@@ -117,7 +117,7 @@ KUBE_CONFIGS=$(find kubernetes/ -name "*.yaml" -o -name "*.yml" 2>/dev/null | he
 if [ -n "$KUBE_CONFIGS" ]; then
     for config in $KUBE_CONFIGS; do
         print_info "Validating $config..."
-        if python3 -c "import yaml; yaml.safe_load(open('$config'))" 2>/dev/null; then
+        if python3 -c "import yaml; list(yaml.safe_load_all(open('$config')))" 2>/dev/null; then
             # Basic structure check
             if grep -q "apiVersion\|kind" "$config"; then
                 print_success "$config - Valid Kubernetes manifest"

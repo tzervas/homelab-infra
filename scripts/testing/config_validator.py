@@ -49,12 +49,14 @@ class ConfigValidator:
         logger = logging.getLogger(__name__)
         logger.setLevel(getattr(logging, level.upper()))
 
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        # Only add handler if no handlers exist
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
 
         return logger
 

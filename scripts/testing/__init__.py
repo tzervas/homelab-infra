@@ -18,8 +18,8 @@ try:
     from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
     from .test_reporter import HomelabTestReporter, TestSuiteResult
 except ImportError as e:
-    # Handle cases where dependencies might not be available
-    pass
+    import warnings
+    warnings.warn(f"ImportError in scripts.testing.__init__: {e}", ImportWarning)
 
 __all__ = [
     "ConfigValidator",

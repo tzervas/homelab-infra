@@ -124,6 +124,7 @@ class ServiceDeploymentChecker:
                                   max_retries: int = 3, retry_delay: int = 5) -> Tuple[int, int, List[Dict]]:
         """Check pod status with intelligent retry logic."""
         if not self.k8s_client:
+            self.logger.warning("Kubernetes client not initialized - cannot check pod status")
             return 0, 0, []
 
         for attempt in range(max_retries):
@@ -166,7 +167,7 @@ class ServiceDeploymentChecker:
             except Exception as e:
                 self.logger.warning(f"Pod status check attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    time.sleep(retry_delay)
+                    time.sleep(retry_delay)  # Wait before retry to avoid overwhelming the API server
                 else:
                     return 0, 0, []
 
@@ -311,20 +312,65 @@ class ServiceDeploymentChecker:
         )
 
     def _parse_cpu(self, cpu_str: str) -> int:
-        """Parse CPU string to millicores."""
-        if cpu_str.endswith('m'):
-            return int(cpu_str[:-1])
-        return int(float(cpu_str) * 1000)
+        """Parse CPU string to millicores.
+
+        Supports Kubernetes CPU formats:
+        - '100m' (millicores)
+        - '1', '0.5' (cores, float or int)
+        - '250u', '100n', etc. (micro/nano cores)
+        Raises ValueError for invalid formats.
+        """
+        cpu_str = cpu_str.strip()
+        try:
+            if cpu_str.endswith('m'):
+                return int(cpu_str[:-1])
+            elif cpu_str.endswith('u'):  # microcores
+                return int(float(cpu_str[:-1]) / 1000)
+            elif cpu_str.endswith('n'):  # nanocores
+                return int(float(cpu_str[:-1]) / 1_000_000)
+            else:
+                # Try parsing as float (cores)
+                return int(float(cpu_str) * 1000)
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid CPU string format: '{cpu_str}'")
 
     def _parse_memory(self, memory_str: str) -> int:
-        """Parse memory string to Mi."""
-        if memory_str.endswith('Mi'):
-            return int(memory_str[:-2])
-        elif memory_str.endswith('Gi'):
-            return int(memory_str[:-2]) * 1024
-        elif memory_str.endswith('Ki'):
-            return int(memory_str[:-2]) // 1024
-        return int(memory_str) // (1024 * 1024)  # Assume bytes
+        """Parse memory string to Mi (Mebibytes).
+
+        Supports all Kubernetes memory formats including:
+        - Binary: Ki, Mi, Gi, Ti, Pi, Ei
+        - Decimal: K, M, G, T, P, E
+        - Plain bytes
+        """
+        try:
+            from kubernetes.utils.quantity import parse_quantity
+            # parse_quantity returns bytes
+            bytes_value = parse_quantity(memory_str)
+            return bytes_value // (1024 * 1024)
+        except ImportError:
+            # Fallback implementation if kubernetes library not available
+            memory_str = memory_str.strip()
+
+            # Binary units
+            if memory_str.endswith('Mi'):
+                return int(memory_str[:-2])
+            elif memory_str.endswith('Gi'):
+                return int(memory_str[:-2]) * 1024
+            elif memory_str.endswith('Ki'):
+                return int(memory_str[:-2]) // 1024
+            elif memory_str.endswith('Ti'):
+                return int(memory_str[:-2]) * 1024 * 1024
+
+            # Decimal units
+            elif memory_str.endswith('M'):
+                return int(float(memory_str[:-1]) * 0.953674)  # MB to MiB
+            elif memory_str.endswith('G'):
+                return int(float(memory_str[:-1]) * 976.563)  # GB to MiB
+            elif memory_str.endswith('K'):
+                return int(float(memory_str[:-1]) / 1048.576)  # KB to MiB
+
+            # Assume bytes
+            return int(memory_str) // (1024 * 1024)
 
     def check_all_services(self) -> Dict[str, ServiceStatus]:
         """Check all defined services."""

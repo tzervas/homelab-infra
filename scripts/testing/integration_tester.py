@@ -139,19 +139,35 @@ class IntegrationConnectivityTester:
 
         return logger
 
-    def test_service_connectivity(self, endpoint: ServiceEndpoint, perspective: str = "server") -> IntegrationTestResult:
+    def test_service_connectivity(
+        self,
+        endpoint: ServiceEndpoint,
+        perspective: str = "server",
+        verify_ssl: bool = None
+    ) -> IntegrationTestResult:
         """Test basic connectivity to a service endpoint."""
         start_time = time.time()
 
         # Choose URL based on perspective
         test_url = endpoint.internal_url if perspective == "server" else endpoint.external_url
 
+        # Determine SSL verification default if not explicitly set
+        if verify_ssl is None:
+            verify_ssl = perspective != "server"
+
+        # Warn if connecting to external URL with SSL verification disabled
+        if perspective != "server" and not verify_ssl:
+            self.logger.warning(
+                f"SSL verification is disabled for external URL '{test_url}'. "
+                "This may hide certificate issues in production."
+            )
+
         try:
             # Test basic connectivity
             response = requests.get(
                 urljoin(test_url, endpoint.health_path),
                 timeout=self.short_timeout,
-                verify=False,  # Skip SSL verification for internal testing
+                verify=verify_ssl,
                 allow_redirects=True
             )
 
@@ -212,12 +228,19 @@ class IntegrationConnectivityTester:
         for api_path in endpoint.api_paths:
             try:
                 url = urljoin(base_url, api_path)
-                response = requests.get(
-                    url,
-                    timeout=self.short_timeout,
-                    verify=False,
-                    allow_redirects=True
-                )
+                request_kwargs = {
+                    "timeout": self.short_timeout,
+                    "verify": False,
+                    "allow_redirects": True
+                }
+
+                # Add authentication if required
+                if getattr(endpoint, "requires_auth", False):
+                    auth_token = self.get_auth_token(endpoint)
+                    if auth_token:
+                        request_kwargs["headers"] = {"Authorization": f"Bearer {auth_token}"}
+
+                response = requests.get(url, **request_kwargs)
 
                 # Consider 200-299, 401 (auth required), and 403 (forbidden) as "reachable"
                 reachable = response.status_code < 500 and response.status_code != 404
@@ -296,12 +319,19 @@ class IntegrationConnectivityTester:
                 allow_redirects=False
             )
 
-            # Look for redirect to Keycloak or auth-related headers
-            sso_indicators = [
-                "keycloak" in response.headers.get("location", "").lower(),
-                "auth" in response.headers.get("location", "").lower(),
-                response.status_code in [302, 303, 307, 401]
-            ]
+            # Refined SSO detection logic to reduce false positives
+            location = response.headers.get("location", "").lower()
+            www_authenticate = response.headers.get("www-authenticate", "").lower()
+            sso_location_keywords = ["keycloak", "sso", "login", "oauth", "openid"]
+            is_sso_redirect = (
+                response.status_code in [302, 303, 307]
+                and any(keyword in location for keyword in sso_location_keywords)
+            )
+            is_sso_401 = (
+                response.status_code == 401
+                and any(keyword in www_authenticate for keyword in ["bearer", "keycloak", "oauth", "openid"])
+            )
+            sso_indicators = [is_sso_redirect, is_sso_401]
 
             duration = time.time() - start_time
 
@@ -442,18 +472,24 @@ class IntegrationConnectivityTester:
                 target_url = target_endpoint.internal_url
 
                 # Use ping test as a proxy for network connectivity
-                target_ip = urlparse(target_url).netloc.split(':')[0]
-                ping_result = subprocess.run(
-                    ["ping", "-c", "1", "-W", "2", target_ip],
-                    capture_output=True, text=True, timeout=5
-                )
+                parsed_url = urlparse(target_url)
+                target_host = parsed_url.netloc.split(':')[0]
+                target_port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(2)
+                    tcp_result = sock.connect_ex((target_host, target_port))
+                    sock.close()
+                except Exception:
+                    tcp_result = 1
 
-                connectivity_ok = ping_result.returncode == 0
+                connectivity_ok = tcp_result == 0
 
                 comm_results[description] = {
                     "status": "pass" if connectivity_ok else "fail",
-                    "target_ip": target_ip,
-                    "ping_success": connectivity_ok
+                    "target_host": target_host,
+                    "target_port": target_port,
+                    "tcp_connection_success": connectivity_ok
                 }
 
                 if connectivity_ok:
@@ -489,6 +525,20 @@ class IntegrationConnectivityTester:
                 "total_tests": total_tests
             }
         )
+
+    def get_auth_token(self, endpoint: ServiceEndpoint) -> Optional[str]:
+        """Get authentication token for the endpoint.
+
+        Override this method to provide actual authentication logic.
+        """
+        # TODO: Implement actual authentication logic
+        # Example: return os.getenv(f"{endpoint.name.upper()}_AUTH_TOKEN")
+        return None
+
+    @classmethod
+    def get_service_names(cls) -> List[str]:
+        """Get list of available service names."""
+        return ["gitlab", "keycloak", "prometheus", "grafana"]
 
     def run_comprehensive_integration_tests(self, include_workstation_tests: bool = False) -> List[IntegrationTestResult]:
         """Run all integration tests."""
@@ -539,7 +589,7 @@ def main():
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
     parser.add_argument("--include-workstation", action="store_true",
                        help="Include workstation perspective tests")
-    parser.add_argument("--service", choices=list(IntegrationConnectivityTester({}).service_endpoints.keys()),
+    parser.add_argument("--service", choices=IntegrationConnectivityTester.get_service_names(),
                        help="Test specific service only")
 
     args = parser.parse_args()

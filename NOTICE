@@ -1,0 +1,42 @@
+Homelab Infrastructure
+Copyright (c) 2025 Tyler Zervas
+
+This product includes software developed by third parties.
+
+================================================================================
+
+This project uses the following open source software components:
+
+Apache 2.0 Licensed Projects:
+- k3s (© Rancher Labs, Inc.)
+- MetalLB (© MetalLB contributors)
+- cert-manager (© The cert-manager Authors)
+- ingress-nginx (© The Kubernetes Authors)
+- Longhorn (© Rancher Labs, Inc.)
+- Prometheus (© The Prometheus Authors)
+- Helm (© The Helm Authors)
+- sealed-secrets (© Bitnami)
+
+MIT Licensed Projects:
+- Helmfile (© 2017 Robison Jacka)
+
+AGPLv3 Licensed Projects (Used as unmodified deployments):
+- Grafana (© Grafana Labs)
+- Loki (© Grafana Labs)
+- Promtail (© Grafana Labs)
+
+See ATTRIBUTIONS.md for complete licensing information and project details.
+See LICENSES/ directory for full license texts.
+
+================================================================================
+
+CNCF Projects:
+Several components are Cloud Native Computing Foundation projects:
+- Graduated: Helm, Prometheus
+- Incubating: cert-manager, Longhorn
+- Sandbox: k3s
+
+================================================================================
+
+For questions about licensing, please refer to ATTRIBUTIONS.md or open an issue
+in this repository.

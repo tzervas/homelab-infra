@@ -1,0 +1,68 @@
+# Staging Environment Configuration
+environment: staging
+
+# Global overrides for staging
+global:
+  # Use staging Let's Encrypt issuer
+  tls:
+    enabled: true
+    issuer: "letsencrypt-staging"
+
+  # Moderate resource requirements
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# GitLab staging settings
+gitlab:
+  replicas: 2
+
+  # Moderate resource requirements
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2000m"
+    limits:
+      memory: "8Gi"
+      cpu: "4000m"
+
+  gitlab:
+    webservice:
+      ingress:
+        tls:
+          secretName: gitlab-staging-tls
+
+# Keycloak staging settings
+keycloak:
+  replicas: 2
+
+  # Use external Postgres database
+  database:
+    vendor: postgres
+    existingSecret: keycloak-db-secret
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# Monitoring moderate for staging
+monitoring:
+  prometheus:
+    retention: "14d"
+    storage: 20Gi
+
+  grafana:
+    persistence:
+      size: 10Gi
+
+  loki:
+    retention: "7d"
+    storage: 10Gi

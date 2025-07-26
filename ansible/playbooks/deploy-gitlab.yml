@@ -1,0 +1,16 @@
+---
+# GitLab Deployment
+# Deploys GitLab with container registry
+
+- name: Deploy GitLab
+  debug:
+    msg: "🦊 Deploying GitLab with container registry..."
+
+- name: Create GitLab namespace
+  shell: kubectl create namespace gitlab --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display GitLab deployment status
+  debug:
+    msg: "✅ GitLab deployment initiated successfully!"

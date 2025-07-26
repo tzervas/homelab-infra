@@ -18,6 +18,7 @@ kubeconfig*
 # Environment variables
 .env
 *.env
+.env.private.local
 
 # IDE and editor files
 .idea/

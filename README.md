@@ -7,7 +7,6 @@ Infrastructure as Code (IaC) for managing homelab k3s environment with Helm and 
 This repository contains the complete infrastructure configuration for a homelab environment, featuring:
 
 - **k3s** - Lightweight Kubernetes distribution
-- **Terraform** - Infrastructure provisioning
 - **Helm/Helmfile** - Declarative application deployment
 - **MetalLB** - Bare metal load balancer
 - **Longhorn** - Distributed block storage
@@ -19,11 +18,10 @@ This repository contains the complete infrastructure configuration for a homelab
 
 ### Prerequisites
 
-- A homelab server with SSH access
+- k3s cluster running on 192.168.16.26
 - kubectl configured
 - Helm 3.x installed
-- Ansible installed
-- At least 16GB RAM and 200GB disk space
+- Helmfile installed
 
 ### Configuration Setup
 
@@ -92,13 +90,9 @@ This repository includes public documentation in the `docs/` directory. Detailed
 │   ├── repositories.yaml   # Helm repository definitions
 │   └── helmfile.yaml      # Declarative release management
 ├── kubernetes/             # Base Kubernetes manifests
-│   ├── base/              # Namespace, RBAC, network policies
-│   └── overlays/          # Environment-specific overlays
+│   └── base/              # Namespace, RBAC, network policies
 ├── scripts/               # Deployment and utility scripts
-└── terraform/            # Terraform configurations
-    ├── main.tf            # Main Terraform configuration
-    ├── variables.tf       # Input variables
-    └── outputs.tf         # Output variables
+└── terraform/            # Future Terraform configurations
 ```
 
 ## Getting Started
@@ -107,14 +101,14 @@ Documentation for setup and usage can be found in the [docs](./docs) directory.
 
 ## Network Configuration
 
-### Server Details (customize in your private config)
-- **k3s Master**: Your homelab server IP
-- **Network Range**: Your internal network range
+### Server Details
+- **k3s Master**: 192.168.16.26
+- **Network Range**: 192.168.25.x
 
-### MetalLB IP Allocation (customize in your private config)
-- **Development**: A small IP range for testing
-- **Staging**: Medium IP range for staging
-- **Production**: Larger IP range for production
+### MetalLB IP Allocation
+- **Development**: 192.168.25.200-192.168.25.210
+- **Staging**: 192.168.25.220-192.168.25.235
+- **Production**: 192.168.25.240-192.168.25.250
 
 ## Environments
 
@@ -262,14 +256,10 @@ kubectl logs -n longhorn-system -l app=longhorn-manager > longhorn.log
 
 ## Contributing
 
-1. Create a feature branch from `develop` using:
-   ```bash
-   git checkout -b feature/your-feature-name develop
-   ```
-2. Make your changes
-3. Test changes in development environment
-4. Update documentation as needed
-5. Submit a pull request to `develop`
+1. Create feature branch from `develop`
+2. Test changes in development environment
+3. Update documentation as needed
+4. Submit pull request to `develop`
 
 ## License
 

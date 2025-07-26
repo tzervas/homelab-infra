@@ -312,7 +312,7 @@
         TARGET_USER="kang"
         MAX_ATTEMPTS=30
         ATTEMPT=0
-        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
+        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('/home/vector_weight/.ssh/id_ed25519') }}"
         DEPLOYMENT_PHASE="{{ phase | default('vm-test') }}"
 
         # SSH options

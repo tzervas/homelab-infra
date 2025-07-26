@@ -187,7 +187,7 @@ echo "config/" >> .gitignore
 ### Validation Scripts
 ```bash
 # Validate configuration syntax
-./scripts/validate-deployment-local.sh
+./scripts/validate-deployment-comprehensive.sh
 
 # Test network connectivity
 ./scripts/test-deployment-readiness.sh

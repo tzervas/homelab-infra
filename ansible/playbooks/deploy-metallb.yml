@@ -1,0 +1,63 @@
+---
+# MetalLB Load Balancer Deployment
+# Deploys MetalLB for bare metal load balancing
+
+- name: Deploy MetalLB namespace
+  debug:
+    msg: "🔗 Deploying MetalLB load balancer..."
+
+- name: Install MetalLB using Helm
+  shell: |
+    # Add MetalLB Helm repository
+    helm repo add metallb https://metallb.github.io/metallb
+    helm repo update
+
+    # Install MetalLB
+    helm upgrade --install metallb metallb/metallb \
+      --namespace metallb-system \
+      --create-namespace \
+      --version {{ versions.metallb }} \
+      --wait
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Configure MetalLB IP pool
+  copy:
+    content: |
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: default-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+        - {{ homelab_network.metallb_range }}
+      ---
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: default
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+        - default-pool
+    dest: /tmp/metallb-config.yaml
+    mode: '0644'
+
+- name: Apply MetalLB configuration
+  shell: kubectl apply -f /tmp/metallb-config.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Verify MetalLB deployment
+  shell: kubectl get pods -n metallb-system
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: metallb_pods
+
+- name: Display MetalLB status
+  debug:
+    msg:
+      - "✅ MetalLB deployed successfully!"
+      - "IP Range: {{ homelab_network.metallb_range }}"
+      - "Pods: {{ metallb_pods.stdout_lines }}"

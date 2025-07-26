@@ -1,0 +1,91 @@
+global:
+  domain: "homelab.local"
+  storageClass: "longhorn"
+  timezone: "UTC"
+
+metallb:
+  enabled: true
+  controller:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+  speaker:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+cert-manager:
+  enabled: true
+  installCRDs: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  webhook:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  cainjector:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+ingress-nginx:
+  enabled: true
+  controller:
+    service:
+      type: LoadBalancer
+      loadBalancerIP: ""  # Will be assigned by MetalLB
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    config:
+      use-forwarded-headers: "true"
+      compute-full-forwarded-for: "true"
+      use-proxy-protocol: "false"
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    admissionWebhooks:
+      enabled: true
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+sealed-secrets:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi

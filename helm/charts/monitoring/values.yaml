@@ -1,0 +1,174 @@
+global:
+  domain: "homelab.local"
+  storageClass: "longhorn"
+
+kube-prometheus-stack:
+  enabled: true
+
+  prometheus:
+    prometheusSpec:
+      retention: "30d"
+      retentionSize: "45GB"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: longhorn
+            resources:
+              requests:
+                storage: 50Gi
+      resources:
+        limits:
+          cpu: 2000m
+          memory: 8Gi
+        requests:
+          cpu: 500m
+          memory: 2Gi
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+      ruleSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
+      podMonitorNamespaceSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+
+  alertmanager:
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: longhorn
+            resources:
+              requests:
+                storage: 10Gi
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+  grafana:
+    enabled: false  # Use standalone Grafana for better control
+
+  kubeStateMetrics:
+    enabled: true
+
+  nodeExporter:
+    enabled: true
+
+  prometheusOperator:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+loki:
+  enabled: true
+  deploymentMode: SingleBinary
+
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: 'filesystem'
+    schemaConfig:
+      configs:
+        - from: 2024-04-01
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+
+    auth_enabled: false
+    server:
+      grpc_server_max_recv_msg_size: 8388608
+      grpc_server_max_send_msg_size: 8388608
+
+  singleBinary:
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 20Gi
+
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+grafana:
+  enabled: true
+
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    size: 10Gi
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  adminPassword: "admin"  # Change this in production
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://kube-prometheus-stack-prometheus:9090
+          access: proxy
+          isDefault: true
+        - name: Loki
+          type: loki
+          url: http://loki:3100
+          access: proxy
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.homelab.local
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.homelab.local

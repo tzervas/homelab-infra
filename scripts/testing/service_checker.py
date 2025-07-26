@@ -137,9 +137,9 @@ class ServiceDeploymentChecker:
                 pod_details = []
 
                 for pod in pods.items:
-                    pod_ready = pod.status.phase == "Running"
-                    if pod.status.container_statuses:
-                        pod_ready = all(cs.ready for cs in pod.status.container_statuses)
+                    pod_ready = (pod.status.phase == "Running" and
+                                (not pod.status.container_statuses or
+                                 all(cs.ready for cs in pod.status.container_statuses)))
 
                     if pod_ready:
                         ready_pods += 1
@@ -229,7 +229,10 @@ class ServiceDeploymentChecker:
                             for protocol in ["http", "https"]:
                                 try:
                                     url = f"{protocol}://{svc.spec.cluster_ip}:{port_num}{health_path}"
-                                    response = requests.get(url, timeout=10, verify=False)
+                                    # Add instance variable for internal SSL verification
+                                    verify_internal = getattr(self, 'verify_internal_ssl', False)
+
+                                    response = requests.get(url, timeout=10, verify=verify_internal)
                                     health_results[f"{protocol}_{port_num}"] = response.status_code < 400
                                     break  # If successful, don't try other protocol
                                 except:
@@ -316,23 +319,40 @@ class ServiceDeploymentChecker:
 
         Supports Kubernetes CPU formats:
         - '100m' (millicores)
-        - '1', '0.5' (cores, float or int)
-        - '250u', '100n', etc. (micro/nano cores)
-        Raises ValueError for invalid formats.
+        - '0.5', '1.5' (cores as float)
+        - '1e3m', '1e-3' (scientific notation)
+        - '250u' (250 microcores = 0.25m)
+        - '500n' (500 nanocores = 0.0005m)
         """
-        cpu_str = cpu_str.strip()
         try:
-            if cpu_str.endswith('m'):
-                return int(cpu_str[:-1])
-            elif cpu_str.endswith('u'):  # microcores
-                return int(float(cpu_str[:-1]) / 1000)
-            elif cpu_str.endswith('n'):  # nanocores
-                return int(float(cpu_str[:-1]) / 1_000_000)
-            else:
-                # Try parsing as float (cores)
-                return int(float(cpu_str) * 1000)
-        except (ValueError, TypeError):
-            raise ValueError(f"Invalid CPU string format: '{cpu_str}'")
+            from kubernetes.utils.quantity import parse_quantity
+            # parse_quantity returns the value in base units
+            # For CPU, base unit is "core" so we convert to millicores
+            cores = parse_quantity(cpu_str)
+            return int(cores * 1000)
+        except ImportError:
+            # Fallback implementation
+            cpu_str = cpu_str.strip()
+            try:
+                # Handle scientific notation
+                if 'e' in cpu_str.lower():
+                    if cpu_str.endswith('m'):
+                        return int(float(cpu_str[:-1]))
+                    else:
+                        return int(float(cpu_str) * 1000)
+
+                # Handle units
+                if cpu_str.endswith('m'):
+                    return int(float(cpu_str[:-1]))
+                elif cpu_str.endswith('u'):  # microcores
+                    return int(float(cpu_str[:-1]) / 1000)
+                elif cpu_str.endswith('n'):  # nanocores
+                    return int(float(cpu_str[:-1]) / 1_000_000)
+                else:
+                    # Assume cores (can be float)
+                    return int(float(cpu_str) * 1000)
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid CPU string format: '{cpu_str}'") from e
 
     def _parse_memory(self, memory_str: str) -> int:
         """Parse memory string to Mi (Mebibytes).
@@ -346,9 +366,9 @@ class ServiceDeploymentChecker:
             from kubernetes.utils.quantity import parse_quantity
             # parse_quantity returns bytes
             bytes_value = parse_quantity(memory_str)
-            return bytes_value // (1024 * 1024)
+            return int(bytes_value / (1024 * 1024))  # Convert to MiB
         except ImportError:
-            # Fallback implementation if kubernetes library not available
+            # Enhanced fallback implementation
             memory_str = memory_str.strip()
 
             # Binary units
@@ -360,17 +380,29 @@ class ServiceDeploymentChecker:
                 return int(memory_str[:-2]) // 1024
             elif memory_str.endswith('Ti'):
                 return int(memory_str[:-2]) * 1024 * 1024
+            elif memory_str.endswith('Pi'):
+                return int(memory_str[:-2]) * 1024 * 1024 * 1024
+            elif memory_str.endswith('Ei'):
+                return int(memory_str[:-2]) * 1024 * 1024 * 1024 * 1024
 
             # Decimal units
             elif memory_str.endswith('M'):
-                return int(float(memory_str[:-1]) * 0.953674)  # MB to MiB
+                return int(float(memory_str[:-1]) * 1000**2 / (1024**2))  # MB to MiB
             elif memory_str.endswith('G'):
-                return int(float(memory_str[:-1]) * 976.563)  # GB to MiB
+                return int(float(memory_str[:-1]) * 1000**3 / (1024**2))  # GB to MiB
+            elif memory_str.endswith('T'):
+                return int(float(memory_str[:-1]) * 1000**4 / (1024**2))  # TB to MiB
+            elif memory_str.endswith('P'):
+                return int(float(memory_str[:-1]) * 1000**5 / (1024**2))  # PB to MiB
+            elif memory_str.endswith('E'):
+                return int(float(memory_str[:-1]) * 1000**6 / (1024**2))  # EB to MiB
             elif memory_str.endswith('K'):
-                return int(float(memory_str[:-1]) / 1048.576)  # KB to MiB
+                return int(float(memory_str[:-1]) * 1000 / (1024**2))  # KB to MiB
+            elif memory_str.endswith('k'):
+                return int(float(memory_str[:-1]) * 1000 / (1024**2))  # kB to MiB
 
-            # Assume bytes
-            return int(memory_str) // (1024 * 1024)
+            # Assume bytes if no unit
+            return int(float(memory_str) / (1024**2))
 
     def check_all_services(self) -> Dict[str, ServiceStatus]:
         """Check all defined services."""

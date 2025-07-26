@@ -221,15 +221,35 @@ class ConfigValidator:
     def _validate_ip_range(self, ip_range: str) -> bool:
         """Validate IP range format (e.g., 192.168.1.100-192.168.1.200)."""
         import re
-        pattern = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
-        return bool(re.match(pattern, ip_range))
+        pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+        return bool(re.fullmatch(pattern, ip_range))
 
     def _validate_resource_value(self, value: str) -> bool:
         """Validate Kubernetes resource value format."""
         import re
-        cpu_pattern = r'^\d+m?$'
-        memory_pattern = r'^\d+(Mi|Gi|Ki|M|G|K)?$'
-        return bool(re.match(cpu_pattern, str(value)) or re.match(memory_pattern, str(value)))
+        # CPU: number (int or float) with optional 'm' suffix, or with units u/n
+        # Also support scientific notation like 1e3m or 1.5e-3
+        cpu_pattern = r'([0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)(m|u|n)?'
+
+        # Memory: number with optional valid binary or decimal suffix
+        # Ki, Mi, Gi, Ti, Pi, Ei (binary) or k, K, M, G, T, P, E (decimal)
+        memory_pattern = r'([0-9]+(\.[0-9]+)?)(Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?'
+
+        value_str = str(value).strip()
+
+        # Check if it matches CPU pattern
+        if re.fullmatch(cpu_pattern, value_str):
+            return True
+
+        # Check if it matches memory pattern
+        if re.fullmatch(memory_pattern, value_str):
+            return True
+
+        # Check if it's a plain number (bytes or cores)
+        if re.fullmatch(r'[0-9]+(\.[0-9]+)?', value_str):
+            return True
+
+        return False
 
     def _check_sensitive_data(self, data: Dict[str, Any], patterns: List[str], result: ValidationResult) -> None:
         """Recursively check for potential sensitive data exposure."""

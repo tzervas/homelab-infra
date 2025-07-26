@@ -391,10 +391,13 @@ class IntegrationConnectivityTester:
 
                 # HTTP connectivity test
                 try:
+                    # Add a parameter to the method or use instance variable
+                    verify_ssl = getattr(self, 'verify_external_ssl', True)
+
                     response = requests.head(
                         endpoint.external_url,
                         timeout=self.short_timeout,
-                        verify=False,
+                        verify=verify_ssl,
                         allow_redirects=True
                     )
                     http_ok = response.status_code < 500
@@ -531,9 +534,10 @@ class IntegrationConnectivityTester:
 
         Override this method to provide actual authentication logic.
         """
-        # TODO: Implement actual authentication logic
-        # Example: return os.getenv(f"{endpoint.name.upper()}_AUTH_TOKEN")
-        return None
+        raise NotImplementedError(
+            "Authentication required but get_auth_token() not implemented. "
+            "Override this method or set auth tokens via environment variables."
+        )
 
     @classmethod
     def get_service_names(cls) -> List[str]:

@@ -303,20 +303,59 @@
           - "Console Output Available: {{ 'Yes' if 'Console unavailable' not in console_check.stdout else 'No' }}"
           - "Checking SSH readiness..."
 
-    - name: Intelligent SSH readiness check with detailed monitoring
+    - name: Configuration-driven SSH readiness check
       shell: |
         #!/bin/bash
         HOST="{{ vm_ip.stdout }}"
-        MAX_ATTEMPTS=40
+        BASTION_HOST="{{ ansible_host }}"
+        BASTION_USER="{{ ansible_user }}"
+        TARGET_USER="kang"
+        MAX_ATTEMPTS=30
         ATTEMPT=0
+        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
+        DEPLOYMENT_PHASE="{{ phase | default('vm-test') }}"
 
-        echo "Starting SSH readiness monitoring for $HOST"
+        # SSH options
+        SSH_OPTS="-i $SSH_KEY -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        BASTION_SSH_OPTS="$SSH_OPTS -o ProxyJump=$BASTION_USER@$BASTION_HOST"
+
+        # Connection method based on deployment configuration
+        USE_BASTION=true  # Default for VMs
+        CONNECTION_TYPE="VM via bastion"
+
+        case "$DEPLOYMENT_PHASE" in
+          "vm-test"|"full-vm-test")
+            # VMs always need bastion (192.168.122.x network)
+            USE_BASTION=true
+            CONNECTION_TYPE="VM via bastion ($BASTION_HOST)"
+            ;;
+          "bare-metal")
+            # Bare metal: check if target is same as bastion
+            if [[ "$HOST" == "$BASTION_HOST" ]]; then
+              USE_BASTION=false
+              CONNECTION_TYPE="Bare metal (direct to homelab server)"
+            else
+              USE_BASTION=true
+              CONNECTION_TYPE="Bare metal node via bastion ($BASTION_HOST)"
+            fi
+            ;;
+          *)
+            # Unknown phase, default to bastion
+            USE_BASTION=true
+            CONNECTION_TYPE="Unknown phase - using bastion"
+            ;;
+        esac
+
+        echo "🔍 Starting SSH readiness monitoring for $TARGET_USER@$HOST via bastion $BASTION_HOST"
+        echo "Using SSH key: $SSH_KEY"
+        echo "Bastion host: $BASTION_USER@$BASTION_HOST"
 
         while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
           ATTEMPT=$((ATTEMPT + 1))
-          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS"
+          echo ""
+          echo "🔄 Attempt $ATTEMPT/$MAX_ATTEMPTS"
 
-          # Check if port 22 is listening with reasonable backoff
+          # Determine backoff time based on attempt
           if [ $ATTEMPT -le 10 ]; then
             backoff=5
           elif [ $ATTEMPT -le 20 ]; then
@@ -325,68 +364,129 @@
             backoff=15
           fi
 
-          if nc -z -w3 $HOST 22 2>/dev/null; then
-            echo "✓ Port 22 is open"
-
-            # Try SSH connection with detailed output
-            if ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no kang@$HOST 'echo "SSH_READY"' 2>/dev/null | grep -q "SSH_READY"; then
-              echo "✅ SSH connection successful!"
-              exit 0
-            else
-              echo "⏳ Port open but SSH not ready, retrying..."
-            fi
-          else
-            echo "⏳ Port 22 not yet available (next try in $backoff seconds)"
-          fi
-
-          # Perform lighter diagnostics more frequently
-          echo "🔍 Checking for boot progress..."
+          # Check VM state first
           VM_STATE=$(virsh domstate {{ vm_config.name }} 2>/dev/null || echo "unknown")
-          echo "   VM State: $VM_STATE"
+          echo "   🖥️  VM State: $VM_STATE"
 
           if [ "$VM_STATE" != "running" ]; then
-            echo "💤 VM is not in running state yet"
+            echo "   💤 VM is not in running state yet"
           else
-            # Quick CPU check for ongoing activity
-            CPU_TIME=$(virsh domstats {{ vm_config.name }} --cpu-total 2>/dev/null | grep "cpu.time" | cut -d'=' -f2 || echo "0")
-            if [[ "$CPU_TIME" -gt 0 ]]; then
-              echo "   CPU Activity detected"
+            # Test SSH connection through bastion
+            echo "   🔗 Testing SSH through bastion host..."
+            if timeout 15 ssh $BASTION_SSH_OPTS $TARGET_USER@$HOST 'echo "SSH_READY"' 2>/dev/null | grep -q "SSH_READY"; then
+              echo "   🎉 SSH connection successful through bastion!"
+
+              # Perform comprehensive readiness checks
+              echo "   🔍 Running comprehensive service readiness checks..."
+              ssh $BASTION_SSH_OPTS $TARGET_USER@$HOST '
+                echo "   📋 System readiness status:"
+                echo "     - Hostname: $(hostname)"
+                echo "     - Uptime: $(uptime | cut -d"," -f1)"
+                echo "     - Load: $(uptime | grep -o "load.*")"
+                echo "     - Memory: $(free -m | grep "Mem:" | awk "{print \$2\" MB total, \"\$3\" MB used\"}")"
+                echo "     - Disk space: $(df -h / | tail -1 | awk "{print \$4\" available\"}")"
+
+                # Check critical services
+                echo "   🔧 Service status:"
+                if systemctl is-active ssh >/dev/null 2>&1; then
+                  echo "     - SSH service: ✅ Active"
+                else
+                  echo "     - SSH service: ❌ Inactive"
+                fi
+
+                if systemctl is-active systemd-resolved >/dev/null 2>&1; then
+                  echo "     - DNS resolver: ✅ Active"
+                else
+                  echo "     - DNS resolver: ❌ Inactive"
+                fi
+
+                # Check cloud-init completion
+                if cloud-init status --wait --long >/dev/null 2>&1; then
+                  echo "     - Cloud-init: ✅ Complete"
+                else
+                  echo "     - Cloud-init: ⏳ In progress or failed"
+                fi
+
+                # Network connectivity test
+                if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
+                  echo "     - Internet connectivity: ✅ Available"
+                else
+                  echo "     - Internet connectivity: ❌ Unavailable"
+                fi
+
+                # Package manager readiness
+                if apt list --installed >/dev/null 2>&1; then
+                  echo "     - Package manager: ✅ Ready"
+                else
+                  echo "     - Package manager: ❌ Not ready"
+                fi
+              ' 2>/dev/null
+
+              echo ""
+              echo "✅ VM is fully ready for deployment!"
+              exit 0
             else
-              echo "   No CPU Activity detected"
+              echo "   ⏳ SSH not ready through bastion (host may still be booting)"
             fi
 
-            if ping -c 1 -W 2 $HOST >/dev/null 2>&1; then
-              echo "   Network: ✓ VM is reachable"
+            # Additional VM diagnostics for running VMs
+            CPU_TIME=$(virsh domstats {{ vm_config.name }} --cpu-total 2>/dev/null | grep "cpu.time" | cut -d'=' -f2 || echo "0")
+            if [ "$CPU_TIME" -gt 0 ] 2>/dev/null; then
+              echo "   📊 CPU Activity: Detected (boot in progress)"
             else
-              echo "   Network: ❌ VM not responding to ping"
+              echo "   📊 CPU Activity: Low (may be idle or stuck)"
+            fi
+
+            # Check if VM responds to ping from homelab server
+            if ping -c 1 -W 2 $HOST >/dev/null 2>&1; then
+              echo "   🌐 Network: VM is reachable from homelab server"
+            else
+              echo "   🌐 Network: VM not responding to ping"
             fi
           fi
 
+          echo "   ⏱️  Waiting $backoff seconds before next attempt..."
           sleep $backoff
         done
 
-        echo "❌ SSH readiness timeout after $((MAX_ATTEMPTS * 15)) seconds"
-        echo "Final diagnostics:"
-        virsh domstate {{ vm_config.name }}
-        echo "Attempting final SSH connection..."
-        ssh -v -o ConnectTimeout=10 -o BatchMode=yes kang@$HOST 'echo test' 2>&1 | head -20
+        echo ""
+        echo "❌ SSH readiness timeout after approximately $((MAX_ATTEMPTS * 10)) seconds"
+        echo ""
+        echo "🔧 Final diagnostics:"
+        echo "VM State: $(virsh domstate {{ vm_config.name }})"
+        echo "Network interfaces: $(virsh domiflist {{ vm_config.name }} | tail -n +3)"
+        echo "Network addresses: $(virsh domifaddr {{ vm_config.name }} | tail -n +3)"
+        echo ""
+        echo "Attempting final SSH connection with verbose output..."
+        ssh $BASTION_SSH_OPTS -v $TARGET_USER@$HOST 'echo "Final test"' 2>&1 | head -20
         exit 1
       register: ssh_ready_check
       failed_when: ssh_ready_check.rc != 0
       delegate_to: "{{ inventory_hostname }}"
 
-    - name: Verify SSH functionality with system info
+    - name: Verify SSH functionality with comprehensive system info via bastion
       shell: |
-        ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no kang@{{ vm_ip.stdout }} '
-          echo "=== VM System Information ==="
+        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
+        SSH_OPTS="-i $SSH_KEY -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        BASTION_SSH_OPTS="$SSH_OPTS -o ProxyJump={{ ansible_user }}@{{ ansible_host }}"
+
+        echo "🔍 Final verification: Comprehensive system information check"
+        ssh $BASTION_SSH_OPTS kang@{{ vm_ip.stdout }} '
+          echo "📋 === VM System Information ==="
           echo "Hostname: $(hostname)"
           echo "Uptime: $(uptime)"
+          echo "Load average: $(cat /proc/loadavg)"
           echo "Memory: $(free -h | head -2)"
-          echo "Disk: $(df -h / | tail -1)"
-          echo "Cloud-init status: $(cloud-init status --wait --long 2>/dev/null || echo "unknown")"
-          echo "SSH connection verified!"
+          echo "Disk usage: $(df -h / | tail -1)"
+          echo "Network interfaces: $(ip -br addr show | head -3)"
+          echo "Default route: $(ip route | grep default | head -1)"
+          echo "DNS servers: $(cat /etc/resolv.conf | grep nameserver | head -2)"
+          echo "Cloud-init status: $(cloud-init status --wait --long 2>/dev/null || echo "Status unknown")"
+          echo "SSH daemon status: $(systemctl is-active ssh)"
+          echo "🎯 SSH connection through bastion verified successfully!"
         '
       register: vm_info
+      delegate_to: "{{ inventory_hostname }}"
 
     - name: Display VM system information
       debug:

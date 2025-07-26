@@ -45,3 +45,32 @@ gitleaks-report.*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Deployment and Sensitive Scripts (to be moved to private repo)
+scripts/deploy*.sh
+scripts/secrets*.sh
+scripts/*secret*.sh
+scripts/*sensitive*.sh
+
+# Security and Private Configuration
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+*.p12
+*.pfx
+.private/
+**/private/
+**/.*_private
+**/*_private.yaml
+**/*_private.yml
+**/*_private.json
+docs/private_repo_info.md
+
+# Local Development Overrides
+*.local.yaml
+*.local.yml
+*.local.json
+.env.local
+.env.*.local

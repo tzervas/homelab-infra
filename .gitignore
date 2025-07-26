@@ -96,4 +96,3 @@ docs/private_repo_info.md
 # Backup directories
 untracked_backup/
 .private_backup/
-fix-commit-history.sh

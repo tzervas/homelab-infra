@@ -1,0 +1,129 @@
+---
+# Main GitLab + Keycloak Homelab Deployment Playbook
+# Supports both VM testing and bare metal deployment
+
+- name: GitLab + Keycloak Homelab Infrastructure Deployment
+  hosts: homelab
+  gather_facts: yes
+  become: yes
+
+  vars:
+    deployment_timestamp: "{{ ansible_date_time.iso8601 }}"
+
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "Deployment Phase: {{ phase }}"
+          - "Target Host: {{ inventory_hostname }}"
+          - "Ansible Host: {{ ansible_host }}"
+          - "Timestamp: {{ deployment_timestamp }}"
+          - "Components: {{ deploy_components | join(', ') }}"
+
+    - name: Ensure required directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /opt/homelab
+        - /opt/homelab/logs
+        - /opt/homelab/configs
+        - /opt/homelab/backups
+
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+
+  tasks:
+    # VM Creation and Setup (for testing phases)
+    - name: Create and configure test VM
+      include_tasks: playbooks/create-vm.yml
+      when: phase in ['vm-test', 'full-vm-test']
+
+    # VM Cleanup (for cleanup phase)
+    - name: Cleanup test VM
+      include_tasks: playbooks/cleanup-vm.yml
+      when: phase == 'cleanup-vm'
+
+    # K3s Deployment (for all deployment phases)
+    - name: Deploy K3s cluster
+      include_tasks: playbooks/deploy-k3s.yml
+      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+
+    # Infrastructure Components
+    - name: Deploy MetalLB load balancer
+      include_tasks: playbooks/deploy-metallb.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'metallb' in deploy_components"
+
+    - name: Deploy cert-manager
+      include_tasks: playbooks/deploy-cert-manager.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'cert-manager' in deploy_components"
+
+    - name: Deploy nginx-ingress
+      include_tasks: playbooks/deploy-nginx-ingress.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'nginx-ingress' in deploy_components"
+
+    # Application Deployment
+    - name: Deploy Keycloak SSO
+      include_tasks: playbooks/deploy-keycloak.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'keycloak' in deploy_components"
+
+    - name: Deploy GitLab
+      include_tasks: playbooks/deploy-gitlab.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'gitlab' in deploy_components"
+
+    # Monitoring Stack
+    - name: Deploy monitoring stack
+      include_tasks: playbooks/deploy-monitoring.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'monitoring' in deploy_components"
+
+    # Backup Solutions
+    - name: Deploy backup solutions
+      include_tasks: playbooks/deploy-backup.yml
+      when:
+        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        - "'backup-solutions' in deploy_components"
+
+    # Cleanup Tasks (for cleanup phases)
+    - name: Cleanup bare metal K3s
+      include_tasks: playbooks/cleanup-k3s.yml
+      when: phase == 'cleanup-bare-metal'
+
+  post_tasks:
+    - name: Log deployment completion
+      lineinfile:
+        path: /opt/homelab/logs/deployment.log
+        line: "{{ deployment_timestamp }} - {{ phase }} deployment completed on {{ inventory_hostname }}"
+        create: yes
+      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "✅ Deployment Phase '{{ phase }}' completed successfully!"
+          - "📝 Check logs at: /opt/homelab/logs/"
+          - "🔧 Next steps documented in deployment guide"
+      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+
+    - name: Display cleanup summary
+      debug:
+        msg:
+          - "🧹 Cleanup Phase '{{ phase }}' completed successfully!"
+          - "💻 System ready for fresh deployment"
+      when: phase in ['cleanup-vm', 'cleanup-bare-metal']

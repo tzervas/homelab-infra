@@ -1,0 +1,196 @@
+---
+# VM Creation and Configuration for Testing
+# Creates a KVM/libvirt VM for testing the homelab deployment
+
+- name: Check if libvirt is installed
+  command: virsh --version
+  register: virsh_check
+  changed_when: false
+  failed_when: false
+
+- name: Install libvirt and KVM packages
+  apt:
+    name:
+      - qemu-kvm
+      - libvirt-daemon-system
+      - libvirt-clients
+      - bridge-utils
+      - virt-manager
+      - cloud-image-utils
+      - genisoimage
+    state: present
+    update_cache: yes
+  when: virsh_check.rc != 0
+
+- name: Add user to libvirt group
+  user:
+    name: "{{ ansible_user }}"
+    groups: libvirt
+    append: yes
+
+- name: Start and enable libvirt service
+  systemd:
+    name: libvirtd
+    state: started
+    enabled: yes
+
+- name: Check if test VM already exists
+  command: virsh dominfo {{ vm_config.name }}
+  register: vm_exists
+  changed_when: false
+  failed_when: false
+
+- name: Remove existing test VM if it exists
+  block:
+    - name: Stop test VM if running
+      command: virsh destroy {{ vm_config.name }}
+      failed_when: false
+
+    - name: Undefine existing test VM
+      command: virsh undefine {{ vm_config.name }} --remove-all-storage
+      failed_when: false
+
+  when: vm_exists.rc == 0
+
+- name: Create VM storage directory
+  file:
+    path: /var/lib/libvirt/images/{{ vm_config.name }}
+    state: directory
+    mode: '0755'
+
+- name: Download Ubuntu cloud image
+  get_url:
+    url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+    dest: /var/lib/libvirt/images/ubuntu-22.04-server-cloudimg-amd64.img
+    mode: '0644'
+  register: cloud_image_download
+
+- name: Create VM disk from cloud image
+  command: >
+    qemu-img create -f qcow2 -F qcow2 -b /var/lib/libvirt/images/ubuntu-22.04-server-cloudimg-amd64.img
+    /var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}.qcow2 {{ vm_config.disk_size }}
+
+- name: Create cloud-init user-data
+  copy:
+    content: |
+      #cloud-config
+      hostname: {{ vm_config.name }}
+      manage_etc_hosts: true
+
+      users:
+        - name: kang
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          groups: users, admin, wheel, sudo
+          home: /home/kang
+          shell: /bin/bash
+          lock_passwd: false
+          ssh_authorized_keys:
+            - {{ lookup('file', '~/.ssh/id_rsa.pub') }}
+
+      ssh_pwauth: false
+      disable_root: false
+
+      package_update: true
+      package_upgrade: true
+      packages:
+        - curl
+        - wget
+        - git
+        - htop
+        - nano
+        - net-tools
+        - ca-certificates
+        - gnupg
+        - lsb-release
+        - apt-transport-https
+
+      runcmd:
+        - systemctl enable ssh
+        - systemctl start ssh
+        - echo 'VM setup complete' > /var/log/cloud-init-complete.log
+
+      final_message: "The test VM is finally up, after $UPTIME seconds"
+    dest: /var/lib/libvirt/images/{{ vm_config.name }}/user-data
+    mode: '0644'
+
+- name: Create cloud-init meta-data
+  copy:
+    content: |
+      instance-id: {{ vm_config.name }}
+      local-hostname: {{ vm_config.name }}
+      network:
+        version: 2
+        ethernets:
+          enp1s0:
+            dhcp4: true
+            dhcp-identifier: mac
+    dest: /var/lib/libvirt/images/{{ vm_config.name }}/meta-data
+    mode: '0644'
+
+- name: Create cloud-init ISO
+  command: >
+    genisoimage -output /var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}-cloud-init.iso
+    -volid cidata -joliet -rock /var/lib/libvirt/images/{{ vm_config.name }}/user-data
+    /var/lib/libvirt/images/{{ vm_config.name }}/meta-data
+
+- name: Create test VM
+  command: >
+    virt-install
+    --name {{ vm_config.name }}
+    --virt-type kvm
+    --memory {{ vm_config.memory }}
+    --vcpus {{ vm_config.vcpus }}
+    --boot hd,menu=on
+    --disk path=/var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}.qcow2,device=disk,bus=virtio
+    --disk path=/var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}-cloud-init.iso,device=cdrom
+    --graphics none
+    --os-type Linux
+    --os-variant {{ vm_config.os_variant }}
+    --network network={{ vm_config.network }},model=virtio
+    --console pty,target_type=serial
+    --noautoconsole
+    --autostart
+
+- name: Wait for VM to be running
+  command: virsh domstate {{ vm_config.name }}
+  register: vm_state
+  until: vm_state.stdout.strip() == "running"
+  retries: 30
+  delay: 10
+
+- name: Get VM IP address
+  shell: >
+    virsh domifaddr {{ vm_config.name }} | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1
+  register: vm_ip
+  until: vm_ip.stdout != ""
+  retries: 20
+  delay: 15
+
+- name: Update inventory with VM IP
+  set_fact:
+    ansible_host: "{{ vm_ip.stdout }}"
+
+- name: Display VM information
+  debug:
+    msg:
+      - "🖥️  Test VM created successfully!"
+      - "VM Name: {{ vm_config.name }}"
+      - "IP Address: {{ vm_ip.stdout }}"
+      - "Memory: {{ vm_config.memory }}MB"
+      - "CPUs: {{ vm_config.vcpus }}"
+      - "Disk: {{ vm_config.disk_size }}"
+
+- name: Wait for SSH to be available on VM
+  wait_for:
+    host: "{{ vm_ip.stdout }}"
+    port: 22
+    delay: 30
+    timeout: 300
+    state: started
+
+- name: Test SSH connection to VM
+  command: ssh -o ConnectTimeout=10 -o BatchMode=yes kang@{{ vm_ip.stdout }} 'echo "SSH connection successful"'
+  register: ssh_test
+  retries: 5
+  delay: 10
+  until: ssh_test.rc == 0

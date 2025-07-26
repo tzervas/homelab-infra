@@ -1,0 +1,167 @@
+---
+# K3s Kubernetes Cluster Deployment
+# Installs and configures K3s with required settings for homelab
+
+- name: Check if K3s is already installed
+  command: k3s --version
+  register: k3s_check
+  changed_when: false
+  failed_when: false
+
+- name: Display K3s status
+  debug:
+    msg: "K3s is {{ 'already installed' if k3s_check.rc == 0 else 'not installed' }}"
+
+- name: Install K3s
+  shell: |
+    curl -sfL https://get.k3s.io | sh -s - server \
+      --write-kubeconfig-mode 644 \
+      {{ k3s_server_args | join(' ') }}
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+  when: k3s_check.rc != 0
+
+- name: Wait for K3s to be ready
+  wait_for:
+    port: 6443
+    host: localhost
+    delay: 30
+    timeout: 300
+
+- name: Test K3s cluster status
+  command: k3s kubectl get nodes
+  register: k3s_nodes
+  retries: 10
+  delay: 10
+  until: k3s_nodes.rc == 0
+
+- name: Display K3s cluster status
+  debug:
+    var: k3s_nodes.stdout_lines
+
+- name: Create local kubectl config directory
+  file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: no
+
+- name: Copy K3s kubeconfig to user directory
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    remote_src: yes
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Update kubeconfig server address
+  replace:
+    path: "{{ ansible_env.HOME }}/.kube/config"
+    regexp: 'https://127\.0\.0\.1:6443'
+    replace: "https://{{ ansible_host }}:6443"
+  become: no
+
+- name: Install kubectl completion
+  shell: k3s kubectl completion bash > /etc/bash_completion.d/kubectl
+  args:
+    creates: /etc/bash_completion.d/kubectl
+
+- name: Create kubectl alias
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "alias kubectl='k3s kubectl'"
+    create: yes
+  become: no
+
+- name: Install Helm
+  shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Add Helm completion
+  shell: helm completion bash > /etc/bash_completion.d/helm
+  args:
+    creates: /etc/bash_completion.d/helm
+
+- name: Install Helmfile
+  shell: |
+    HELMFILE_VERSION="v0.158.1"
+    wget -O /tmp/helmfile.tar.gz "https://github.com/roboll/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_linux_amd64.tar.gz"
+    tar -xzf /tmp/helmfile.tar.gz -C /tmp
+    mv /tmp/helmfile /usr/local/bin/helmfile
+    chmod +x /usr/local/bin/helmfile
+  args:
+    creates: /usr/local/bin/helmfile
+
+- name: Verify tools installation
+  shell: |
+    echo "K3s version: $(k3s --version)"
+    echo "Kubectl version: $(k3s kubectl version --client)"
+    echo "Helm version: $(helm version --short)"
+    echo "Helmfile version: $(helmfile --version)"
+  register: tools_versions
+
+- name: Display installed tools
+  debug:
+    var: tools_versions.stdout_lines
+
+- name: Create homelab namespace
+  shell: k3s kubectl create namespace homelab --dry-run=client -o yaml | k3s kubectl apply -f -
+
+- name: Label homelab namespace
+  shell: k3s kubectl label namespace homelab name=homelab --overwrite
+
+- name: Create monitoring namespace
+  shell: k3s kubectl create namespace monitoring --dry-run=client -o yaml | k3s kubectl apply -f -
+
+- name: Label monitoring namespace
+  shell: k3s kubectl label namespace monitoring name=monitoring --overwrite
+
+- name: Create backup namespace
+  shell: k3s kubectl create namespace backup --dry-run=client -o yaml | k3s kubectl apply -f -
+
+- name: Label backup namespace
+  shell: k3s kubectl label namespace backup name=backup --overwrite
+
+- name: Get cluster information
+  shell: |
+    echo "=== Cluster Nodes ==="
+    k3s kubectl get nodes -o wide
+    echo ""
+    echo "=== Cluster Namespaces ==="
+    k3s kubectl get namespaces
+    echo ""
+    echo "=== System Pods ==="
+    k3s kubectl get pods -n kube-system
+  register: cluster_info
+
+- name: Display cluster information
+  debug:
+    var: cluster_info.stdout_lines
+
+- name: Save cluster access information
+  copy:
+    content: |
+      # K3s Cluster Access Information
+      # Generated: {{ ansible_date_time.iso8601 }}
+
+      export KUBECONFIG="{{ ansible_env.HOME }}/.kube/config"
+      export K3S_SERVER="https://{{ ansible_host }}:6443"
+
+      # Quick commands
+      alias k='k3s kubectl'
+      alias kgp='k3s kubectl get pods'
+      alias kgs='k3s kubectl get svc'
+      alias kgn='k3s kubectl get nodes'
+
+      # Cluster info
+      echo "K3s Cluster Ready!"
+      echo "Server: {{ ansible_host }}"
+      echo "Version: {{ k3s_version }}"
+      echo "Kubeconfig: {{ ansible_env.HOME }}/.kube/config"
+    dest: /opt/homelab/k3s-access.sh
+    mode: '0755'

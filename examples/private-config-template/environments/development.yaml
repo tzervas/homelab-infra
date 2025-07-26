@@ -1,0 +1,76 @@
+# Development Environment Configuration
+environment: development
+
+# Global overrides for development
+global:
+  # Use self-signed certificates in dev
+  tls:
+    enabled: true
+    issuer: "selfsigned-issuer"
+
+  # Reduced resource requirements
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# GitLab development settings
+gitlab:
+  replicas: 1
+
+  # Lower resource requirements
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+  # Development-specific settings
+  gitlab:
+    webservice:
+      ingress:
+        tls:
+          secretName: gitlab-dev-tls
+
+    # Disable some features for development
+    registry:
+      enabled: false
+
+    gitaly:
+      persistence:
+        size: 20Gi
+
+# Keycloak development settings
+keycloak:
+  replicas: 1
+
+  # Use H2 database for development
+  database:
+    vendor: h2
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Monitoring reduced for development
+monitoring:
+  prometheus:
+    retention: "7d"
+    storage: 10Gi
+
+  grafana:
+    persistence:
+      size: 5Gi
+
+  loki:
+    retention: "3d"
+    storage: 5Gi

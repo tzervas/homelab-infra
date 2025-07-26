@@ -1,0 +1,68 @@
+# Global Helm Values Override Template
+# Copy this to your private repository and customize
+
+global:
+  # Domain Configuration
+  domain: "${HOMELAB_DOMAIN:-homelab.local}"
+  devDomain: "${HOMELAB_DEV_DOMAIN:-dev.homelab.local}"
+
+  # Image Pull Policy
+  imagePullPolicy: IfNotPresent
+
+  # Storage Configuration
+  storageClass: "local-path"
+
+  # Resource Defaults
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Network Configuration
+network:
+  metallb:
+    enabled: true
+    ipRange: "${METALLB_IP_RANGE:-192.168.16.200-192.168.16.220}"
+
+  ingress:
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+# TLS Configuration
+tls:
+  enabled: true
+  clusterIssuer: "letsencrypt-prod"
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  namespace: "monitoring"
+  retention: "30d"
+
+  prometheus:
+    storageSize: "10Gi"
+
+  grafana:
+    adminUser: "admin"
+    # adminPassword: set in secrets
+
+  alertmanager:
+    storageSize: "1Gi"
+
+# Backup Configuration
+backup:
+  enabled: true
+  namespace: "backup"
+  schedule:
+    gitlab: "0 2 * * *"      # Daily at 2 AM
+    database: "0 2 30 * *"   # Daily at 2:30 AM
+    config: "0 2 15 * *"     # Daily at 2:15 AM
+  retention:
+    gitlab: "7d"
+    database: "7d"
+    config: "30d"

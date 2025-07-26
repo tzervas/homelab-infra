@@ -1,0 +1,31 @@
+---
+# K3s Cleanup Playbook
+# Removes K3s cluster and cleans up resources
+
+- name: Cleanup K3s cluster
+  debug:
+    msg: "🧹 Cleaning up K3s cluster..."
+
+- name: Stop K3s service
+  systemd:
+    name: k3s
+    state: stopped
+  failed_when: false
+
+- name: Run K3s uninstall script
+  shell: /usr/local/bin/k3s-uninstall.sh
+  failed_when: false
+
+- name: Remove K3s directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/rancher
+    - /var/lib/rancher
+    - /var/lib/kubelet
+    - /etc/cni
+
+- name: Display cleanup status
+  debug:
+    msg: "✅ K3s cluster cleanup completed successfully!"

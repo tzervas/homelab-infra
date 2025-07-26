@@ -382,28 +382,34 @@ perform_health_checks() {
     # Get ingress hostnames and perform health checks - handle multiple ingresses per service
     for service in "${!health_endpoints[@]}"; do
         local ingress_count=0
-        kubectl get ingress -A --no-headers | grep "$service" | while read -r ingress_info; do
-            ingress_count=$((ingress_count + 1))
+        local endpoint="${health_endpoints[$service]}"
+
+        # Use process substitution to avoid subshell issues with counter
+        while IFS= read -r ingress_info; do
             if [[ -n "$ingress_info" ]]; then
-            local namespace=$(echo "$ingress_info" | awk '{print $1}')
-            local hosts=$(echo "$ingress_info" | awk '{print $4}')
-            local host=$(echo "$hosts" | cut -d',' -f1)
-            local endpoint="${health_endpoints[$service]}"
+                ingress_count=$((ingress_count + 1))
+                local namespace=$(echo "$ingress_info" | awk '{print $1}')
+                local hosts=$(echo "$ingress_info" | awk '{print $4}')
+                local host=$(echo "$hosts" | cut -d',' -f1)
 
                 # Test HTTP/HTTPS connectivity
+                local service_accessible=false
                 for protocol in https http; do
                     local url="${protocol}://${host}${endpoint}"
                     if curl -s -k -m 10 "$url" &>/dev/null; then
                         add_result "${service^} Health Check (#$ingress_count)" "PASS" "Accessible at $url"
+                        service_accessible=true
                         break
-                    else
-                        if [[ "$protocol" == "http" ]]; then
-                            add_result "${service^} Health Check (#$ingress_count)" "FAIL" "Not accessible at $url"
-                        fi
                     fi
                 done
+
+                # If neither protocol worked, report failure
+                if [[ "$service_accessible" == "false" ]]; then
+                    local url="https://${host}${endpoint}"
+                    add_result "${service^} Health Check (#$ingress_count)" "FAIL" "Not accessible at $url"
+                fi
             fi
-        done
+        done < <(kubectl get ingress -A --no-headers | grep "$service")
 
         # If no ingresses found for this service
         if [[ $ingress_count -eq 0 ]]; then

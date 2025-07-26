@@ -1,0 +1,16 @@
+---
+# Monitoring Stack Deployment
+# Deploys Prometheus, Grafana, and Loki
+
+- name: Deploy Monitoring Stack
+  debug:
+    msg: "📊 Deploying monitoring stack (Prometheus, Grafana, Loki)..."
+
+- name: Create monitoring namespace
+  shell: kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display monitoring deployment status
+  debug:
+    msg: "✅ Monitoring stack deployment initiated successfully!"

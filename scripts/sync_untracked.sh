@@ -23,7 +23,8 @@ get_untracked_files() {
 # Function to backup untracked files
 backup_untracked() {
     local dest_dir="$1"
-    local files=($(get_untracked_files))
+local files
+files=($(get_untracked_files))
 
     if [ ${#files[@]} -eq 0 ]; then
         echo "No untracked files found in current branch"

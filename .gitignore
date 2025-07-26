@@ -55,6 +55,8 @@ scripts/deploy*.sh
 scripts/secrets*.sh
 scripts/*secret*.sh
 scripts/*sensitive*.sh
+scripts/claude*.sh
+scripts/setup_ssh.sh
 
 # Security and Private Configuration
 *.pem

@@ -1,0 +1,58 @@
+global:
+  domain: "staging.homelab.local"
+  environment: "staging"
+
+# Moderate resource allocation for staging
+resources:
+  limits:
+    cpu: "2000m"
+    memory: "4Gi"
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+
+# MetalLB Configuration for Staging
+metallb:
+  configInline:
+    address-pools:
+      - name: default
+        protocol: layer2
+        addresses:
+          - 192.168.25.220-192.168.25.235
+
+# Moderate retention for staging
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: "15d"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 25Gi
+
+loki:
+  singleBinary:
+    persistence:
+      size: 10Gi
+
+grafana:
+  persistence:
+    size: 5Gi
+  # Admin password from environment variable
+  adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
+
+# Longhorn settings for staging (production-like)
+longhorn:
+  defaultSettings:
+    defaultReplicaCount: 2
+    storageOverProvisioningPercentage: 300
+
+# Enable monitoring in staging
+ingress-nginx:
+  controller:
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

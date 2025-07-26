@@ -22,15 +22,21 @@ kubeconfig*
 # IDE and editor files
 .idea/
 .vscode/
-.claude/
 *.swp
 *.swo
 
 # AI assistant files
 .anthropic/
-.claude/
 .copilot/
 .codeium/
+
+# Claude specific ignores
+.claude/*.log
+.claude/settings.local.json
+.claude/cache/
+.claude/history/
+.claude/*.private.*
+.claude/sensitive.*
 
 # Security scanning
 .gitleaks.toml

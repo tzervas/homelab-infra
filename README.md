@@ -7,6 +7,7 @@ Infrastructure as Code (IaC) for managing homelab k3s environment with Helm and 
 This repository contains the complete infrastructure configuration for a homelab environment, featuring:
 
 - **k3s** - Lightweight Kubernetes distribution
+- **Terraform** - Infrastructure provisioning
 - **Helm/Helmfile** - Declarative application deployment
 - **MetalLB** - Bare metal load balancer
 - **Longhorn** - Distributed block storage
@@ -76,7 +77,10 @@ This repository includes public documentation in the `docs/` directory. Detailed
 
 ```
 .
-├── docs/                    # Documentation
+├── .gitignore         # Git ignore patterns
+├── LICENSE           # MIT License
+├── README.md         # This documentation
+├── docs/            # Additional documentation
 │   ├── k3s-setup.md        # k3s installation guide
 │   └── claude_integration.md
 ├── helm/                    # Helm configurations
@@ -88,10 +92,18 @@ This repository includes public documentation in the `docs/` directory. Detailed
 │   ├── repositories.yaml   # Helm repository definitions
 │   └── helmfile.yaml      # Declarative release management
 ├── kubernetes/             # Base Kubernetes manifests
-│   └── base/              # Namespace, RBAC, network policies
+│   ├── base/              # Namespace, RBAC, network policies
+│   └── overlays/          # Environment-specific overlays
 ├── scripts/               # Deployment and utility scripts
-└── terraform/            # Future Terraform configurations
+└── terraform/            # Terraform configurations
+    ├── main.tf            # Main Terraform configuration
+    ├── variables.tf       # Input variables
+    └── outputs.tf         # Output variables
 ```
+
+## Getting Started
+
+Documentation for setup and usage can be found in the [docs](./docs) directory.
 
 ## Network Configuration
 
@@ -250,10 +262,14 @@ kubectl logs -n longhorn-system -l app=longhorn-manager > longhorn.log
 
 ## Contributing
 
-1. Create feature branch from `develop`
-2. Test changes in development environment
-3. Update documentation as needed
-4. Submit pull request to `develop`
+1. Create a feature branch from `develop` using:
+   ```bash
+   git checkout -b feature/your-feature-name develop
+   ```
+2. Make your changes
+3. Test changes in development environment
+4. Update documentation as needed
+5. Submit a pull request to `develop`
 
 ## License
 

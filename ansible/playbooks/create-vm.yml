@@ -2,14 +2,6 @@
 # VM Creation and Configuration for Testing
 # Creates a KVM/libvirt VM for testing the homelab deployment
 
-- name: Create proper ansible tmp directory
-  file:
-    path: "/tmp/.ansible-{{ ansible_user }}/tmp"
-    state: directory
-    mode: '0700'
-    owner: "{{ ansible_user }}"
-  become: yes
-
 - name: Check if libvirt is installed
   command: virsh --version
   register: virsh_check
@@ -26,7 +18,7 @@
       - virtinst
       - cloud-image-utils
       - genisoimage
-      - netcat-openbsd  # For port checking
+      - virt-manager
     state: present
     update_cache: yes
   when: virsh_check.rc != 0
@@ -37,89 +29,11 @@
     groups: libvirt
     append: yes
 
-- name: Configure firewalld for libvirt
-  block:
-    - name: Check if firewalld is running
-      systemd:
-        name: firewalld
-        state: started
-      register: firewalld_service
-      failed_when: false
-
-    - name: Configure firewalld backend to iptables for libvirt compatibility
-      lineinfile:
-        path: /etc/firewalld/firewalld.conf
-        regexp: '^FirewallBackend='
-        line: 'FirewallBackend=iptables'
-        backup: yes
-      when: firewalld_service.changed or firewalld_service.state == "started"
-      register: firewalld_config_changed
-
-    - name: Restart firewalld if configuration changed
-      systemd:
-        name: firewalld
-        state: restarted
-      when: firewalld_config_changed.changed
-
-  rescue:
-    - name: Stop firewalld if configuration fails
-      systemd:
-        name: firewalld
-        state: stopped
-        enabled: no
-      failed_when: false
-
 - name: Start and enable libvirt service
   systemd:
     name: libvirtd
     state: started
     enabled: yes
-
-- name: Create default network configuration
-  copy:
-    content: |
-      <network>
-        <name>default</name>
-        <forward mode='nat'/>
-        <bridge name='virbr0' stp='on' delay='0'/>
-        <mac address='52:54:00:00:00:00'/>
-        <ip address='192.168.122.1' netmask='255.255.255.0'>
-          <dhcp>
-            <range start='192.168.122.2' end='192.168.122.254'/>
-          </dhcp>
-        </ip>
-      </network>
-    dest: /tmp/default-network.xml
-    mode: '0644'
-
-- name: Define default network if not exists
-  shell: virsh net-define /tmp/default-network.xml
-  register: net_define_result
-  failed_when:
-    - net_define_result.rc != 0
-    - "'already exists' not in net_define_result.stderr"
-  changed_when: net_define_result.rc == 0
-
-- name: Start default network
-  shell: virsh net-start default
-  register: net_start_result
-  failed_when:
-    - net_start_result.rc != 0
-    - "'already active' not in net_start_result.stderr"
-  changed_when: net_start_result.rc == 0
-
-- name: Set network autostart
-  shell: virsh net-autostart default
-  register: net_autostart_result
-  failed_when: false
-
-- name: Verify default network is active
-  shell: virsh net-list --all
-  register: network_status
-
-- name: Display network status
-  debug:
-    msg: "Network status: {{ network_status.stdout_lines }}"
 
 - name: Check if test VM already exists
   command: virsh dominfo {{ vm_config.name }}
@@ -172,7 +86,7 @@
           shell: /bin/bash
           lock_passwd: false
           ssh_authorized_keys:
-            - {{ lookup('file', '~/.ssh/id_ed25519.pub') }}
+            - {{ lookup('file', '~/.ssh/id_rsa.pub') }}
 
       ssh_pwauth: false
       disable_root: false
@@ -227,12 +141,13 @@
     --virt-type kvm
     --memory {{ vm_config.memory }}
     --vcpus {{ vm_config.vcpus }}
-    --import
+    --boot hd,menu=on
     --disk path=/var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}.qcow2,device=disk,bus=virtio
     --disk path=/var/lib/libvirt/images/{{ vm_config.name }}/{{ vm_config.name }}-cloud-init.iso,device=cdrom
     --graphics none
-    --os-variant ubuntu22.04
-    --network network=default,model=virtio
+    --os-type Linux
+    --os-variant {{ vm_config.os_variant }}
+    --network network={{ vm_config.network }},model=virtio
     --console pty,target_type=serial
     --noautoconsole
     --autostart
@@ -252,20 +167,9 @@
   retries: 20
   delay: 15
 
-- name: Store VM IP for reference
+- name: Update inventory with VM IP
   set_fact:
-    vm_ip_address: "{{ vm_ip.stdout }}"
-
-- name: Add VM to runtime inventory as cluster node
-  add_host:
-    name: test-vm
-    groups: cluster
     ansible_host: "{{ vm_ip.stdout }}"
-    ansible_user: kang
-    ansible_ssh_private_key_file: "{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
-    ansible_ssh_common_args: '-o ProxyJump={{ ansible_user }}@{{ ansible_host }} -o StrictHostKeyChecking=no'
-    node_role: worker
-    vm_ip_address: "{{ vm_ip.stdout }}"
 
 - name: Display VM information
   debug:
@@ -277,143 +181,18 @@
       - "CPUs: {{ vm_config.vcpus }}"
       - "Disk: {{ vm_config.disk_size }}"
 
-- name: Monitor VM boot process and SSH readiness
-  block:
-    - name: Wait for VM to respond to ping (network layer check)
-      shell: ping -c 1 {{ vm_ip.stdout }}
-      register: ping_result
-      until: ping_result.rc == 0
-      retries: 30
-      delay: 10
-      failed_when: false
-      delegate_to: "{{ inventory_hostname }}"
 
-    - name: Monitor VM boot progress via console output
-      shell: |
-        # Check if VM is still booting by looking at console activity
-        timeout 5 virsh console {{ vm_config.name }} --force 2>/dev/null | head -10 || echo "Console unavailable"
-      register: console_check
-      failed_when: false
-      delegate_to: "{{ inventory_hostname }}"
+- name: Wait for SSH to be available on VM
+  wait_for:
+    host: "{{ vm_ip.stdout }}"
+    port: 22
+    delay: 30
+    timeout: 300
+    state: started
 
-    - name: Display boot progress information
-      debug:
-        msg:
-          - "VM Ping Status: {{ 'OK' if ping_result.rc == 0 else 'Failed' }}"
-          - "Console Output Available: {{ 'Yes' if 'Console unavailable' not in console_check.stdout else 'No' }}"
-          - "Checking SSH readiness..."
-
-    - name: Intelligent SSH readiness check with detailed monitoring
-      shell: |
-        #!/bin/bash
-        HOST="{{ vm_ip.stdout }}"
-        MAX_ATTEMPTS=40
-        ATTEMPT=0
-
-        echo "Starting SSH readiness monitoring for $HOST"
-
-        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-          ATTEMPT=$((ATTEMPT + 1))
-          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS"
-
-          # Check if port 22 is listening
-          if nc -z -w3 $HOST 22 2>/dev/null; then
-            echo "✓ Port 22 is open"
-
-            # Try SSH connection with detailed output
-            if ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no kang@$HOST 'echo "SSH_READY"' 2>/dev/null | grep -q "SSH_READY"; then
-              echo "✅ SSH connection successful!"
-              exit 0
-            else
-              echo "⏳ Port open but SSH not ready (likely still initializing)"
-            fi
-          else
-            echo "⏳ Port 22 not yet available"
-          fi
-
-          # Check for common boot issues every 5 attempts
-          if [ $((ATTEMPT % 5)) -eq 0 ]; then
-            echo "🔍 Performing diagnostic checks..."
-
-            # Check VM state
-            VM_STATE=$(virsh domstate {{ vm_config.name }} 2>/dev/null || echo "unknown")
-            echo "   VM State: $VM_STATE"
-
-            if [ "$VM_STATE" != "running" ]; then
-              echo "❌ VM is not in running state: $VM_STATE"
-              exit 1
-            fi
-
-            # Check if VM is consuming CPU (sign of activity)
-            CPU_TIME=$(virsh domstats {{ vm_config.name }} --cpu-total 2>/dev/null | grep "cpu.time" | cut -d'=' -f2 || echo "0")
-            echo "   CPU Activity: $CPU_TIME"
-
-            # Test network connectivity
-            if ping -c 1 -W 2 $HOST >/dev/null 2>&1; then
-              echo "   Network: ✓ VM is reachable"
-            else
-              echo "   Network: ❌ VM not responding to ping"
-            fi
-          fi
-
-          sleep 15
-        done
-
-        echo "❌ SSH readiness timeout after $((MAX_ATTEMPTS * 15)) seconds"
-        echo "Final diagnostics:"
-        virsh domstate {{ vm_config.name }}
-        echo "Attempting final SSH connection..."
-        ssh -v -o ConnectTimeout=10 -o BatchMode=yes kang@$HOST 'echo test' 2>&1 | head -20
-        exit 1
-      register: ssh_ready_check
-      failed_when: ssh_ready_check.rc != 0
-      delegate_to: "{{ inventory_hostname }}"
-
-    - name: Verify SSH functionality with system info
-      shell: |
-        ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no kang@{{ vm_ip.stdout }} '
-          echo "=== VM System Information ==="
-          echo "Hostname: $(hostname)"
-          echo "Uptime: $(uptime)"
-          echo "Memory: $(free -h | head -2)"
-          echo "Disk: $(df -h / | tail -1)"
-          echo "Cloud-init status: $(cloud-init status --wait --long 2>/dev/null || echo "unknown")"
-          echo "SSH connection verified!"
-        '
-      register: vm_info
-
-    - name: Display VM system information
-      debug:
-        var: vm_info.stdout_lines
-
-  rescue:
-    - name: SSH readiness failed - collecting diagnostics
-      block:
-        - name: Collect VM diagnostics
-          shell: |
-            echo "=== VM Diagnostics ==="
-            echo "VM State: $(virsh domstate {{ vm_config.name }})"
-            echo "VM Info: $(virsh dominfo {{ vm_config.name }})"
-            echo "Network interfaces: $(virsh domiflist {{ vm_config.name }})"
-            echo "Network addresses: $(virsh domifaddr {{ vm_config.name }})"
-            echo "Console log (last 50 lines):"
-            virsh console {{ vm_config.name }} --force 2>/dev/null | tail -50 || echo "Console unavailable"
-          register: vm_diagnostics
-          failed_when: false
-
-        - name: Display diagnostics
-          debug:
-            var: vm_diagnostics.stdout_lines
-
-        - name: Suggest manual intervention
-          debug:
-            msg:
-              - "🚨 SSH readiness check failed. Manual steps to investigate:"
-              - "1. Check VM console: virsh console {{ vm_config.name }}"
-              - "2. Check VM status: virsh domstate {{ vm_config.name }}"
-              - "3. Check network: ping {{ vm_ip.stdout }}"
-              - "4. Try manual SSH: ssh kang@{{ vm_ip.stdout }}"
-              - "5. Check cloud-init logs inside VM: /var/log/cloud-init*.log"
-
-        - fail:
-            msg: "VM SSH readiness check failed after comprehensive monitoring"
+- name: Test SSH connection to VM
+  command: ssh -o ConnectTimeout=10 -o BatchMode=yes kang@{{ vm_ip.stdout }} 'echo "SSH connection successful"'
+  register: ssh_test
+  retries: 5
+  delay: 10
+  until: ssh_test.rc == 0

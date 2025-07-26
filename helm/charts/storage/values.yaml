@@ -1,0 +1,105 @@
+global:
+  storageClass: "longhorn"
+
+longhorn:
+  enabled: true
+
+  persistence:
+    defaultClass: true
+    defaultClassReplicaCount: 2
+    defaultDataLocality: best-effort
+
+  csi:
+    attacherReplicaCount: 1
+    provisionerReplicaCount: 1
+    resizerReplicaCount: 1
+    snapshotterReplicaCount: 1
+
+  defaultSettings:
+    backupTarget: ""  # Configure S3/NFS backup target
+    backupTargetCredentialSecret: ""
+    createDefaultDiskLabeledNodes: true
+    defaultDataPath: "/var/lib/longhorn/"
+    defaultDataLocality: "best-effort"
+    replicaSoftAntiAffinity: false
+    storageOverProvisioningPercentage: 200
+    storageMinimalAvailablePercentage: 25
+    upgradeChecker: true
+    defaultReplicaCount: 2
+    defaultLonghornStaticStorageClass: "longhorn"
+    backupstorePollInterval: 300
+    taintToleration: ""
+    systemManagedComponentsNodeSelector: ""
+    priorityClass: ""
+    autoSalvage: true
+    autoDeletePodWhenVolumeDetachedUnexpectedly: true
+    disableSchedulingOnCordonedNode: true
+    replicaZoneSoftAntiAffinity: true
+    nodeDownPodDeletionPolicy: "delete-both-statefulset-and-deployment-pod"
+    allowNodeDrainWithLastHealthyReplica: false
+    mkfsExt4Parameters: "-O ^64bit,^metadata_csum"
+    disableReplicaRebuild: false
+    replicaReplenishmentWaitInterval: 600
+    concurrentReplicaRebuildPerNodeLimit: 5
+    disableRevisionCounter: true
+    systemManagedPodsImagePullPolicy: "if-not-present"
+    allowVolumeCreationWithDegradedAvailability: true
+    autoCleanupSystemGeneratedSnapshot: true
+    concurrentAutomaticEngineUpgradePerNodeLimit: 0
+    backingImageCleanupWaitInterval: 60
+    backingImageRecoveryWaitInterval: 300
+    guaranteedEngineManagerCPU: 12
+    guaranteedReplicaManagerCPU: 12
+
+  longhornManager:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  longhornDriver:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  longhornUI:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    host: longhorn.homelab.local
+    tls: true
+    tlsSecret: longhorn-tls
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: longhorn-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+
+  service:
+    ui:
+      type: ClusterIP
+
+  # Resource requirements for Longhorn components
+  engineImage:
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi

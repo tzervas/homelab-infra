@@ -1,0 +1,60 @@
+global:
+  domain: "dev.homelab.local"
+  environment: "development"
+
+# Resource constraints for development
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+# MetalLB Configuration for Development
+metallb:
+  configInline:
+    address-pools:
+      - name: default
+        protocol: layer2
+        addresses:
+          - 192.168.25.200-192.168.25.210  # Smaller range for dev
+
+# Reduced retention for development
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: "7d"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 10Gi  # Smaller storage for dev
+
+loki:
+  singleBinary:
+    persistence:
+      size: 5Gi  # Smaller storage for dev
+
+grafana:
+  persistence:
+    size: 2Gi  # Smaller storage for dev
+  # Use environment variable for admin password
+  adminPassword: "${GRAFANA_ADMIN_PASSWORD:-devadmin}"  # Default fallback for development only
+
+# Longhorn settings for development
+longhorn:
+  defaultSettings:
+    defaultReplicaCount: 1  # Single replica for dev
+    storageOverProvisioningPercentage: 500
+
+# Disable resource-intensive features in development
+ingress-nginx:
+  controller:
+    metrics:
+      enabled: false  # Disable metrics in dev
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi

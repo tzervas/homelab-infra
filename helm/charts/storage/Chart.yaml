@@ -1,0 +1,16 @@
+apiVersion: v2
+name: storage
+description: Storage solutions for homelab k3s cluster
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+dependencies:
+  - name: longhorn
+    version: "1.7.1"
+    repository: https://charts.longhorn.io
+    condition: longhorn.enabled
+
+maintainers:
+  - name: homelab-admin
+    email: admin@homelab.local

@@ -75,6 +75,7 @@ scripts/setup_ssh.sh
 *.p12
 *.pfx
 .private/
+.private-config/
 **/private/
 **/.*_private
 **/*_private.yaml

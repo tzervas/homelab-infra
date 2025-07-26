@@ -1,0 +1,68 @@
+# Production Environment Configuration
+environment: production
+
+# Global overrides for production
+global:
+  # Production Let's Encrypt issuer
+  tls:
+    enabled: true
+    issuer: "letsencrypt-prod"
+
+  # Higher resource requirements
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# GitLab production settings
+gitlab:
+  replicas: 3
+
+  # Higher resource requirements
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "4000m"
+    limits:
+      memory: "16Gi"
+      cpu: "8000m"
+
+  gitlab:
+    webservice:
+      ingress:
+        tls:
+          secretName: gitlab-prod-tls
+
+# Keycloak production settings
+keycloak:
+  replicas: 3
+
+  # Use external Postgres database
+  database:
+    vendor: postgres
+    existingSecret: keycloak-db-secret
+
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Monitoring increased for production
+monitoring:
+  prometheus:
+    retention: "30d"
+    storage: 50Gi
+
+  grafana:
+    persistence:
+      size: 20Gi
+
+  loki:
+    retention: "14d"
+    storage: 20Gi

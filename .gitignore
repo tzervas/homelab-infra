@@ -23,11 +23,13 @@ kubeconfig*
 # IDE and editor files
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 
 # AI assistant files
 .anthropic/
+.claude/
 .copilot/
 .codeium/
 docs/claude_*.md

@@ -55,6 +55,36 @@ This project uses a multi-repository approach for security:
 
 This will automatically clone your private repo, set up the directory structure, and load sensitive environment variables during deployment.
 
+### Configuration Setup
+
+This project uses a multi-repository approach for security:
+
+1. **Main Repository** (this one): Public infrastructure code and documentation
+2. **Private Repository**: Sensitive configurations, secrets, and environment overrides
+3. **Examples Repository**: Template configurations
+
+#### Setting up Private Configuration
+
+1. Create a private repository for your sensitive configurations:
+   ```bash
+   # Example: Create a private repo on GitHub/GitLab
+   git clone git@github.com:username/homelab-infra-private.git
+   ```
+
+2. Configure the private repository in your `.env` file:
+   ```bash
+   PRIVATE_CONFIG_REPO=git@github.com:username/homelab-infra-private.git
+   PRIVATE_CONFIG_BRANCH=main
+   PRIVATE_CONFIG_DIR=config
+   ```
+
+3. Initialize the private configuration:
+   ```bash
+   ./scripts/sync-private-config.sh sync
+   ```
+
+This will automatically clone your private repo, set up the directory structure, and load sensitive environment variables during deployment.
+
 ### Deploy Infrastructure
 
 ```bash

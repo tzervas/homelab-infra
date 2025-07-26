@@ -304,6 +304,7 @@
           - "Checking SSH readiness..."
 
     - name: Configuration-driven SSH readiness check
+      become: no
       shell: |
         #!/bin/bash
         HOST="{{ vm_ip.stdout }}"
@@ -312,7 +313,7 @@
         TARGET_USER="kang"
         MAX_ATTEMPTS=30
         ATTEMPT=0
-        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('/home/vector_weight/.ssh/id_ed25519') }}"
+        SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
         DEPLOYMENT_PHASE="{{ phase | default('vm-test') }}"
 
         # SSH options
@@ -465,6 +466,7 @@
       delegate_to: "{{ inventory_hostname }}"
 
     - name: Verify SSH functionality with comprehensive system info via bastion
+      become: no
       shell: |
         SSH_KEY="{{ lookup('env', 'HOMELAB_SSH_KEY_PATH') | default('~/.ssh/id_ed25519') }}"
         SSH_OPTS="-i $SSH_KEY -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"

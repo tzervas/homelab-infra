@@ -1,5 +1,6 @@
 {
   "model": "sonnet",
+  "fallbackModel": "claude-2.1",
   "autoUpdates": true,
   "verbose": true,
   "cleanupPeriodDays": 30,

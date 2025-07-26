@@ -1,0 +1,26 @@
+---
+# NGINX Ingress Controller Deployment
+# Deploys nginx-ingress for HTTP/HTTPS routing
+
+- name: Deploy NGINX Ingress Controller
+  debug:
+    msg: "🌐 Deploying NGINX Ingress Controller..."
+
+- name: Install nginx-ingress
+  shell: |
+    # Add nginx-ingress Helm repository
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+
+    # Install nginx-ingress
+    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+      --namespace ingress-nginx \
+      --create-namespace \
+      --version {{ versions.nginx_ingress }} \
+      --wait
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Display nginx-ingress status
+  debug:
+    msg: "✅ NGINX Ingress Controller deployed successfully!"

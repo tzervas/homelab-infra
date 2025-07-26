@@ -1,45 +1,61 @@
 # Network Configuration
 
 ## Overview
+This document provides a high-level overview of the network configuration. Detailed network architecture and sensitive configuration details are maintained in private documentation.
 
-Agent Mode operates primarily as a local application with minimal network requirements. This document outlines the network configuration and security considerations.
+## Network Components
 
-## Network Requirements
+### 1. Load Balancer
+- Metallb for bare metal load balancing
+- Configurable IP pools
+- Layer 2 mode operation
 
-### Local Operations
-- Terminal interface runs locally
-- File operations are performed locally
-- Git operations require network access for remote operations
+### 2. Ingress Controller
+- nginx-ingress controller
+- TLS termination
+- Path-based routing
 
-### External Services
-- AI model access (if using remote models)
-- Git repository access
-- Package management (pip/uv)
+## Network Policies
+
+### Security Implementation
+- Default deny-all policies
+- Explicit allow rules for required communication
+- Namespace isolation
+
+### Service Communication
+- Internal service discovery
+- External access control
+- Monitored communication paths
 
 ## Security Measures
 
-### Authentication
-- SSH for Git operations
-- GPG for commit signing
-- API keys for external services (stored securely)
+### 1. TLS Configuration
+- Enforced encryption
+- Certificate management
+- Regular rotation
 
-### Data Privacy
-- No sensitive data transmission
-- Local processing where possible
-- Encrypted communication channels
+### 2. Network Segmentation
+- Strict isolation
+- Controlled communication paths
+- Access limitations
 
-## Firewall Configuration
-
-### Inbound Rules
-- No inbound connections required
-
-### Outbound Rules
-- HTTPS (443) for Git operations
-- HTTPS (443) for package management
-- HTTPS (443) for AI model access (if using remote models)
+### 3. Access Control
+- Authentication requirements
+- Authorization policies
+- Service account management
 
 ## Monitoring
 
-- Network usage monitoring
-- Connection logging
-- Security event tracking
+### Network Metrics
+- Performance monitoring
+- Health checks
+- Error tracking
+
+### Troubleshooting
+- Diagnostic tools
+- Logging
+- Debug capabilities
+
+## Notes
+- Detailed network configuration and sensitive details are maintained in private documentation
+- For access to complete network documentation, please contact the project maintainers

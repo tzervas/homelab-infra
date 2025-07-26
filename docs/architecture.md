@@ -1,49 +1,59 @@
-# Architecture Documentation
+# Homelab Infrastructure Architecture
 
-## System Overview
+## Overview
+This document outlines the high-level system design and component relationships for the homelab infrastructure project. Detailed configuration and sensitive architecture details are maintained in private documentation.
 
-Agent Mode is designed as a terminal-based AI assistant that integrates with development workflows. The system is built with modularity and extensibility in mind.
+## Core Components
+
+### 1. Kubernetes Layer (k3s)
+- Lightweight Kubernetes distribution
+- Optimized for homelab environments
+- Custom configuration for security and performance
+
+### 2. Storage Infrastructure
+- Distributed block storage system
+- Volume replication capabilities
+- Backup and restore functionality
+
+### 3. Networking Stack
+- Load balancer for service exposure
+- Ingress controller for HTTP(S) routing
+- Network policy enforcement
+
+### 4. Monitoring & Observability
+- Metrics collection and storage
+- Log aggregation
+- Visualization dashboards
+
+## Security Architecture
+
+### 1. Network Security
+- Network policy implementation
+- Segmented namespaces
+- TLS encryption
+
+### 2. Access Control
+- Role-Based Access Control (RBAC)
+- Service account management
+- Pod security standards
+
+### 3. Secret Management
+- Environment-based configuration
+- Secure secret storage
+- Access control mechanisms
 
 ## Component Relationships
 
-### Core Components
-
-1. **Terminal Interface**
-   - Handles user input/output
-   - Manages terminal state
-   - Processes commands
-
-2. **AI Engine**
-   - Processes natural language queries
-   - Generates contextual responses
-   - Maintains conversation state
-
-3. **Tool Integration**
-   - File operations
-   - Git operations
-   - Project management
-   - Code analysis
-
-### Data Flow
-
-```
-User Input -> Terminal Interface -> AI Engine -> Tool Integration -> System Action
-     ^                                                                    |
-     |                                                                    v
-User Output <- Terminal Interface <- AI Engine <- Tool Integration <- Action Result
+```mermaid
+graph TD
+    A[External Traffic] --> B[Load Balancer]
+    B --> C[Ingress Controller]
+    C --> D[K3s Cluster]
+    D --> E[Application Pods]
+    E --> F[Storage]
+    D --> G[Monitoring]
 ```
 
-## Security Considerations
-
-- GPG signing for all commits
-- Secure credential management
-- No sensitive data in version control
-- Least privilege principle for operations
-
-## Extension Points
-
-The system is designed to be extended through:
-1. Additional tool integrations
-2. Custom command handlers
-3. New AI capabilities
-4. Additional security measures
+## Notes
+- Detailed configuration and sensitive architecture details are maintained in private documentation
+- For access to complete architecture documentation, please contact the project maintainers

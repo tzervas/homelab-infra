@@ -1,0 +1,460 @@
+{
+  "allowedTools": [
+    "Bash(git:*)",
+    "Bash(kubectl:*)",
+    "Bash(k3s:*)",
+    "Bash(ssh:*)",
+    "Bash(scp:*)",
+    "Bash(helm:*)",
+    "Bash(terraform:*)",
+    "Bash(ansible:*)",
+    "Edit",
+    "FileSystem",
+    "Python",
+    "Search",
+    "Network"
+  ],
+  "models": {
+    "default": "claude-3-haiku-20240307",
+    "fallback": "claude-2.1",
+    "taskSpecific": {
+      "infrastructure": {
+        "architecture": {
+          "model": "claude-4-opus-20250514",
+          "strengths": [
+            "Complex system design",
+            "Multi-component relationships",
+            "Performance optimization strategies",
+            "System boundary analysis",
+            "Architectural pattern recognition"
+          ],
+          "tasks": [
+            "system-architecture",
+            "performance-modeling",
+            "scalability-design",
+            "disaster-recovery-planning"
+          ],
+          "tokenUsage": "high",
+          "costTier": "premium"
+        },
+        "implementation": {
+          "model": "claude-3.7-opus-20250101",
+          "strengths": [
+            "Infrastructure as Code",
+            "Configuration templates",
+            "Resource definitions"
+          ],
+          "tasks": [
+            "terraform-modules",
+            "kubernetes-manifests",
+            "helm-charts"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "validation": {
+          "model": "claude-3-haiku-20240307",
+          "strengths": [
+            "Config validation",
+            "Syntax checking",
+            "Basic security rules"
+          ],
+          "tasks": [
+            "manifest-validation",
+            "syntax-check",
+            "basic-security-rules"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      },
+      "development": {
+        "complexLogic": {
+          "model": "claude-4-opus-20250514",
+          "strengths": [
+            "Complex algorithms",
+            "System integration",
+            "Performance optimization"
+          ],
+          "tasks": [
+            "algorithm-design",
+            "system-integration",
+            "performance-critical-code"
+          ],
+          "tokenUsage": "high",
+          "costTier": "premium"
+        },
+        "standardImplementation": {
+          "model": "claude-3.5-opus-20240321",
+          "strengths": [
+            "Standard patterns",
+            "CRUD operations",
+            "API implementations"
+          ],
+          "tasks": [
+            "api-endpoints",
+            "database-operations",
+            "service-layers"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "basicTasks": {
+          "model": "claude-2.1",
+          "strengths": [
+            "Simple functions",
+            "Basic utilities",
+            "Straightforward logic"
+          ],
+          "tasks": [
+            "utility-functions",
+            "data-structures",
+            "simple-operations"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      },
+      "security": {
+        "analysis": {
+          "model": "claude-4-opus-20250514",
+          "strengths": [
+            "Threat modeling",
+            "Security architecture",
+            "Zero-trust design"
+          ],
+          "tasks": [
+            "threat-analysis",
+            "security-architecture",
+            "compliance-verification"
+          ],
+          "tokenUsage": "high",
+          "costTier": "premium"
+        },
+        "implementation": {
+          "model": "claude-3.7-opus-20250101",
+          "strengths": [
+            "Security controls",
+            "Authentication flows",
+            "Authorization systems"
+          ],
+          "tasks": [
+            "auth-implementation",
+            "security-controls",
+            "access-management"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "validation": {
+          "model": "claude-3-haiku-20240307",
+          "strengths": [
+            "Security rule checking",
+            "Basic vulnerability scanning",
+            "Config validation"
+          ],
+          "tasks": [
+            "security-validation",
+            "config-checks",
+            "basic-scanning"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      },
+      "documentation": {
+        "architecture": {
+          "model": "claude-3.7-opus-20250101",
+          "strengths": [
+            "System architecture docs",
+            "Technical specifications",
+            "Design rationale"
+          ],
+          "tasks": [
+            "architecture-docs",
+            "technical-specs",
+            "design-decisions"
+          ],
+          "tokenUsage": "medium-high",
+          "costTier": "standard"
+        },
+        "technical": {
+          "model": "claude-3-sonnet-20240229",
+          "strengths": [
+            "API documentation",
+            "Implementation guides",
+            "Code examples"
+          ],
+          "tasks": [
+            "api-docs",
+            "implementation-guides",
+            "code-examples"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "user": {
+          "model": "claude-3-haiku-20240307",
+          "strengths": [
+            "User guides",
+            "README files",
+            "Basic instructions"
+          ],
+          "tasks": [
+            "user-guides",
+            "readmes",
+            "how-tos"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      },
+      "testing": {
+        "systemTesting": {
+          "model": "claude-4-opus-20250514",
+          "strengths": [
+            "System test design",
+            "Integration scenarios",
+            "Complex edge cases"
+          ],
+          "tasks": [
+            "system-test-design",
+            "integration-scenarios",
+            "edge-case-identification"
+          ],
+          "tokenUsage": "high",
+          "costTier": "premium"
+        },
+        "unitTesting": {
+          "model": "claude-3-sonnet-20240229",
+          "strengths": [
+            "Unit test generation",
+            "Test case design",
+            "Mocking strategies"
+          ],
+          "tasks": [
+            "unit-tests",
+            "test-cases",
+            "mock-objects"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "basicValidation": {
+          "model": "claude-2.1",
+          "strengths": [
+            "Simple assertions",
+            "Basic validations",
+            "Input testing"
+          ],
+          "tasks": [
+            "input-validation",
+            "output-checking",
+            "simple-assertions"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      },
+      "optimization": {
+        "systemLevel": {
+          "model": "claude-4-opus-20250514",
+          "strengths": [
+            "System-wide optimization",
+            "Performance analysis",
+            "Resource optimization"
+          ],
+          "tasks": [
+            "system-optimization",
+            "performance-analysis",
+            "resource-planning"
+          ],
+          "tokenUsage": "high",
+          "costTier": "premium"
+        },
+        "componentLevel": {
+          "model": "claude-3.5-opus-20240321",
+          "strengths": [
+            "Component optimization",
+            "Code efficiency",
+            "Memory usage"
+          ],
+          "tasks": [
+            "code-optimization",
+            "memory-efficiency",
+            "component-tuning"
+          ],
+          "tokenUsage": "medium",
+          "costTier": "standard"
+        },
+        "basicOptimization": {
+          "model": "claude-3-haiku-20240307",
+          "strengths": [
+            "Simple optimizations",
+            "Basic improvements",
+            "Quick fixes"
+          ],
+          "tasks": [
+            "code-cleanup",
+            "simple-optimization",
+            "quick-improvements"
+          ],
+          "tokenUsage": "low",
+          "costTier": "efficient"
+        }
+      }
+    }
+  },
+  "modelSelection": {
+    "rules": [
+      {
+        "condition": "taskComplexity == 'high' && importanceCritical == true",
+        "model": "claude-4-opus-20250514"
+      },
+      {
+        "condition": "taskComplexity == 'medium' && requiresContext == true",
+        "model": "claude-3.7-opus-20250101"
+      },
+      {
+        "condition": "taskComplexity == 'medium' && requiresContext == false",
+        "model": "claude-3.5-opus-20240321"
+      },
+      {
+        "condition": "taskComplexity == 'low' && requiresPrecision == true",
+        "model": "claude-3-sonnet-20240229"
+      },
+      {
+        "condition": "taskComplexity == 'low' && requiresPrecision == false",
+        "model": "claude-3-haiku-20240307"
+      },
+      {
+        "condition": "taskType == 'validation' || taskType == 'simple'",
+        "model": "claude-2.1"
+      }
+    ],
+    "costOptimization": {
+      "enabled": true,
+      "preferEfficientModels": true,
+      "escalateOnFailure": true
+    }
+  },
+  "permissionMode": "default",
+  "verbose": true,
+  "directories": {
+    "project": "/home/vector_weight/Documents/projects/homelab/homelab-infra",
+    "allowed": [
+      "/home/vector_weight/Documents/projects/homelab/homelab-infra"
+    ],
+    "restricted": [
+      "**/.git/*",
+      "**/node_modules/*",
+      "**/.env",
+      "**/secrets/*"
+    ]
+  },
+  "remote": {
+    "host": "kang@REMOTE_IP",
+    "sshKeyPath": "~/.ssh/id_ed25519",
+    "kubeconfig": "/etc/rancher/k3s/k3s.yaml",
+    "sshOptions": [
+      "StrictHostKeyChecking=yes",
+      "BatchMode=yes",
+      "ConnectTimeout=10"
+    ]
+  },
+  "security": {
+    "requireGPGSign": true,
+    "allowedBranches": ["feature/*", "develop"],
+    "protectedBranches": ["main", "develop"],
+    "requireReview": true,
+    "minReviewers": 1,
+    "blockForcePush": true,
+    "validateSecrets": true,
+    "scanCommits": true
+  },
+  "workflow": {
+    "defaultBranch": "develop",
+    "branchPrefix": "feature/",
+    "commitMessageFormat": "type(scope): description",
+    "allowedTypes": [
+      "feat",
+      "fix",
+      "docs",
+      "style",
+      "refactor",
+      "test",
+      "chore",
+      "ci",
+      "perf"
+    ],
+    "requireIssueReference": true,
+    "conventionalCommits": true
+  },
+  "automation": {
+    "generateDocs": true,
+    "runTests": true,
+    "lintCode": true,
+    "updateChangelog": true,
+    "validateK8s": {
+      "enabled": true,
+      "tools": ["kubeval", "conftest", "kubescore"],
+      "policies": ["security", "best-practices", "reliability"]
+    },
+    "validateHelm": {
+      "enabled": true,
+      "lint": true,
+      "testValues": true
+    },
+    "monitoring": {
+      "enabled": true,
+      "prometheus": true,
+      "grafana": true,
+      "alerting": true
+    }
+  },
+  "tools": {
+    "kubernetes": {
+      "version": "1.27",
+      "distribution": "k3s",
+      "validateManifests": true,
+      "enforceResourceLimits": true,
+      "requireProbes": true
+    },
+    "helm": {
+      "version": "3.12",
+      "requireVersion": true,
+      "requireValues": true,
+      "validateCharts": true
+    },
+    "terraform": {
+      "version": "1.5",
+      "validateHCL": true,
+      "requireStateBackend": true
+    }
+  },
+  "development": {
+    "enforceConventions": true,
+    "requireTests": true,
+    "coverage": {
+      "required": true,
+      "minimum": 80
+    },
+    "documentation": {
+      "required": true,
+      "validateLinks": true,
+      "enforceStructure": true
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": ".claude/claude.log",
+    "maxSize": "10M",
+    "maxFiles": 5,
+    "format": "json",
+    "modelUsage": {
+      "track": true,
+      "analyzeEfficiency": true,
+      "suggestOptimizations": true
+    }
+  }
+}

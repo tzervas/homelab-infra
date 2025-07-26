@@ -22,15 +22,25 @@ kubeconfig*
 # IDE and editor files
 .idea/
 .vscode/
-.claude/
 *.swp
 *.swo
 
 # AI assistant files
 .anthropic/
-.claude/
 .copilot/
 .codeium/
+docs/claude_*.md
+.claude*.json
+.claude_history/
+.claude_cache/
+
+# Claude specific ignores
+.claude/*.log
+.claude/settings.local.json
+.claude/cache/
+.claude/history/
+.claude/*.private.*
+.claude/sensitive.*
 
 # Security scanning
 .gitleaks.toml
@@ -45,3 +55,40 @@ gitleaks-report.*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Deployment and Sensitive Scripts (to be moved to private repo)
+scripts/deploy*.sh
+scripts/secrets*.sh
+scripts/*secret*.sh
+scripts/*sensitive*.sh
+scripts/sync_*.sh
+scripts/update_branches.sh
+scripts/claude*.sh
+scripts/setup_ssh.sh
+
+# Security and Private Configuration
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+*.p12
+*.pfx
+.private/
+**/private/
+**/.*_private
+**/*_private.yaml
+**/*_private.yml
+**/*_private.json
+docs/private_repo_info.md
+
+# Local Development Overrides
+*.local.yaml
+*.local.yml
+*.local.json
+.env.local
+.env.*.local
+
+# Backup directories
+untracked_backup/
+.private_backup/

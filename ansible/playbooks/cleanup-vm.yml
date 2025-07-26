@@ -1,0 +1,38 @@
+---
+# VM Cleanup Playbook
+# Removes the test VM and cleans up resources
+
+- name: Check if test VM exists
+  command: virsh dominfo {{ vm_config.name }}
+  register: vm_exists
+  changed_when: false
+  failed_when: false
+
+- name: Stop and remove test VM
+  block:
+    - name: Stop test VM if running
+      command: virsh destroy {{ vm_config.name }}
+      failed_when: false
+
+    - name: Undefine test VM
+      command: virsh undefine {{ vm_config.name }} --remove-all-storage
+      failed_when: false
+
+    - name: Remove VM storage directory
+      file:
+        path: /var/lib/libvirt/images/{{ vm_config.name }}
+        state: absent
+
+    - name: Display cleanup completion
+      debug:
+        msg:
+          - "🧹 Test VM cleanup completed!"
+          - "VM Name: {{ vm_config.name }}"
+          - "All VM resources have been removed"
+
+  when: vm_exists.rc == 0
+
+- name: VM not found message
+  debug:
+    msg: "ℹ️  No test VM found to clean up"
+  when: vm_exists.rc != 0

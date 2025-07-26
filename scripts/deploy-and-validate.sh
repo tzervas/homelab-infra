@@ -102,29 +102,40 @@ validate_prerequisites() {
 
     log_success "All required tools available"
 
-    # Validate configuration files
+    # Validate configuration files (flexible approach)
+    local env_required="${ENV_REQUIRED:-true}"
+
     if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-        log_error "Configuration file .env not found"
-        exit 1
+        if [[ "$env_required" == "true" && "$DEPLOYMENT_PHASE" != "validation-only" && "$VALIDATION_ONLY" != "true" ]]; then
+            log_error "Configuration file .env not found and required for deployment"
+            log_info "Either create .env file or set ENV_REQUIRED=false to skip this check"
+            log_info "For validation-only mode, .env file is not strictly required"
+            exit 1
+        else
+            log_warning "Configuration file .env not found, proceeding without it"
+            log_info "Set ENV_REQUIRED=true if .env is mandatory for your deployment"
+        fi
+    else
+        log_success "Configuration file .env found"
+        # Load environment variables from .env
+        set -a
+        source "$PROJECT_ROOT/.env"
+        set +a
     fi
 
     # Check for private configuration
     if [[ -f "$PROJECT_ROOT/.env.private.local" ]]; then
         log_success "Private configuration found"
+        # Load private environment variables
+        set -a
+        source "$PROJECT_ROOT/.env.private.local"
+        set +a
     else
         log_warning "No private configuration (.env.private.local) found"
-        log_info "Using default configuration values"
+        log_info "Using default/environment variable configuration values"
     fi
 
-    # Load environment variables
-    set -a
-    source "$PROJECT_ROOT/.env"
-    if [[ -f "$PROJECT_ROOT/.env.private.local" ]]; then
-        source "$PROJECT_ROOT/.env.private.local"
-    fi
-    set +a
-
-    log_success "Configuration loaded successfully"
+    log_success "Configuration validation completed"
 }
 
 perform_deployment() {

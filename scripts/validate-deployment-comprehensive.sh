@@ -22,6 +22,10 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# Configuration for report output
+REPORT_DIR="${REPORT_DIR:-$PROJECT_ROOT}"
+REPORT_FILENAME="${REPORT_FILENAME:-validation-report-$(date +%Y%m%d-%H%M%S-%N).md}"
+
 # Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -41,6 +45,39 @@ log_error() {
 
 log_header() {
     echo -e "${PURPLE}$1${NC}"
+}
+
+# Generic helper function to check pods in namespaces
+check_pods() {
+    local namespace="$1"
+    local component_name="$2"
+    local label_selector="${3:-}"
+
+    if kubectl get namespace "$namespace" &>/dev/null; then
+        local kubectl_cmd="kubectl get pods -n $namespace"
+        if [[ -n "$label_selector" ]]; then
+            kubectl_cmd="$kubectl_cmd -l $label_selector"
+        fi
+
+        if $kubectl_cmd &>/dev/null; then
+            local ready_pods=$(eval "$kubectl_cmd --no-headers" | grep -c "Running" || echo "0")
+            local total_pods=$(eval "$kubectl_cmd --no-headers" | wc -l)
+
+            if [[ "$ready_pods" == "$total_pods" && "$ready_pods" -gt 0 ]]; then
+                add_result "$component_name" "PASS" "$ready_pods/$total_pods pods running"
+                return 0
+            else
+                add_result "$component_name" "FAIL" "Only $ready_pods/$total_pods pods running"
+                return 1
+            fi
+        else
+            add_result "$component_name" "FAIL" "No $component_name pods found"
+            return 1
+        fi
+    else
+        add_result "$component_name" "FAIL" "$namespace namespace not found"
+        return 1
+    fi
 }
 
 # Validation results tracking
@@ -112,132 +149,43 @@ check_kubectl_access() {
 validate_infrastructure() {
     log_header "🏗️ Validating Core Infrastructure"
 
-    # Check MetalLB
-    if kubectl get pods -n metallb-system &>/dev/null; then
-        local metallb_ready=$(kubectl get pods -n metallb-system --no-headers | grep -c "Running" || echo "0")
-        local metallb_total=$(kubectl get pods -n metallb-system --no-headers | wc -l)
+    # Check MetalLB using generic helper
+    check_pods "metallb-system" "MetalLB Load Balancer"
 
-        if [[ "$metallb_ready" == "$metallb_total" && "$metallb_ready" -gt 0 ]]; then
-            add_result "MetalLB Load Balancer" "PASS" "$metallb_ready/$metallb_total pods running"
-        else
-            add_result "MetalLB Load Balancer" "FAIL" "Only $metallb_ready/$metallb_total pods running"
-        fi
-    else
-        add_result "MetalLB Load Balancer" "FAIL" "MetalLB namespace not found"
-    fi
+    # Check cert-manager using generic helper
+    check_pods "cert-manager" "Certificate Manager"
 
-    # Check cert-manager
-    if kubectl get pods -n cert-manager &>/dev/null; then
-        local cert_ready=$(kubectl get pods -n cert-manager --no-headers | grep -c "Running" || echo "0")
-        local cert_total=$(kubectl get pods -n cert-manager --no-headers | wc -l)
-
-        if [[ "$cert_ready" == "$cert_total" && "$cert_ready" -gt 0 ]]; then
-            add_result "Certificate Manager" "PASS" "$cert_ready/$cert_total pods running"
-        else
-            add_result "Certificate Manager" "FAIL" "Only $cert_ready/$cert_total pods running"
-        fi
-    else
-        add_result "Certificate Manager" "FAIL" "cert-manager namespace not found"
-    fi
-
-    # Check NGINX Ingress
-    if kubectl get pods -n ingress-nginx &>/dev/null; then
-        local nginx_ready=$(kubectl get pods -n ingress-nginx --no-headers | grep -c "Running" || echo "0")
-        local nginx_total=$(kubectl get pods -n ingress-nginx --no-headers | wc -l)
-
-        if [[ "$nginx_ready" == "$nginx_total" && "$nginx_ready" -gt 0 ]]; then
-            add_result "NGINX Ingress Controller" "PASS" "$nginx_ready/$nginx_total pods running"
-        else
-            add_result "NGINX Ingress Controller" "FAIL" "Only $nginx_ready/$nginx_total pods running"
-        fi
-    else
-        add_result "NGINX Ingress Controller" "FAIL" "ingress-nginx namespace not found"
-    fi
+    # Check NGINX Ingress using generic helper
+    check_pods "ingress-nginx" "NGINX Ingress Controller"
 }
 
 validate_applications() {
     log_header "🦊 Validating Applications"
 
-    # Check GitLab
-    if kubectl get namespace gitlab &>/dev/null; then
-        if kubectl get pods -n gitlab &>/dev/null; then
-            local gitlab_ready=$(kubectl get pods -n gitlab --no-headers | grep -c "Running" || echo "0")
-            local gitlab_total=$(kubectl get pods -n gitlab --no-headers | wc -l)
+    # Check GitLab using generic helper
+    check_pods "gitlab" "GitLab Application"
 
-            if [[ "$gitlab_ready" == "$gitlab_total" && "$gitlab_ready" -gt 0 ]]; then
-                add_result "GitLab Application" "PASS" "$gitlab_ready/$gitlab_total pods running"
-            else
-                add_result "GitLab Application" "FAIL" "Only $gitlab_ready/$gitlab_total pods running"
-            fi
-        else
-            add_result "GitLab Application" "FAIL" "No GitLab pods found"
-        fi
-    else
-        add_result "GitLab Application" "FAIL" "GitLab namespace not found"
-    fi
-
-    # Check Keycloak
-    if kubectl get namespace keycloak &>/dev/null; then
-        if kubectl get pods -n keycloak &>/dev/null; then
-            local keycloak_ready=$(kubectl get pods -n keycloak --no-headers | grep -c "Running" || echo "0")
-            local keycloak_total=$(kubectl get pods -n keycloak --no-headers | wc -l)
-
-            if [[ "$keycloak_ready" == "$keycloak_total" && "$keycloak_ready" -gt 0 ]]; then
-                add_result "Keycloak SSO" "PASS" "$keycloak_ready/$keycloak_total pods running"
-            else
-                add_result "Keycloak SSO" "FAIL" "Only $keycloak_ready/$keycloak_total pods running"
-            fi
-        else
-            add_result "Keycloak SSO" "FAIL" "No Keycloak pods found"
-        fi
-    else
-        add_result "Keycloak SSO" "FAIL" "Keycloak namespace not found"
-    fi
+    # Check Keycloak using generic helper
+    check_pods "keycloak" "Keycloak SSO"
 }
 
 validate_monitoring() {
     log_header "📊 Validating Monitoring Stack"
 
-    # Check Prometheus
-    if kubectl get namespace monitoring &>/dev/null; then
-        # Check Prometheus
-        if kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus &>/dev/null; then
-            local prom_ready=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus --no-headers | grep -c "Running" || echo "0")
-            if [[ "$prom_ready" -gt 0 ]]; then
-                add_result "Prometheus Monitoring" "PASS" "$prom_ready pod(s) running"
-            else
-                add_result "Prometheus Monitoring" "FAIL" "No running Prometheus pods"
-            fi
-        else
-            add_result "Prometheus Monitoring" "FAIL" "Prometheus pods not found"
-        fi
-
-        # Check Grafana
-        if kubectl get pods -n monitoring -l app.kubernetes.io/name=grafana &>/dev/null; then
-            local grafana_ready=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=grafana --no-headers | grep -c "Running" || echo "0")
-            if [[ "$grafana_ready" -gt 0 ]]; then
-                add_result "Grafana Dashboard" "PASS" "$grafana_ready pod(s) running"
-            else
-                add_result "Grafana Dashboard" "FAIL" "No running Grafana pods"
-            fi
-        else
-            add_result "Grafana Dashboard" "FAIL" "Grafana pods not found"
-        fi
-
-        # Check AlertManager
-        if kubectl get pods -n monitoring -l app.kubernetes.io/name=alertmanager &>/dev/null; then
-            local alert_ready=$(kubectl get pods -n monitoring -l app.kubernetes.io/name=alertmanager --no-headers | grep -c "Running" || echo "0")
-            if [[ "$alert_ready" -gt 0 ]]; then
-                add_result "AlertManager" "PASS" "$alert_ready pod(s) running"
-            else
-                add_result "AlertManager" "FAIL" "No running AlertManager pods"
-            fi
-        else
-            add_result "AlertManager" "FAIL" "AlertManager pods not found"
-        fi
-    else
+    # Check if monitoring namespace exists first
+    if ! kubectl get namespace monitoring &>/dev/null; then
         add_result "Monitoring Stack" "FAIL" "Monitoring namespace not found"
+        return
     fi
+
+    # Check Prometheus using generic helper with label selector
+    check_pods "monitoring" "Prometheus Monitoring" "app.kubernetes.io/name=prometheus"
+
+    # Check Grafana using generic helper with label selector
+    check_pods "monitoring" "Grafana Dashboard" "app.kubernetes.io/name=grafana"
+
+    # Check AlertManager using generic helper with label selector
+    check_pods "monitoring" "AlertManager" "app.kubernetes.io/name=alertmanager"
 }
 
 validate_networking() {
@@ -279,8 +227,16 @@ validate_certificates() {
             local ready_certs=$(kubectl get certificates -A --no-headers | grep -c "True" || echo "0")
             add_result "TLS Certificates" "PASS" "$ready_certs/$cert_count certificates ready"
 
-            # Check individual certificates
-            kubectl get certificates -A --no-headers | while read namespace name ready secret age; do
+            # Check individual certificates using JSON output to handle spaces in names
+            kubectl get certificates -A -o json | jq -r '
+                .items[] | [
+                    .metadata.namespace,
+                    .metadata.name,
+                    (
+                        .status.conditions // [] | map(select(.type == "Ready"))[0].status // "Unknown"
+                    )
+                ] | @tsv
+            ' | while IFS=$'\t' read -r namespace name ready; do
                 if [[ "$ready" == "True" ]]; then
                     add_result "Certificate: $namespace/$name" "PASS" "Certificate ready"
                 else
@@ -381,6 +337,9 @@ perform_connectivity_tests() {
     # Test internal service connectivity
     local test_pod="connectivity-test-$(date +%s)"
 
+    # Ensure the test pod is deleted if the script exits or is interrupted
+    trap "kubectl delete pod \$test_pod --ignore-not-found --grace-period=0 --force &>/dev/null" EXIT
+
     # Create a test pod for connectivity testing
     kubectl run "$test_pod" --image=curlimages/curl:latest --restart=Never --rm -i --tty=false -- sleep 3600 &>/dev/null || true
 
@@ -400,12 +359,13 @@ perform_connectivity_tests() {
                 add_result "API Server Connectivity" "FAIL" "Cannot reach Kubernetes API"
             fi
         fi
-
-        # Clean up test pod
-        kubectl delete pod "$test_pod" --force --grace-period=0 &>/dev/null || true
     else
         add_result "Connectivity Tests" "FAIL" "Could not create test pod"
     fi
+
+    # Clean up the test pod and remove the trap
+    kubectl delete pod "$test_pod" --ignore-not-found --grace-period=0 --force &>/dev/null
+    trap - EXIT
 }
 
 perform_health_checks() {
@@ -419,28 +379,34 @@ perform_health_checks() {
         ["prometheus"]="/graph"
     )
 
-    # Get ingress hostnames and perform health checks
+    # Get ingress hostnames and perform health checks - handle multiple ingresses per service
     for service in "${!health_endpoints[@]}"; do
-        local ingress_info=$(kubectl get ingress -A --no-headers | grep "$service" | head -1)
-        if [[ -n "$ingress_info" ]]; then
+        local ingress_count=0
+        kubectl get ingress -A --no-headers | grep "$service" | while read -r ingress_info; do
+            ingress_count=$((ingress_count + 1))
+            if [[ -n "$ingress_info" ]]; then
             local namespace=$(echo "$ingress_info" | awk '{print $1}')
             local hosts=$(echo "$ingress_info" | awk '{print $4}')
             local host=$(echo "$hosts" | cut -d',' -f1)
             local endpoint="${health_endpoints[$service]}"
 
-            # Test HTTP/HTTPS connectivity
-            for protocol in https http; do
-                local url="${protocol}://${host}${endpoint}"
-                if curl -s -k -m 10 "$url" &>/dev/null; then
-                    add_result "${service^} Health Check" "PASS" "Accessible at $url"
-                    break
-                else
-                    if [[ "$protocol" == "http" ]]; then
-                        add_result "${service^} Health Check" "FAIL" "Not accessible at $url"
+                # Test HTTP/HTTPS connectivity
+                for protocol in https http; do
+                    local url="${protocol}://${host}${endpoint}"
+                    if curl -s -k -m 10 "$url" &>/dev/null; then
+                        add_result "${service^} Health Check (#$ingress_count)" "PASS" "Accessible at $url"
+                        break
+                    else
+                        if [[ "$protocol" == "http" ]]; then
+                            add_result "${service^} Health Check (#$ingress_count)" "FAIL" "Not accessible at $url"
+                        fi
                     fi
-                fi
-            done
-        else
+                done
+            fi
+        done
+
+        # If no ingresses found for this service
+        if [[ $ingress_count -eq 0 ]]; then
             add_result "${service^} Health Check" "FAIL" "No ingress found for $service"
         fi
     done
@@ -449,7 +415,7 @@ perform_health_checks() {
 generate_detailed_report() {
     log_header "📋 Generating Detailed Validation Report"
 
-    local report_file="$PROJECT_ROOT/validation-report-$(date +%Y%m%d-%H%M%S).md"
+    local report_file="$REPORT_DIR/$REPORT_FILENAME"
 
     cat > "$report_file" << EOF
 # Homelab Infrastructure Validation Report

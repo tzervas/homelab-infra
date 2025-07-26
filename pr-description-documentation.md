@@ -127,7 +127,7 @@ homelab-infra/
 ### Testing Instructions
 1. Clone the branch: `git checkout feature/comprehensive-documentation-consolidation`
 2. Follow the quick start guide: `docs/setup/quick-start.md`
-3. Validate configuration: `./scripts/validate-deployment-local.sh`
+3. Validate configuration: `./scripts/validate-deployment-comprehensive.sh`
 4. Test deployment: `./scripts/deploy-homelab.sh vm-test`
 
 ## 🎉 Expected Benefits

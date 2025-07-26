@@ -31,6 +31,10 @@ kubeconfig*
 .claude/
 .copilot/
 .codeium/
+docs/claude_*.md
+.claude*.json
+.claude_history/
+.claude_cache/
 
 # Security scanning
 .gitleaks.toml

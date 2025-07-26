@@ -316,7 +316,15 @@
           ATTEMPT=$((ATTEMPT + 1))
           echo "Attempt $ATTEMPT/$MAX_ATTEMPTS"
 
-          # Check if port 22 is listening
+          # Check if port 22 is listening with reasonable backoff
+          if [ $ATTEMPT -le 10 ]; then
+            backoff=5
+          elif [ $ATTEMPT -le 20 ]; then
+            backoff=10
+          else
+            backoff=15
+          fi
+
           if nc -z -w3 $HOST 22 2>/dev/null; then
             echo "✓ Port 22 is open"
 
@@ -325,30 +333,28 @@
               echo "✅ SSH connection successful!"
               exit 0
             else
-              echo "⏳ Port open but SSH not ready (likely still initializing)"
+              echo "⏳ Port open but SSH not ready, retrying..."
             fi
           else
-            echo "⏳ Port 22 not yet available"
+            echo "⏳ Port 22 not yet available (next try in $backoff seconds)"
           fi
 
-          # Check for common boot issues every 5 attempts
-          if [ $((ATTEMPT % 5)) -eq 0 ]; then
-            echo "🔍 Performing diagnostic checks..."
+          # Perform lighter diagnostics more frequently
+          echo "🔍 Checking for boot progress..."
+          VM_STATE=$(virsh domstate {{ vm_config.name }} 2>/dev/null || echo "unknown")
+          echo "   VM State: $VM_STATE"
 
-            # Check VM state
-            VM_STATE=$(virsh domstate {{ vm_config.name }} 2>/dev/null || echo "unknown")
-            echo "   VM State: $VM_STATE"
-
-            if [ "$VM_STATE" != "running" ]; then
-              echo "❌ VM is not in running state: $VM_STATE"
-              exit 1
+          if [ "$VM_STATE" != "running" ]; then
+            echo "💤 VM is not in running state yet"
+          else
+            # Quick CPU check for ongoing activity
+            CPU_TIME=$(virsh domstats {{ vm_config.name }} --cpu-total 2>/dev/null | grep "cpu.time" | cut -d'=' -f2 || echo "0")
+            if [[ "$CPU_TIME" -gt 0 ]]; then
+              echo "   CPU Activity detected"
+            else
+              echo "   No CPU Activity detected"
             fi
 
-            # Check if VM is consuming CPU (sign of activity)
-            CPU_TIME=$(virsh domstats {{ vm_config.name }} --cpu-total 2>/dev/null | grep "cpu.time" | cut -d'=' -f2 || echo "0")
-            echo "   CPU Activity: $CPU_TIME"
-
-            # Test network connectivity
             if ping -c 1 -W 2 $HOST >/dev/null 2>&1; then
               echo "   Network: ✓ VM is reachable"
             else
@@ -356,7 +362,7 @@
             fi
           fi
 
-          sleep 15
+          sleep $backoff
         done
 
         echo "❌ SSH readiness timeout after $((MAX_ATTEMPTS * 15)) seconds"

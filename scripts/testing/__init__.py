@@ -1,0 +1,37 @@
+"""
+Homelab Infrastructure Testing Framework
+
+A comprehensive testing framework for validating homelab infrastructure,
+from configuration files to end-to-end service connectivity.
+"""
+
+__version__ = "0.1.0"
+__author__ = "Tyler Zervas"
+__email__ = "tz-dev@vectorweight.com"
+
+# Import main classes for easy access
+try:
+    from .config_validator import ConfigValidator, ValidationResult
+    from .infrastructure_health import InfrastructureHealthMonitor, ClusterHealth
+    from .service_checker import ServiceDeploymentChecker, ServiceStatus
+    from .network_security import NetworkSecurityValidator, SecurityStatus
+    from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
+    from .test_reporter import HomelabTestReporter, TestSuiteResult
+except ImportError as e:
+    # Handle cases where dependencies might not be available
+    pass
+
+__all__ = [
+    "ConfigValidator",
+    "ValidationResult",
+    "InfrastructureHealthMonitor",
+    "ClusterHealth",
+    "ServiceDeploymentChecker",
+    "ServiceStatus",
+    "NetworkSecurityValidator",
+    "SecurityStatus",
+    "IntegrationConnectivityTester",
+    "IntegrationTestResult",
+    "HomelabTestReporter",
+    "TestSuiteResult",
+]

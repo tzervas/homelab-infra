@@ -1,0 +1,87 @@
+# Monitoring Stack Configuration
+# Private values for Prometheus, Grafana, Loki stack
+
+prometheus:
+  # Alertmanager configuration
+  alertmanager:
+    config:
+      global:
+        smtp_smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+        smtp_from: "${SMTP_FROM_EMAIL}"
+        smtp_auth_username: "${SMTP_USERNAME}"
+        smtp_auth_password: "${SMTP_PASSWORD}"
+        slack_api_url: "${SLACK_WEBHOOK_URL}"
+
+      route:
+        group_by: ['alertname']
+        group_wait: 10s
+        group_interval: 10s
+        repeat_interval: 1h
+        receiver: 'web.hook'
+
+      receivers:
+      - name: 'web.hook'
+        email_configs:
+        - to: 'admin@homelab.local'
+          subject: 'Homelab Alert: {{ .GroupLabels.alertname }}'
+          body: |
+            {{ range .Alerts }}
+            Alert: {{ .Annotations.summary }}
+            Description: {{ .Annotations.description }}
+            {{ end }}
+
+        slack_configs:
+        - channel: '#alerts'
+          title: 'Homelab Alert'
+          text: |
+            {{ range .Alerts }}
+            {{ .Annotations.summary }}
+            {{ end }}
+
+grafana:
+  # Admin credentials
+  adminUser: admin
+  adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
+
+  # SMTP configuration
+  smtp:
+    enabled: true
+    host: "${SMTP_HOST}:${SMTP_PORT}"
+    user: "${SMTP_USERNAME}"
+    password: "${SMTP_PASSWORD}"
+    from_address: "grafana@homelab.local"
+    from_name: "Homelab Grafana"
+
+  # OAuth configuration (integrate with Keycloak)
+  auth:
+    generic_oauth:
+      enabled: true
+      name: "Keycloak"
+      allow_sign_up: true
+      client_id: "grafana"
+      client_secret: "${KEYCLOAK_GRAFANA_CLIENT_SECRET}"
+      scopes: "openid profile email"
+      auth_url: "https://keycloak.homelab.local/auth/realms/homelab/protocol/openid-connect/auth"
+      token_url: "https://keycloak.homelab.local/auth/realms/homelab/protocol/openid-connect/token"
+      api_url: "https://keycloak.homelab.local/auth/realms/homelab/protocol/openid-connect/userinfo"
+
+loki:
+  # Storage configuration
+  config:
+    storage_config:
+      aws:
+        s3: "${BACKUP_S3_ENDPOINT}"
+        bucketnames: "${BACKUP_S3_BUCKET}-logs"
+        access_key_id: "${BACKUP_S3_ACCESS_KEY}"
+        secret_access_key: "${BACKUP_S3_SECRET_KEY}"
+        region: "${BACKUP_S3_REGION}"
+
+    # Retention policies
+    limits_config:
+      retention_period: 720h  # 30 days
+
+prometheus-node-exporter:
+  # Node exporter configuration
+  hostRootFsMount:
+    enabled: true
+    mountPropagation: HostToContainer

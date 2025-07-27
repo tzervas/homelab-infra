@@ -121,13 +121,27 @@ class PermissionVerifier:
             return False, "", "Invalid command format", 1
 
         # Basic validation of command arguments - reject anything with shell metacharacters
-        shell_metacharacters = ["|", "&", ";", "<", ">", "(", ")", "$", "`", "\\", '"', "'"]
+        shell_metacharacters = ["|", "&", ";", "<", ">", "(", ")", "$", "`", "\\", "\"", "'"]
         if any(any(char in arg for char in shell_metacharacters) for arg in cmd):
             return False, "", "Command contains invalid characters", 1
 
+        # Additional security - escape each argument properly
         try:
+            from shlex import quote
+            # Create a list of properly escaped arguments
+            escaped_cmd = [quote(arg) for arg in cmd]
+            # Validate escaped command
+            if any(len(arg) > 1024 for arg in escaped_cmd):  # Reasonable length limit
+                return False, "", "Command argument too long", 1
+
+            # Execute with escaped arguments
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout, check=False
+                escaped_cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                check=False,
+                shell=False  # Explicitly disable shell interpretation
             )
             return (
                 result.returncode == 0,

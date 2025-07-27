@@ -1,0 +1,76 @@
+---
+# Playbook to set up deployment user for rootless homelab operation
+# This playbook creates a dedicated non-root user with minimal sudo privileges
+
+- name: Setup deployment user for rootless homelab operation
+  hosts: homelab
+  gather_facts: yes
+  become: yes  # This playbook needs initial root access to create the user
+
+  pre_tasks:
+    - name: Ensure required packages are installed
+      package:
+        name:
+          - sudo
+          - acl
+        state: present
+
+    - name: Create sudo log directory
+      file:
+        path: /var/log/sudo-io
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create audit log directory
+      file:
+        path: /var/log/audit
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+  roles:
+    - deployment-user
+
+  post_tasks:
+    - name: Test deployment user configuration
+      block:
+        - name: Test user exists and has correct groups
+          command: id {{ deployment_user }}
+          register: user_info
+          changed_when: false
+
+        - name: Display user information
+          debug:
+            msg: "{{ user_info.stdout }}"
+
+        - name: Test sudo configuration
+          command: sudo -u {{ deployment_user }} sudo -l
+          register: sudo_info
+          changed_when: false
+          failed_when: false
+
+        - name: Display sudo privileges
+          debug:
+            msg: "{{ sudo_info.stdout_lines | default(['Unable to determine sudo privileges']) }}"
+
+        - name: Verify SSH key was created
+          stat:
+            path: "{{ deployment_home }}/.ssh/id_{{ deployment_ssh_key_type }}"
+          register: ssh_key_stat
+
+        - name: SSH key status
+          debug:
+            msg: "SSH key exists: {{ ssh_key_stat.stat.exists }}"
+
+      rescue:
+        - name: Display error information
+          debug:
+            msg: "Error occurred during deployment user verification"
+
+  vars:
+    # Override any role defaults here if needed
+    deployment_user: homelab-deploy
+    deployment_home: /home/homelab-deploy

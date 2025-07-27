@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Configuration Validator for Homelab Infrastructure
+"""Configuration Validator for Homelab Infrastructure.
 
 This module provides validation capabilities for YAML/JSON configuration files,
 Ansible inventory files, Helm values files, and environment-specific configurations.
@@ -8,22 +7,24 @@ Ansible inventory files, Helm values files, and environment-specific configurati
 
 import json
 import logging
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 import yaml
-from jsonschema import Draft7Validator, ValidationError
+from jsonschema import Draft7Validator
 
 
 @dataclass
 class ValidationResult:
     """Structured validation result for configuration files."""
+
     file_path: str
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     file_type: str = ""
 
     def add_error(self, message: str) -> None:
@@ -39,7 +40,7 @@ class ValidationResult:
 class ConfigValidator:
     """Main validator class for homelab configuration files."""
 
-    def __init__(self, log_level: str = "INFO"):
+    def __init__(self, log_level: str = "INFO") -> None:
         """Initialize the validator with logging configuration."""
         self.logger = self._setup_logging(log_level)
         self.schemas = self._load_schemas()
@@ -52,15 +53,13 @@ class ConfigValidator:
         # Only add handler if no handlers exist
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         return logger
 
-    def _load_schemas(self) -> Dict[str, Dict[str, Any]]:
+    def _load_schemas(self) -> dict[str, dict[str, Any]]:
         """Load validation schemas for different configuration types."""
         return {
             "ansible_inventory": {
@@ -72,47 +71,44 @@ class ConfigValidator:
                         "properties": {
                             "children": {"type": "object"},
                             "vars": {"type": "object"},
-                            "hosts": {"type": "object"}
-                        }
-                    }
-                }
+                            "hosts": {"type": "object"},
+                        },
+                    },
+                },
             },
             "helm_values": {
                 "type": "object",
                 "properties": {
                     "global": {"type": "object"},
                     "resources": {"type": "object"},
-                    "image": {"type": "object"}
-                }
+                    "image": {"type": "object"},
+                },
             },
             "environment_config": {
                 "type": "object",
                 "required": ["environment"],
-                "properties": {
-                    "environment": {"type": "string"},
-                    "global": {"type": "object"}
-                }
-            }
+                "properties": {"environment": {"type": "string"}, "global": {"type": "object"}},
+            },
         }
 
-    def _load_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def _load_file(self, file_path: str) -> dict[str, Any] | None:
         """Safely load YAML or JSON file."""
         try:
             path = Path(file_path)
             if not path.exists():
-                raise FileNotFoundError(f"File not found: {file_path}")
+                msg = f"File not found: {file_path}"
+                raise FileNotFoundError(msg)
 
-            with open(path, 'r', encoding='utf-8') as f:
-                if path.suffix.lower() == '.json':
+            with open(path, encoding="utf-8") as f:
+                if path.suffix.lower() == ".json":
                     return json.load(f)
-                else:
-                    return yaml.safe_load(f)
+                return yaml.safe_load(f)
 
         except Exception as e:
-            self.logger.error(f"Failed to load {file_path}: {e}")
+            self.logger.exception(f"Failed to load {file_path}: {e}")
             return None
 
-    def validate_schema(self, data: Dict[str, Any], schema: Dict[str, Any]) -> List[str]:
+    def validate_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> list[str]:
         """Validate data against JSON schema."""
         validator = Draft7Validator(schema)
         errors = []
@@ -143,7 +139,7 @@ class ConfigValidator:
             # Check for required host variables
             required_vars = ["ansible_host", "ansible_user"]
             if "children" in all_section:
-                for group_name, group_data in all_section["children"].items():
+                for group_data in all_section["children"].values():
                     if "hosts" in group_data:
                         for host_name, host_vars in group_data["hosts"].items():
                             for var in required_vars:
@@ -189,7 +185,11 @@ class ConfigValidator:
 
     def validate_environment_config(self, file_path: str) -> ValidationResult:
         """Validate environment-specific configuration files."""
-        result = ValidationResult(file_path=file_path, is_valid=True, file_type="environment_config")
+        result = ValidationResult(
+            file_path=file_path,
+            is_valid=True,
+            file_type="environment_config",
+        )
 
         data = self._load_file(file_path)
         if data is None:
@@ -220,20 +220,18 @@ class ConfigValidator:
 
     def _validate_ip_range(self, ip_range: str) -> bool:
         """Validate IP range format (e.g., 192.168.1.100-192.168.1.200)."""
-        import re
-        pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+        pattern = r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
         return bool(re.fullmatch(pattern, ip_range))
 
     def _validate_resource_value(self, value: str) -> bool:
         """Validate Kubernetes resource value format."""
-        import re
         # CPU: number (int or float) with optional 'm' suffix, or with units u/n
         # Also support scientific notation like 1e3m or 1.5e-3
-        cpu_pattern = r'([0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)(m|u|n)?'
+        cpu_pattern = r"([0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)(m|u|n)?"
 
         # Memory: number with optional valid binary or decimal suffix
         # Ki, Mi, Gi, Ti, Pi, Ei (binary) or k, K, M, G, T, P, E (decimal)
-        memory_pattern = r'([0-9]+(\.[0-9]+)?)(Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?'
+        memory_pattern = r"([0-9]+(\.[0-9]+)?)(Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?"
 
         value_str = str(value).strip()
 
@@ -246,14 +244,17 @@ class ConfigValidator:
             return True
 
         # Check if it's a plain number (bytes or cores)
-        if re.fullmatch(r'[0-9]+(\.[0-9]+)?', value_str):
-            return True
+        return bool(re.fullmatch("[0-9]+(\\.[0-9]+)?", value_str))
 
-        return False
-
-    def _check_sensitive_data(self, data: Dict[str, Any], patterns: List[str], result: ValidationResult) -> None:
+    def _check_sensitive_data(
+        self,
+        data: dict[str, Any],
+        patterns: list[str],
+        result: ValidationResult,
+    ) -> None:
         """Recursively check for potential sensitive data exposure."""
-        def _check_recursive(obj, path=""):
+
+        def _check_recursive(obj, path="") -> None:
             if isinstance(obj, dict):
                 for key, value in obj.items():
                     current_path = f"{path}.{key}" if path else key
@@ -267,7 +268,7 @@ class ConfigValidator:
 
         _check_recursive(data)
 
-    def validate_file(self, file_path: str, file_type: Optional[str] = None) -> ValidationResult:
+    def validate_file(self, file_path: str, file_type: str | None = None) -> ValidationResult:
         """Validate a configuration file based on its type or path."""
         path = Path(file_path)
 
@@ -285,19 +286,22 @@ class ConfigValidator:
         # Route to appropriate validator
         if file_type == "ansible_inventory":
             return self.validate_ansible_inventory(file_path)
-        elif file_type == "helm_values":
+        if file_type == "helm_values":
             return self.validate_helm_values(file_path)
-        elif file_type == "environment_config":
+        if file_type == "environment_config":
             return self.validate_environment_config(file_path)
-        else:
-            # Generic YAML/JSON validation
-            result = ValidationResult(file_path=file_path, is_valid=True, file_type="generic")
-            data = self._load_file(file_path)
-            if data is None:
-                result.add_error("Failed to load file")
-            return result
+        # Generic YAML/JSON validation
+        result = ValidationResult(file_path=file_path, is_valid=True, file_type="generic")
+        data = self._load_file(file_path)
+        if data is None:
+            result.add_error("Failed to load file")
+        return result
 
-    def validate_directory(self, directory: str, patterns: List[str] = None) -> List[ValidationResult]:
+    def validate_directory(
+        self,
+        directory: str,
+        patterns: list[str] | None = None,
+    ) -> list[ValidationResult]:
         """Validate all configuration files in a directory."""
         if patterns is None:
             patterns = ["*.yml", "*.yaml", "*.json"]
@@ -320,33 +324,42 @@ class ConfigValidator:
         return results
 
 
-def main():
+def main() -> int:
     """Main function for standalone testing."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Validate homelab configuration files")
-    parser.add_argument("path", help="File or directory path to validate")
-    parser.add_argument("--type", choices=["ansible_inventory", "helm_values", "environment_config"],
-                       help="Specify configuration type")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-                       help="Set logging level")
+    parser.add_argument("paths", nargs="+", help="File or directory paths to validate")
+    parser.add_argument(
+        "--type",
+        choices=["ansible_inventory", "helm_values", "environment_config"],
+        help="Specify configuration type",
+    )
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Set logging level",
+    )
 
     args = parser.parse_args()
 
     validator = ConfigValidator(log_level=args.log_level)
-    path = Path(args.path)
+    results = []
 
-    if path.is_file():
-        result = validator.validate_file(str(path), args.type)
-        results = [result]
-    else:
-        results = validator.validate_directory(str(path))
+    for path_str in args.paths:
+        path = Path(path_str)
+        if path.is_file():
+            result = validator.validate_file(str(path), args.type)
+            results.append(result)
+        else:
+            results.extend(validator.validate_directory(str(path)))
 
     # Summary
     total_files = len(results)
     valid_files = sum(1 for r in results if r.is_valid)
 
-    print(f"\n📊 Validation Summary:")
+    print("\n📊 Validation Summary:")
     print(f"Total files: {total_files}")
     print(f"Valid files: {valid_files}")
     print(f"Invalid files: {total_files - valid_files}")

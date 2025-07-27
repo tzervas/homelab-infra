@@ -28,29 +28,34 @@ homelab-infra/
 The configuration system uses a layered approach for maximum flexibility:
 
 ### 1. Public Defaults (`.env`)
+
 - Safe default values
 - Network configurations with placeholder IPs
 - Component versions
 - Public settings that can be shared
 
 ### 2. Private Overrides (`.env.private.local`)
+
 - Your actual network settings
 - Server credentials
 - Custom domain names
 - Local environment overrides
 
 ### 3. Helm Values (`config/values/`)
+
 - Application-specific settings
 - Service configurations
 - Resource limits and requests
 - Custom application parameters
 
 ### 4. Environment Settings (`config/environments/`)
+
 - Development, staging, production settings
 - Environment-specific resource allocations
 - Different service endpoints per environment
 
 ### 5. Secrets (`config/secrets/`)
+
 - Encrypted credentials
 - API keys and tokens
 - Database passwords
@@ -113,24 +118,28 @@ storage:
 ## 📝 Detailed Configuration Guides
 
 ### Environment Variables
+
 - **[Complete Environment Variables Guide](environment-variables.md)**
 - All available variables and their purposes
 - Network configuration options
 - Service-specific settings
 
 ### Private Configuration
+
 - **[Private Configuration Management](private-configuration.md)**
 - Managing secrets securely
 - Environment-specific settings
 - Best practices for sensitive data
 
 ### Helm Values
+
 - **[Helm Values Customization](helm-values.md)**
 - Application-specific configurations
 - Resource management
 - Advanced deployment options
 
 ### Service Configuration
+
 - **[Individual Service Settings](services.md)**
 - GitLab configuration
 - Keycloak setup
@@ -139,6 +148,7 @@ storage:
 ## 🔐 Security Considerations
 
 ### What to Keep Private
+
 - Server IP addresses and credentials
 - Domain names (if sensitive)
 - API keys and tokens
@@ -146,12 +156,14 @@ storage:
 - TLS certificates and keys
 
 ### What's Safe to Share
+
 - Default resource allocations
 - Public configuration templates
 - Component versions
 - General deployment settings
 
 ### File Protection
+
 ```bash
 # Ensure private files have correct permissions
 chmod 600 .env.private.local
@@ -165,18 +177,21 @@ echo "config/" >> .gitignore
 ## 🔄 Configuration Workflow
 
 ### Development Environment
+
 1. Use example configurations as starting point
 2. Override with local development settings
 3. Test with VM deployment first
 4. Validate all services are accessible
 
 ### Staging Environment
+
 1. Copy development configuration
 2. Update with staging-specific settings
 3. Use staging domain names
 4. Deploy to staging infrastructure
 
 ### Production Environment
+
 1. Review all security settings
 2. Use production domains and certificates
 3. Enable monitoring and alerting
@@ -185,6 +200,7 @@ echo "config/" >> .gitignore
 ## 🛠️ Configuration Tools
 
 ### Validation Scripts
+
 ```bash
 # Validate configuration syntax
 ./scripts/validate-deployment-comprehensive.sh
@@ -197,6 +213,7 @@ echo "config/" >> .gitignore
 ```
 
 ### Configuration Management
+
 ```bash
 # Check current configuration
 ./scripts/deploy-homelab.sh vm-test --dry-run
@@ -211,6 +228,7 @@ cp -r examples/private-config-template/* config/
 ## 📋 Configuration Checklist
 
 ### Pre-Deployment Checklist
+
 - [ ] Network settings configured in `.env.private.local`
 - [ ] SSH keys set up and accessible
 - [ ] Domain names configured (if using custom domains)
@@ -221,6 +239,7 @@ cp -r examples/private-config-template/* config/
 - [ ] Configuration validated with scripts
 
 ### Post-Deployment Checklist
+
 - [ ] All services accessible via web interfaces
 - [ ] TLS certificates properly issued
 - [ ] Monitoring dashboards displaying data
@@ -230,12 +249,14 @@ cp -r examples/private-config-template/* config/
 ## 🔍 Troubleshooting Configuration
 
 ### Common Issues
+
 - **Service not accessible**: Check IP assignments and ingress configuration
 - **TLS certificate issues**: Verify domain configuration and cert-manager settings
 - **Resource constraints**: Review resource requests and limits in Helm values
 - **Authentication problems**: Check Keycloak configuration and user setup
 
 ### Debug Commands
+
 ```bash
 # Check current environment variables
 env | grep HOMELAB

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Infrastructure Health Monitor for Homelab Kubernetes Cluster
+"""Infrastructure Health Monitor for Homelab Kubernetes Cluster.
 
 This module provides comprehensive health monitoring for K3s clusters including
 connectivity checks, node status, core components, and network validation.
@@ -11,11 +10,13 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 
 try:
     from kubernetes import client, config
     from kubernetes.client.rest import ApiException
+
     KUBERNETES_AVAILABLE = True
 except ImportError:
     KUBERNETES_AVAILABLE = False
@@ -24,10 +25,11 @@ except ImportError:
 @dataclass
 class HealthStatus:
     """Structured health status for infrastructure components."""
+
     component: str
     status: str  # "healthy", "warning", "critical", "unknown"
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
     @property
@@ -39,12 +41,13 @@ class HealthStatus:
 @dataclass
 class ClusterHealth:
     """Overall cluster health summary."""
+
     cluster_status: str
     total_checks: int
     healthy_checks: int
     warning_checks: int
     critical_checks: int
-    component_statuses: List[HealthStatus] = field(default_factory=list)
+    component_statuses: list[HealthStatus] = field(default_factory=list)
 
     @property
     def health_percentage(self) -> float:
@@ -57,20 +60,26 @@ class ClusterHealth:
 class InfrastructureHealthMonitor:
     """Main health monitoring class for homelab infrastructure."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO"):
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the health monitor."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
         self.k8s_client = None
         self.critical_namespaces = [
-            "kube-system", "metallb-system", "cert-manager",
-            "ingress-nginx", "longhorn-system", "monitoring"
+            "kube-system",
+            "metallb-system",
+            "cert-manager",
+            "ingress-nginx",
+            "longhorn-system",
+            "monitoring",
         ]
 
         if KUBERNETES_AVAILABLE:
             self._init_kubernetes_client()
         else:
-            self.logger.warning("Kubernetes client not available. Install with: pip install kubernetes")
+            self.logger.warning(
+                "Kubernetes client not available. Install with: pip install kubernetes",
+            )
 
     def _setup_logging(self, level: str) -> logging.Logger:
         """Configure structured logging."""
@@ -79,9 +88,7 @@ class InfrastructureHealthMonitor:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
@@ -95,14 +102,14 @@ class InfrastructureHealthMonitor:
             else:
                 try:
                     config.load_incluster_config()
-                except:
+                except Exception:
                     config.load_kube_config()
 
             self.k8s_client = client.ApiClient()
             self.logger.info("Kubernetes client initialized successfully")
 
         except Exception as e:
-            self.logger.error(f"Failed to initialize Kubernetes client: {e}")
+            self.logger.exception(f"Failed to initialize Kubernetes client: {e}")
             self.k8s_client = None
 
     def check_cluster_connectivity(self) -> HealthStatus:
@@ -111,7 +118,7 @@ class InfrastructureHealthMonitor:
             return HealthStatus(
                 component="cluster_connectivity",
                 status="critical",
-                message="Kubernetes client not available"
+                message="Kubernetes client not available",
             )
 
         try:
@@ -122,7 +129,7 @@ class InfrastructureHealthMonitor:
                 component="cluster_connectivity",
                 status="healthy",
                 message="Cluster API accessible",
-                details={"api_resources_count": len(version.resources)}
+                details={"api_resources_count": len(version.resources)},
             )
 
         except ApiException as e:
@@ -130,13 +137,13 @@ class InfrastructureHealthMonitor:
                 component="cluster_connectivity",
                 status="critical",
                 message=f"API connection failed: {e.reason}",
-                details={"status_code": e.status}
+                details={"status_code": e.status},
             )
         except Exception as e:
             return HealthStatus(
                 component="cluster_connectivity",
                 status="critical",
-                message=f"Unexpected error: {str(e)}"
+                message=f"Unexpected error: {e!s}",
             )
 
     def check_node_status(self) -> HealthStatus:
@@ -145,7 +152,7 @@ class InfrastructureHealthMonitor:
             return HealthStatus(
                 component="node_status",
                 status="unknown",
-                message="Kubernetes client unavailable"
+                message="Kubernetes client unavailable",
             )
 
         try:
@@ -178,7 +185,7 @@ class InfrastructureHealthMonitor:
                     "cpu_capacity": capacity.get("cpu", "unknown"),
                     "memory_capacity": capacity.get("memory", "unknown"),
                     "cpu_allocatable": allocatable.get("cpu", "unknown"),
-                    "memory_allocatable": allocatable.get("memory", "unknown")
+                    "memory_allocatable": allocatable.get("memory", "unknown"),
                 }
 
             total_nodes = len(nodes.items)
@@ -199,15 +206,15 @@ class InfrastructureHealthMonitor:
                     "total_nodes": total_nodes,
                     "healthy_nodes": healthy_nodes,
                     "unhealthy_nodes": unhealthy_nodes,
-                    "node_details": node_details
-                }
+                    "node_details": node_details,
+                },
             )
 
         except Exception as e:
             return HealthStatus(
                 component="node_status",
                 status="critical",
-                message=f"Failed to check nodes: {str(e)}"
+                message=f"Failed to check nodes: {e!s}",
             )
 
     def check_core_components(self) -> HealthStatus:
@@ -216,7 +223,7 @@ class InfrastructureHealthMonitor:
             return HealthStatus(
                 component="core_components",
                 status="unknown",
-                message="Kubernetes client unavailable"
+                message="Kubernetes client unavailable",
             )
 
         try:
@@ -246,7 +253,9 @@ class InfrastructureHealthMonitor:
                         "type": component_type,
                         "ready": is_ready,
                         "phase": pod.status.phase,
-                        "restarts": sum(cs.restart_count for cs in (pod.status.container_statuses or []))
+                        "restarts": sum(
+                            cs.restart_count for cs in (pod.status.container_statuses or [])
+                        ),
                     }
 
                     if not is_ready:
@@ -257,23 +266,20 @@ class InfrastructureHealthMonitor:
                 message = f"{len(unhealthy_components)} core components unhealthy"
             else:
                 status = "healthy"
-                message = f"All core components healthy"
+                message = "All core components healthy"
 
             return HealthStatus(
                 component="core_components",
                 status=status,
                 message=message,
-                details={
-                    "components": component_status,
-                    "unhealthy": unhealthy_components
-                }
+                details={"components": component_status, "unhealthy": unhealthy_components},
             )
 
         except Exception as e:
             return HealthStatus(
                 component="core_components",
                 status="critical",
-                message=f"Failed to check core components: {str(e)}"
+                message=f"Failed to check core components: {e!s}",
             )
 
     def check_namespace_status(self) -> HealthStatus:
@@ -282,7 +288,7 @@ class InfrastructureHealthMonitor:
             return HealthStatus(
                 component="namespace_status",
                 status="unknown",
-                message="Kubernetes client unavailable"
+                message="Kubernetes client unavailable",
             )
 
         try:
@@ -306,7 +312,7 @@ class InfrastructureHealthMonitor:
                             "exists": True,
                             "total_pods": total_pods,
                             "running_pods": running_pods,
-                            "pod_health": running_pods / total_pods if total_pods > 0 else 1.0
+                            "pod_health": running_pods / total_pods if total_pods > 0 else 1.0,
                         }
                     except Exception:
                         namespace_details[ns_name] = {"exists": True, "error": "Failed to get pods"}
@@ -327,15 +333,15 @@ class InfrastructureHealthMonitor:
                 message=message,
                 details={
                     "namespace_details": namespace_details,
-                    "missing_namespaces": missing_namespaces
-                }
+                    "missing_namespaces": missing_namespaces,
+                },
             )
 
         except Exception as e:
             return HealthStatus(
                 component="namespace_status",
                 status="critical",
-                message=f"Failed to check namespaces: {str(e)}"
+                message=f"Failed to check namespaces: {e!s}",
             )
 
     def check_network_connectivity(self) -> HealthStatus:
@@ -344,7 +350,10 @@ class InfrastructureHealthMonitor:
             # Simple DNS resolution test
             dns_result = subprocess.run(
                 ["nslookup", "kubernetes.default.svc.cluster.local"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
             )
 
             dns_healthy = dns_result.returncode == 0
@@ -352,7 +361,10 @@ class InfrastructureHealthMonitor:
             # Simple ping test to cluster service
             ping_result = subprocess.run(
                 ["ping", "-c", "1", "-W", "5", "kubernetes.default"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
             )
 
             ping_healthy = ping_result.returncode == 0
@@ -371,17 +383,14 @@ class InfrastructureHealthMonitor:
                 component="network_connectivity",
                 status=status,
                 message=message,
-                details={
-                    "dns_resolution": dns_healthy,
-                    "ping_test": ping_healthy
-                }
+                details={"dns_resolution": dns_healthy, "ping_test": ping_healthy},
             )
 
         except Exception as e:
             return HealthStatus(
                 component="network_connectivity",
                 status="warning",
-                message=f"Network check failed: {str(e)}"
+                message=f"Network check failed: {e!s}",
             )
 
     def get_cluster_health(self) -> ClusterHealth:
@@ -393,7 +402,7 @@ class InfrastructureHealthMonitor:
             self.check_node_status,
             self.check_core_components,
             self.check_namespace_status,
-            self.check_network_connectivity
+            self.check_network_connectivity,
         ]
 
         results = []
@@ -403,12 +412,14 @@ class InfrastructureHealthMonitor:
                 results.append(result)
                 self.logger.info(f"{result.component}: {result.status} - {result.message}")
             except Exception as e:
-                self.logger.error(f"Health check failed: {e}")
-                results.append(HealthStatus(
-                    component="unknown",
-                    status="critical",
-                    message=f"Check failed: {str(e)}"
-                ))
+                self.logger.exception(f"Health check failed: {e}")
+                results.append(
+                    HealthStatus(
+                        component="unknown",
+                        status="critical",
+                        message=f"Check failed: {e!s}",
+                    ),
+                )
 
         # Calculate overall health
         total_checks = len(results)
@@ -429,26 +440,30 @@ class InfrastructureHealthMonitor:
             healthy_checks=healthy_checks,
             warning_checks=warning_checks,
             critical_checks=critical_checks,
-            component_statuses=results
+            component_statuses=results,
         )
 
 
-def main():
+def main() -> int:
     """Main function for standalone testing."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Monitor homelab infrastructure health")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
-    parser.add_argument("--component", choices=["connectivity", "nodes", "components", "namespaces", "network"],
-                       help="Check specific component only")
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+    )
+    parser.add_argument(
+        "--component",
+        choices=["connectivity", "nodes", "components", "namespaces", "network"],
+        help="Check specific component only",
+    )
 
     args = parser.parse_args()
 
-    monitor = InfrastructureHealthMonitor(
-        kubeconfig_path=args.kubeconfig,
-        log_level=args.log_level
-    )
+    monitor = InfrastructureHealthMonitor(kubeconfig_path=args.kubeconfig, log_level=args.log_level)
 
     if args.component:
         # Run specific check
@@ -457,7 +472,7 @@ def main():
             "nodes": monitor.check_node_status,
             "components": monitor.check_core_components,
             "namespaces": monitor.check_namespace_status,
-            "network": monitor.check_network_connectivity
+            "network": monitor.check_network_connectivity,
         }
 
         result = check_map[args.component]()
@@ -473,12 +488,12 @@ def main():
     # Run comprehensive health check
     health = monitor.get_cluster_health()
 
-    print(f"\n🏥 Cluster Health Report:")
+    print("\n🏥 Cluster Health Report:")
     print(f"Overall Status: {health.cluster_status.upper()}")
     print(f"Health Score: {health.health_percentage:.1f}%")
     print(f"Checks: {health.healthy_checks}✅ {health.warning_checks}⚠️ {health.critical_checks}❌")
 
-    print(f"\n📊 Component Details:")
+    print("\n📊 Component Details:")
     for status in health.component_statuses:
         icon = "✅" if status.status == "healthy" else "⚠️" if status.status == "warning" else "❌"
         print(f"  {icon} {status.component}: {status.message}")

@@ -1,0 +1,37 @@
+---
+# This is our Ansible-lint configuration
+exclude_paths:
+  - .cache/
+  - .github/
+  - .git/
+  - .tox/
+  - .env/
+  - .venv/
+  - venv/
+  - ENV/
+  - env/
+  - node_modules/
+  - tests/
+
+warn_list:
+  - no-changed-when  # Commands should not change things if nothing needs changing
+  - no-handler  # Tasks that run when changed should be handlers
+  - experimental  # Experimental features
+  - fqcn-builtins  # Use FQCN for builtin actions
+
+skip_list:
+  - yaml[truthy]  # Allow yes/no/true/false in YAML
+  - no-tabs  # Allow tabs for indentation
+  - line-length  # Don't enforce line length
+  - var-naming[no-role-prefix]  # Don't enforce role prefixing
+  - fqcn[action]  # Don't enforce FQCN for action plugins
+
+use_default_rules: true
+parseable: true
+
+# Ansible-lint rules configuration
+mock_modules:
+  - kubernetes.core.k8s
+  - community.kubernetes.k8s
+  - community.kubernetes.helm
+  - community.general.helm

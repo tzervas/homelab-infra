@@ -49,6 +49,7 @@ Run the sync script to set up the private configuration:
 ```
 
 This will:
+
 - Clone your private repository to `.private-config/`
 - Create the directory structure
 - Copy example configurations
@@ -280,12 +281,14 @@ keycloak:
 ### Common Issues
 
 1. **Private repository not found**
+
    ```bash
    # Check repository URL and access
    git ls-remote $PRIVATE_CONFIG_REPO
    ```
 
 2. **SSH key issues**
+
    ```bash
    # Test SSH connection
    ssh -T git@github.com
@@ -295,6 +298,7 @@ keycloak:
    ```
 
 3. **Configuration validation errors**
+
    ```bash
    # Validate YAML syntax
    yamllint config/values/

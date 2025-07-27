@@ -2,6 +2,24 @@ global:
   domain: "staging.homelab.local"
   environment: "staging"
 
+  # Security contexts for staging environment (restricted profile)
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+
+  # Pod security standards - restricted for staging
+  podSecurityStandards:
+    enforce: "restricted"
+    audit: "restricted"
+    warn: "restricted"
+
 # Moderate resource allocation for staging
 resources:
   limits:
@@ -24,6 +42,16 @@ metallb:
 kube-prometheus-stack:
   prometheus:
     prometheusSpec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
       retention: "15d"
       storageSpec:
         volumeClaimTemplate:
@@ -34,10 +62,30 @@ kube-prometheus-stack:
 
 loki:
   singleBinary:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     persistence:
       size: 10Gi
 
 grafana:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
   persistence:
     size: 5Gi
   # Admin password from environment variable
@@ -52,6 +100,20 @@ longhorn:
 # Enable monitoring in staging
 ingress-nginx:
   controller:
+    containerSecurityContext:
+      runAsNonRoot: false  # Nginx needs root for port binding
+      runAsUser: 101
+      runAsGroup: 101
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_BIND_SERVICE
+          - CHOWN
+          - SETGID
+          - SETUID
+      seccompProfile:
+        type: RuntimeDefault
     metrics:
       enabled: true
       serviceMonitor:

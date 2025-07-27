@@ -13,12 +13,14 @@ Get your GitLab + Keycloak homelab infrastructure running in 30 minutes!
 ## ⚡ Prerequisites (5 minutes)
 
 ### Required
+
 - **Linux server** with 16GB RAM, 4+ CPU cores, 200GB+ storage
 - **SSH access** to your server with sudo privileges
 - **Internet connection** for downloading dependencies
 - **Local machine** with git, SSH, and Ansible installed
 
 ### Network Requirements
+
 - **Static IP** for your homelab server
 - **Port access**: 22 (SSH), 80 (HTTP), 443 (HTTPS)
 - **IP range** for MetalLB load balancer (e.g., 192.168.1.200-220)
@@ -81,6 +83,7 @@ ssh your-username@192.168.1.100 'echo "SSH works!"'
 ```
 
 This will:
+
 - Create a test VM on your server
 - Deploy the full stack
 - Verify all components are working
@@ -113,7 +116,7 @@ Once VM testing succeeds:
 
 Add these entries to your `/etc/hosts` file or router DNS:
 
-```
+```text
 192.168.1.201  gitlab.homelab.local
 192.168.1.202  keycloak.homelab.local
 192.168.1.204  prometheus.homelab.local
@@ -121,12 +124,14 @@ Add these entries to your `/etc/hosts` file or router DNS:
 ```
 
 ### Service URLs
-- **GitLab**: https://gitlab.homelab.local
-- **Keycloak**: https://keycloak.homelab.local
-- **Grafana**: https://grafana.homelab.local
-- **Prometheus**: https://prometheus.homelab.local
+
+- **GitLab**: <https://gitlab.homelab.local>
+- **Keycloak**: <https://keycloak.homelab.local>
+- **Grafana**: <https://grafana.homelab.local>
+- **Prometheus**: <https://prometheus.homelab.local>
 
 ### Default Credentials
+
 - **GitLab**: root / (check `kubectl get secret` for password)
 - **Keycloak**: admin / (configured in your secrets)
 - **Grafana**: admin / (configured in your secrets)
@@ -134,18 +139,21 @@ Add these entries to your `/etc/hosts` file or router DNS:
 ## 🔧 First-Time Setup Tasks
 
 ### 1. Configure Keycloak SSO
+
 1. Access Keycloak admin console
 2. Create realm for your organization
 3. Configure GitLab OIDC integration
 4. Set up user groups and permissions
 
 ### 2. Setup GitLab
+
 1. Change root password
 2. Configure SMTP settings
 3. Enable container registry
 4. Create your first project
 
 ### 3. Configure Monitoring
+
 1. Access Grafana dashboards
 2. Set up AlertManager notifications
 3. Configure backup monitoring
@@ -162,6 +170,7 @@ Add these entries to your `/etc/hosts` file or router DNS:
 ## 🚨 Troubleshooting
 
 ### Services Not Accessible
+
 ```bash
 # Check pod status
 kubectl get pods -A
@@ -174,6 +183,7 @@ kubectl get svc -A
 ```
 
 ### TLS Certificate Issues
+
 ```bash
 # Check cert-manager
 kubectl get certificates -A
@@ -184,6 +194,7 @@ kubectl get clusterissuer
 ```
 
 ### Resource Issues
+
 ```bash
 # Check node resources
 kubectl top nodes
@@ -196,16 +207,19 @@ kubectl top pods -A
 ## 📚 Next Steps
 
 ### Learn More
+
 - **[Architecture Overview](architecture.md)** - Understand the system design
 - **[Configuration Guide](../configuration/README.md)** - Customize your deployment
-- **[Security Best Practices](../security/best-practices.md)** - Harden your installation
+- **[Security Best Practices](../security/best-practices.md)** - Secure deployment guide
 
 ### Advanced Features
+
 - **[Backup & Recovery](../operations/backup-recovery.md)** - Protect your data
 - **[Monitoring Setup](../operations/monitoring.md)** - Advanced monitoring
 - **[Scaling Guide](../operations/scaling.md)** - Grow your homelab
 
 ### Operations
+
 - **[Maintenance Guide](../operations/maintenance.md)** - Keep it running smoothly
 - **[Troubleshooting](../troubleshooting/common-issues.md)** - Fix common problems
 
@@ -217,4 +231,5 @@ kubectl top pods -A
 
 ---
 
-**🎊 Congratulations!** You now have a production-ready homelab infrastructure with GitLab, Keycloak, and comprehensive monitoring. Time to start building amazing projects!
+**🎊 Congratulations!** Your production-ready homelab infrastructure is now complete!
+Time to start building amazing projects with GitLab, Keycloak, and monitoring.

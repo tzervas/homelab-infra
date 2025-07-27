@@ -5,6 +5,7 @@ This document describes the environment variables used in the homelab infrastruc
 ## Required Variables
 
 ### Authentication
+
 - `GRAFANA_ADMIN_PASSWORD`: Admin password for Grafana dashboard
   - Required in all environments
   - Must be at least 8 characters
@@ -13,6 +14,7 @@ This document describes the environment variables used in the homelab infrastruc
 ## Optional Variables
 
 ### Storage Configuration
+
 - `PROMETHEUS_STORAGE_SIZE`: Storage size for Prometheus (default varies by environment)
   - Development: 10Gi
   - Staging: 20Gi
@@ -27,12 +29,14 @@ This document describes the environment variables used in the homelab infrastruc
   - Production: 10Gi
 
 ### Monitoring Configuration
+
 - `PROMETHEUS_RETENTION_DAYS`: Days to retain Prometheus metrics
   - Development: 7d
   - Staging: 14d
   - Production: 30d
 
 ### Longhorn Settings
+
 - `LONGHORN_REPLICA_COUNT`: Number of replicas for Longhorn volumes
   - Development: 1
   - Staging: 2
@@ -41,6 +45,7 @@ This document describes the environment variables used in the homelab infrastruc
 - `LONGHORN_BACKUP_SECRET`: Secret for backup target authentication (optional)
 
 ### General Settings
+
 - `ENVIRONMENT`: Current deployment environment
   - Valid values: development, staging, production
   - Affects default values and feature flags
@@ -51,11 +56,13 @@ This document describes the environment variables used in the homelab infrastruc
 ## Usage
 
 1. Copy `.env.example` to `.env`:
+
    ```bash
    cp .env.example .env
    ```
 
 2. Update the values in `.env`:
+
    ```bash
    # Required
    GRAFANA_ADMIN_PASSWORD=your-secure-password
@@ -66,6 +73,7 @@ This document describes the environment variables used in the homelab infrastruc
    ```
 
 3. Deploy with environment variables:
+
    ```bash
    # Development
    ./scripts/deploy.sh -e development

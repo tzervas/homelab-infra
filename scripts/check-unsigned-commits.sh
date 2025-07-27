@@ -23,30 +23,30 @@ echo
 BRANCHES_WITH_UNSIGNED=()
 
 for branch in "${BRANCHES[@]}"; do
-    echo -n "Checking $branch... "
+  echo -n "Checking $branch... "
 
-    # Checkout the branch quietly
-    git checkout "$branch" &>/dev/null || {
-        echo -e "${RED}Failed to checkout${NC}"
-        continue
-    }
+  # Checkout the branch quietly
+  git checkout "$branch" &>/dev/null || {
+    echo -e "${RED}Failed to checkout${NC}"
+    continue
+  }
 
-    # Check for unsigned commits in this branch
-    UNSIGNED_COUNT=$(git log --pretty=format:"%H %G?" HEAD | grep -cE " [NU]$" 2>/dev/null || echo 0)
+  # Check for unsigned commits in this branch
+  UNSIGNED_COUNT=$(git log --pretty=format:"%H %G?" HEAD | grep -cE " [NU]$" 2>/dev/null || echo 0)
 
-    if [ "$UNSIGNED_COUNT" -gt 0 ]; then
-        echo -e "${RED}$UNSIGNED_COUNT unsigned commits${NC}"
-        BRANCHES_WITH_UNSIGNED+=("$branch")
+  if [ "$UNSIGNED_COUNT" -gt 0 ]; then
+    echo -e "${RED}$UNSIGNED_COUNT unsigned commits${NC}"
+    BRANCHES_WITH_UNSIGNED+=("$branch")
 
-        # Show the unsigned commits
-        echo -e "${YELLOW}  Unsigned commits:${NC}"
-        git log --pretty=format:"    %h %G? %s" HEAD | grep -E " [NU] " | head -5
-        if [ "$UNSIGNED_COUNT" -gt 5 ]; then
-            echo "    ... and $((UNSIGNED_COUNT - 5)) more"
-        fi
-    else
-        echo -e "${GREEN}All signed${NC}"
+    # Show the unsigned commits
+    echo -e "${YELLOW}  Unsigned commits:${NC}"
+    git log --pretty=format:"    %h %G? %s" HEAD | grep -E " [NU] " | head -5
+    if [ "$UNSIGNED_COUNT" -gt 5 ]; then
+      echo "    ... and $((UNSIGNED_COUNT - 5)) more"
     fi
+  else
+    echo -e "${GREEN}All signed${NC}"
+  fi
 done
 
 # Return to original branch
@@ -55,12 +55,12 @@ git checkout "$ORIGINAL_BRANCH" &>/dev/null
 echo
 echo -e "${BLUE}=== SUMMARY ===${NC}"
 if [ ${#BRANCHES_WITH_UNSIGNED[@]} -eq 0 ]; then
-    echo -e "${GREEN}✓ All branches have properly signed commits${NC}"
+  echo -e "${GREEN}✓ All branches have properly signed commits${NC}"
 else
-    echo -e "${YELLOW}Branches with unsigned commits (${#BRANCHES_WITH_UNSIGNED[@]}/${#BRANCHES[@]}):${NC}"
-    for branch in "${BRANCHES_WITH_UNSIGNED[@]}"; do
-        echo -e "${RED}  ✗ $branch${NC}"
-    done
-    echo
-    echo -e "${BLUE}Run ./scripts/fix-all-unsigned-commits.sh to fix these issues${NC}"
+  echo -e "${YELLOW}Branches with unsigned commits (${#BRANCHES_WITH_UNSIGNED[@]}/${#BRANCHES[@]}):${NC}"
+  for branch in "${BRANCHES_WITH_UNSIGNED[@]}"; do
+    echo -e "${RED}  ✗ $branch${NC}"
+  done
+  echo
+  echo -e "${BLUE}Run ./scripts/fix-all-unsigned-commits.sh to fix these issues${NC}"
 fi

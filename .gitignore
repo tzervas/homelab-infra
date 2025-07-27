@@ -118,10 +118,19 @@ fix-commit-history.sh
 node_modules/
 
 # Python
-# Python bytecode caching
+# Python bytecode caching and compilation
+# Match any __pycache__ directory anywhere
 **/__pycache__/
+*/**/__pycache__/
+**/*/__pycache__/
+# Match any Python bytecode files anywhere
 **/*.py[cod]
+*/**/*.py[cod]
+**/*/*.py[cod]
+# Other Python compilation files
 **/*$py.class
+*/**/*$py.class
+**/*/*.so
 **/*.so
 .Python
 build/

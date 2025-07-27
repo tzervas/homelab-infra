@@ -225,13 +225,23 @@ run_ansible_playbook() {
 
     log "INFO" "Executing: ${ansible_cmd[*]}"
 
-    # Execute Ansible playbook
+    # Log full command for debugging
+    if [[ "${DEBUG:-false}" == "true" ]]; then
+        log "DEBUG" "Full command: ${ansible_cmd[*]}"
+        log "DEBUG" "Number of arguments: ${#ansible_cmd[@]}"
+        for i in "${!ansible_cmd[@]}"; do
+            log "DEBUG" "  Arg $i: ${ansible_cmd[$i]}"
+        done
+    fi
+
+    # Execute Ansible playbook with proper array expansion
     if "${ansible_cmd[@]}"; then
         log "INFO" "Playbook execution completed successfully"
         return 0
     else
-        log "ERROR" "Playbook execution failed"
-        return 1
+        local exit_code=$?
+        log "ERROR" "Playbook execution failed with exit code: $exit_code"
+        return $exit_code
     fi
 }
 

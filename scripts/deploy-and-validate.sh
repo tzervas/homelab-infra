@@ -24,27 +24,27 @@ NC='\033[0m'
 
 # Logging functions
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+  echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+  echo -e "${RED}[ERROR]${NC} $1"
 }
 
 log_header() {
-    echo -e "${PURPLE}$1${NC}"
+  echo -e "${PURPLE}$1${NC}"
 }
 
 show_usage() {
-    cat << EOF
+  cat <<EOF
 Enhanced Homelab Deployment with Comprehensive Validation
 
 USAGE:
@@ -83,187 +83,187 @@ EOF
 }
 
 validate_prerequisites() {
-    log_header "🔍 Validating Prerequisites"
+  log_header "🔍 Validating Prerequisites"
 
-    local missing_tools=()
+  local missing_tools=()
 
-    # Check required tools
-    for tool in ansible ansible-playbook kubectl curl; do
-        if ! command -v "$tool" &>/dev/null; then
-            missing_tools+=("$tool")
-        fi
-    done
-
-    if [[ ${#missing_tools[@]} -ne 0 ]]; then
-        log_error "Missing required tools: ${missing_tools[*]}"
-        echo "Please install missing tools and try again."
-        exit 1
+  # Check required tools
+  for tool in ansible ansible-playbook kubectl curl; do
+    if ! command -v "$tool" &>/dev/null; then
+      missing_tools+=("$tool")
     fi
+  done
 
-    log_success "All required tools available"
+  if [[ ${#missing_tools[@]} -ne 0 ]]; then
+    log_error "Missing required tools: ${missing_tools[*]}"
+    echo "Please install missing tools and try again."
+    exit 1
+  fi
 
-    # Validate configuration files (flexible approach)
-    local env_required="${ENV_REQUIRED:-true}"
+  log_success "All required tools available"
 
-    if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-        if [[ "$env_required" == "true" && "$DEPLOYMENT_PHASE" != "validation-only" && "$VALIDATION_ONLY" != "true" ]]; then
-            log_error "Configuration file .env not found and required for deployment"
-            log_info "Either create .env file or set ENV_REQUIRED=false to skip this check"
-            log_info "For validation-only mode, .env file is not strictly required"
-            exit 1
-        else
-            log_warning "Configuration file .env not found, proceeding without it"
-            log_info "Set ENV_REQUIRED=true if .env is mandatory for your deployment"
-        fi
+  # Validate configuration files (flexible approach)
+  local env_required="${ENV_REQUIRED:-true}"
+
+  if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
+    if [[ $env_required == "true" && $DEPLOYMENT_PHASE != "validation-only" && $VALIDATION_ONLY != "true" ]]; then
+      log_error "Configuration file .env not found and required for deployment"
+      log_info "Either create .env file or set ENV_REQUIRED=false to skip this check"
+      log_info "For validation-only mode, .env file is not strictly required"
+      exit 1
     else
-        log_success "Configuration file .env found"
-        # Load environment variables from .env
-        set -a
-        source "$PROJECT_ROOT/.env"
-        set +a
+      log_warning "Configuration file .env not found, proceeding without it"
+      log_info "Set ENV_REQUIRED=true if .env is mandatory for your deployment"
     fi
+  else
+    log_success "Configuration file .env found"
+    # Load environment variables from .env
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+  fi
 
-    # Check for private configuration
-    if [[ -f "$PROJECT_ROOT/.env.private.local" ]]; then
-        log_success "Private configuration found"
-        # Load private environment variables
-        set -a
-        source "$PROJECT_ROOT/.env.private.local"
-        set +a
-    else
-        log_warning "No private configuration (.env.private.local) found"
-        log_info "Using default/environment variable configuration values"
-    fi
+  # Check for private configuration
+  if [[ -f "$PROJECT_ROOT/.env.private.local" ]]; then
+    log_success "Private configuration found"
+    # Load private environment variables
+    set -a
+    source "$PROJECT_ROOT/.env.private.local"
+    set +a
+  else
+    log_warning "No private configuration (.env.private.local) found"
+    log_info "Using default/environment variable configuration values"
+  fi
 
-    log_success "Configuration validation completed"
+  log_success "Configuration validation completed"
 }
 
 perform_deployment() {
-    local phase="$1"
+  local phase="$1"
 
-    log_header "🚀 Starting Deployment Phase: $phase"
+  log_header "🚀 Starting Deployment Phase: $phase"
 
-    case "$phase" in
-        "vm-test"|"full-vm-test")
-            log_info "Creating test VM and deploying infrastructure..."
-            "$SCRIPT_DIR/deploy-homelab.sh" "$phase"
-            ;;
-        "bare-metal")
-            log_info "Deploying to bare metal infrastructure..."
-            "$SCRIPT_DIR/deploy-homelab.sh" "$phase"
-            ;;
-        *)
-            log_error "Unknown deployment phase: $phase"
-            show_usage
-            exit 1
-            ;;
-    esac
+  case "$phase" in
+    "vm-test" | "full-vm-test")
+      log_info "Creating test VM and deploying infrastructure..."
+      "$SCRIPT_DIR/deploy-homelab.sh" "$phase"
+      ;;
+    "bare-metal")
+      log_info "Deploying to bare metal infrastructure..."
+      "$SCRIPT_DIR/deploy-homelab.sh" "$phase"
+      ;;
+    *)
+      log_error "Unknown deployment phase: $phase"
+      show_usage
+      exit 1
+      ;;
+  esac
 
-    local deploy_result=$?
-    if [[ $deploy_result -eq 0 ]]; then
-        log_success "Deployment completed successfully"
-    else
-        log_error "Deployment failed with exit code $deploy_result"
-        exit $deploy_result
-    fi
+  local deploy_result=$?
+  if [[ $deploy_result -eq 0 ]]; then
+    log_success "Deployment completed successfully"
+  else
+    log_error "Deployment failed with exit code $deploy_result"
+    exit $deploy_result
+  fi
 }
 
 wait_for_deployment_ready() {
-    log_header "⏳ Waiting for Deployment to Stabilize"
+  log_header "⏳ Waiting for Deployment to Stabilize"
 
-    local max_wait=300  # 5 minutes
-    local check_interval=10
-    local elapsed=0
+  local max_wait=300 # 5 minutes
+  local check_interval=10
+  local elapsed=0
 
-    log_info "Waiting for pods to be ready (timeout: ${max_wait}s)..."
+  log_info "Waiting for pods to be ready (timeout: ${max_wait}s)..."
 
-    while [[ $elapsed -lt $max_wait ]]; do
-        # Check if kubectl is accessible
-        if kubectl cluster-info &>/dev/null; then
-            # Check for any pods in crash/error state
-            local problem_pods=$(kubectl get pods -A --no-headers | grep -E "(Error|CrashLoopBackOff|ImagePullBackOff)" | wc -l)
+  while [[ $elapsed -lt $max_wait ]]; do
+    # Check if kubectl is accessible
+    if kubectl cluster-info &>/dev/null; then
+      # Check for any pods in crash/error state
+      local problem_pods=$(kubectl get pods -A --no-headers | grep -E "(Error|CrashLoopBackOff|ImagePullBackOff)" | wc -l)
 
-            if [[ $problem_pods -eq 0 ]]; then
-                # Check if most pods are running
-                local total_pods=$(kubectl get pods -A --no-headers | wc -l)
-                local running_pods=$(kubectl get pods -A --no-headers | grep "Running" | wc -l)
+      if [[ $problem_pods -eq 0 ]]; then
+        # Check if most pods are running
+        local total_pods=$(kubectl get pods -A --no-headers | wc -l)
+        local running_pods=$(kubectl get pods -A --no-headers | grep "Running" | wc -l)
 
-                if [[ $total_pods -gt 0 && $running_pods -gt $((total_pods * 70 / 100)) ]]; then
-                    log_success "Deployment appears stable (${running_pods}/${total_pods} pods running)"
-                    return 0
-                fi
-            fi
+        if [[ $total_pods -gt 0 && $running_pods -gt $((total_pods * 70 / 100)) ]]; then
+          log_success "Deployment appears stable (${running_pods}/${total_pods} pods running)"
+          return 0
         fi
+      fi
+    fi
 
-        sleep $check_interval
-        elapsed=$((elapsed + check_interval))
-        echo -n "."
-    done
+    sleep $check_interval
+    elapsed=$((elapsed + check_interval))
+    echo -n "."
+  done
 
-    echo
-    log_warning "Deployment did not stabilize within timeout, proceeding with validation"
-    return 0
+  echo
+  log_warning "Deployment did not stabilize within timeout, proceeding with validation"
+  return 0
 }
 
 run_comprehensive_validation() {
-    local deployment_type="$1"
+  local deployment_type="$1"
 
-    log_header "🔬 Running Comprehensive Validation"
+  log_header "🔬 Running Comprehensive Validation"
 
-    # Run the comprehensive validation script
-    if "$SCRIPT_DIR/validate-deployment-comprehensive.sh" "$deployment_type"; then
-        log_success "Comprehensive validation completed successfully"
-        return 0
-    else
-        log_error "Validation failed - see details above"
-        return 1
-    fi
+  # Run the comprehensive validation script
+  if "$SCRIPT_DIR/validate-deployment-comprehensive.sh" "$deployment_type"; then
+    log_success "Comprehensive validation completed successfully"
+    return 0
+  else
+    log_error "Validation failed - see details above"
+    return 1
+  fi
 }
 
 perform_smoke_tests() {
-    log_header "💨 Performing Smoke Tests"
+  log_header "💨 Performing Smoke Tests"
 
-    # Quick smoke tests for critical services
-    local smoke_test_results=0
+  # Quick smoke tests for critical services
+  local smoke_test_results=0
 
-    # Test 1: Kubernetes API accessibility
-    if kubectl version --client &>/dev/null && kubectl cluster-info &>/dev/null; then
-        log_success "Kubernetes API accessible"
+  # Test 1: Kubernetes API accessibility
+  if kubectl version --client &>/dev/null && kubectl cluster-info &>/dev/null; then
+    log_success "Kubernetes API accessible"
+  else
+    log_error "Kubernetes API not accessible"
+    smoke_test_results=1
+  fi
+
+  # Test 2: Core namespaces exist
+  local required_namespaces=("kube-system")
+  for ns in "${required_namespaces[@]}"; do
+    if kubectl get namespace "$ns" &>/dev/null; then
+      log_success "Namespace $ns exists"
     else
-        log_error "Kubernetes API not accessible"
-        smoke_test_results=1
+      log_error "Required namespace $ns missing"
+      smoke_test_results=1
     fi
+  done
 
-    # Test 2: Core namespaces exist
-    local required_namespaces=("kube-system")
-    for ns in "${required_namespaces[@]}"; do
-        if kubectl get namespace "$ns" &>/dev/null; then
-            log_success "Namespace $ns exists"
-        else
-            log_error "Required namespace $ns missing"
-            smoke_test_results=1
-        fi
-    done
+  # Test 3: DNS resolution working
+  if kubectl run smoke-test-dns --image=busybox:1.28 --restart=Never --rm -i --tty=false -- nslookup kubernetes.default &>/dev/null; then
+    log_success "DNS resolution working"
+  else
+    log_warning "DNS resolution test failed or timed out"
+  fi
 
-    # Test 3: DNS resolution working
-    if kubectl run smoke-test-dns --image=busybox:1.28 --restart=Never --rm -i --tty=false -- nslookup kubernetes.default &>/dev/null; then
-        log_success "DNS resolution working"
-    else
-        log_warning "DNS resolution test failed or timed out"
-    fi
-
-    return $smoke_test_results
+  return $smoke_test_results
 }
 
 generate_deployment_summary() {
-    local deployment_type="$1"
-    local validation_result="$2"
+  local deployment_type="$1"
+  local validation_result="$2"
 
-    log_header "📊 Deployment Summary"
+  log_header "📊 Deployment Summary"
 
-    local summary_file="$PROJECT_ROOT/deployment-summary-$(date +%Y%m%d-%H%M%S).md"
+  local summary_file="$PROJECT_ROOT/deployment-summary-$(date +%Y%m%d-%H%M%S).md"
 
-    cat > "$summary_file" << EOF
+  cat >"$summary_file" <<EOF
 # Homelab Infrastructure Deployment Summary
 
 **Date**: $(date)
@@ -294,16 +294,16 @@ $(kubectl get pods -A --field-selector=status.phase=Running 2>/dev/null | head -
 $(if kubectl get ingress -A --no-headers 2>/dev/null | head -10; then
     echo "#### Available Services"
     kubectl get ingress -A --no-headers 2>/dev/null | while read ns name class hosts addr ports age; do
-        echo "- **$name** ($ns): https://$hosts"
+      echo "- **$name** ($ns): https://$hosts"
     done
-else
+  else
     echo "No ingress resources found or kubectl not accessible"
-fi)
+  fi)
 
 ## Next Steps
 
 $(if [[ $validation_result -eq 0 ]]; then
-cat << NEXT_STEPS
+    cat <<NEXT_STEPS
 ### ✅ Deployment Successful
 
 Your homelab infrastructure is ready!
@@ -329,8 +329,8 @@ kubectl port-forward -n monitoring svc/grafana 3000:3000
 kubectl port-forward -n gitlab svc/gitlab-webservice 8080:8080
 \`\`\`
 NEXT_STEPS
-else
-cat << TROUBLESHOOT
+  else
+    cat <<TROUBLESHOOT
 ### ❌ Deployment Issues Detected
 
 Some components failed validation. Please review:
@@ -357,7 +357,7 @@ kubectl describe pod -n <namespace> <pod-name>
 kubectl get events -A --sort-by='.lastTimestamp'
 \`\`\`
 TROUBLESHOOT
-fi)
+  fi)
 
 ---
 
@@ -365,72 +365,72 @@ fi)
 **Report Location**: $summary_file
 EOF
 
-    log_success "Deployment summary generated: $summary_file"
+  log_success "Deployment summary generated: $summary_file"
 
-    # Show key information
-    echo
-    echo "=========================="
-    echo "  DEPLOYMENT COMPLETE"
-    echo "=========================="
-    echo
-    echo "Type: $deployment_type"
-    echo "Duration: $((SECONDS / 60))m $((SECONDS % 60))s"
-    echo "Status: $(if [[ $validation_result -eq 0 ]]; then echo "✅ SUCCESS"; else echo "❌ FAILED"; fi)"
-    echo "Summary: $summary_file"
-    echo
+  # Show key information
+  echo
+  echo "=========================="
+  echo "  DEPLOYMENT COMPLETE"
+  echo "=========================="
+  echo
+  echo "Type: $deployment_type"
+  echo "Duration: $((SECONDS / 60))m $((SECONDS % 60))s"
+  echo "Status: $(if [[ $validation_result -eq 0 ]]; then echo "✅ SUCCESS"; else echo "❌ FAILED"; fi)"
+  echo "Summary: $summary_file"
+  echo
 }
 
 # Main execution function
 main() {
-    local start_time=$SECONDS
+  local start_time=$SECONDS
 
-    # Handle help and validation-only modes
-    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-        show_usage
-        exit 0
-    fi
+  # Handle help and validation-only modes
+  if [[ $1 == "-h" || $1 == "--help" ]]; then
+    show_usage
+    exit 0
+  fi
 
-    if [[ "$1" == "validation-only" || "$VALIDATION_ONLY" == "true" ]]; then
-        SKIP_DEPLOYMENT=true
-        DEPLOYMENT_PHASE="validation-only"
-    fi
+  if [[ $1 == "validation-only" || $VALIDATION_ONLY == "true" ]]; then
+    SKIP_DEPLOYMENT=true
+    DEPLOYMENT_PHASE="validation-only"
+  fi
 
-    log_header "🏗️ Enhanced Homelab Deployment with Validation"
-    echo "Deployment Phase: $DEPLOYMENT_PHASE"
-    echo "Skip Deployment: $SKIP_DEPLOYMENT"
-    echo "Verbose Mode: $VERBOSE"
-    echo "Project Root: $PROJECT_ROOT"
-    echo
+  log_header "🏗️ Enhanced Homelab Deployment with Validation"
+  echo "Deployment Phase: $DEPLOYMENT_PHASE"
+  echo "Skip Deployment: $SKIP_DEPLOYMENT"
+  echo "Verbose Mode: $VERBOSE"
+  echo "Project Root: $PROJECT_ROOT"
+  echo
 
-    # Step 1: Validate prerequisites
-    validate_prerequisites
+  # Step 1: Validate prerequisites
+  validate_prerequisites
 
-    # Step 2: Perform deployment (unless skipped)
-    if [[ "$SKIP_DEPLOYMENT" != "true" ]]; then
-        perform_deployment "$DEPLOYMENT_PHASE"
+  # Step 2: Perform deployment (unless skipped)
+  if [[ $SKIP_DEPLOYMENT != "true" ]]; then
+    perform_deployment "$DEPLOYMENT_PHASE"
 
-        # Step 3: Wait for deployment to stabilize
-        wait_for_deployment_ready
-    else
-        log_info "Skipping deployment phase"
-    fi
+    # Step 3: Wait for deployment to stabilize
+    wait_for_deployment_ready
+  else
+    log_info "Skipping deployment phase"
+  fi
 
-    # Step 4: Perform smoke tests
-    if ! perform_smoke_tests; then
-        log_warning "Some smoke tests failed, but continuing with comprehensive validation"
-    fi
+  # Step 4: Perform smoke tests
+  if ! perform_smoke_tests; then
+    log_warning "Some smoke tests failed, but continuing with comprehensive validation"
+  fi
 
-    # Step 5: Run comprehensive validation
-    local validation_result=0
-    if ! run_comprehensive_validation "$DEPLOYMENT_PHASE"; then
-        validation_result=1
-    fi
+  # Step 5: Run comprehensive validation
+  local validation_result=0
+  if ! run_comprehensive_validation "$DEPLOYMENT_PHASE"; then
+    validation_result=1
+  fi
 
-    # Step 6: Generate summary
-    generate_deployment_summary "$DEPLOYMENT_PHASE" $validation_result
+  # Step 6: Generate summary
+  generate_deployment_summary "$DEPLOYMENT_PHASE" $validation_result
 
-    # Return appropriate exit code
-    exit $validation_result
+  # Return appropriate exit code
+  exit $validation_result
 }
 
 # Execute main function with all arguments

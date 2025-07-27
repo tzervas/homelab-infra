@@ -5,9 +5,11 @@ This homelab infrastructure follows a three-repository GitOps architecture for s
 ## Repository Structure
 
 ### 1. 🏗️ Main Infrastructure Repository (`homelab-infra`)
+
 **This Repository** - Public infrastructure code and deployment automation
 
 **Contents:**
+
 - Kubernetes manifests (base configurations)
 - Ansible playbooks and roles
 - Deployment scripts and automation
@@ -15,15 +17,18 @@ This homelab infrastructure follows a three-repository GitOps architecture for s
 - Helm chart templates (without sensitive values)
 
 **Purpose:**
+
 - Provides the core infrastructure automation
 - Contains reusable deployment patterns
 - Includes comprehensive documentation
 - Maintains deployment workflows
 
 ### 2. 🔐 Private Configuration Repository
+
 **Your Private Repository** - Sensitive configurations and customizations
 
 **Contents:**
+
 - Environment-specific values files
 - Secrets and credentials
 - Custom Helm values overrides
@@ -31,15 +36,18 @@ This homelab infrastructure follows a three-repository GitOps architecture for s
 - Personal customizations
 
 **Purpose:**
+
 - Stores sensitive information securely
 - Contains environment-specific customizations
 - Provides values for your specific deployment
 - Keeps private data separate from public code
 
 ### 3. 📚 Public Examples Repository (`homelab-infra-examples`)
+
 **Community Examples Repository** - Generic templates and examples
 
 **Contents:**
+
 - Example configuration files
 - Sample Helm values files
 - Common deployment scenarios
@@ -47,6 +55,7 @@ This homelab infrastructure follows a three-repository GitOps architecture for s
 - Community contributions
 
 **Purpose:**
+
 - Provides starting templates for new users
 - Shows best practices and common patterns
 - Enables community sharing of configurations
@@ -70,12 +79,14 @@ graph TB
 ## Getting Started
 
 ### 1. Clone the Main Repository
+
 ```bash
 git clone https://github.com/your-org/homelab-infra.git
 cd homelab-infra
 ```
 
 ### 2. Create Your Private Configuration Repository
+
 ```bash
 # Create a new private repository
 gh repo create homelab-infra-private --private
@@ -89,6 +100,7 @@ cp -r ../homelab-infra/examples/* .
 ```
 
 ### 3. Configure Environment Variables
+
 ```bash
 # In homelab-infra/.env
 PRIVATE_CONFIG_REPO=https://github.com/your-username/homelab-infra-private.git
@@ -97,13 +109,16 @@ PRIVATE_CONFIG_DIR=config
 ```
 
 ### 4. Customize Your Configuration
+
 Edit files in your private repository:
+
 - `config/values/global.yaml` - Global overrides
 - `config/values/gitlab.yaml` - GitLab configuration
 - `config/values/keycloak.yaml` - Keycloak configuration
 - `config/secrets/` - Encrypted secrets
 
 ### 5. Deploy
+
 ```bash
 # The deployment scripts will automatically:
 # 1. Use infrastructure code from homelab-infra
@@ -116,6 +131,7 @@ Edit files in your private repository:
 ## Directory Structure
 
 ### Main Repository (`homelab-infra`)
+
 ```
 homelab-infra/
 ├── ansible/                 # Deployment automation
@@ -128,6 +144,7 @@ homelab-infra/
 ```
 
 ### Private Repository (`homelab-infra-private`)
+
 ```
 homelab-infra-private/
 ├── config/
@@ -149,6 +166,7 @@ homelab-infra-private/
 ```
 
 ### Examples Repository (`homelab-infra-examples`)
+
 ```
 homelab-infra-examples/
 ├── basic-setup/             # Minimal configuration
@@ -181,6 +199,7 @@ The deployment process automatically:
 ## Best Practices
 
 ### Public Repository (homelab-infra)
+
 - ✅ Include generic configurations
 - ✅ Provide comprehensive documentation
 - ✅ Use environment variable placeholders
@@ -188,6 +207,7 @@ The deployment process automatically:
 - ❌ Avoid environment-specific hardcoded values
 
 ### Private Repository
+
 - ✅ Use encryption for secrets
 - ✅ Document your customizations
 - ✅ Version control your changes
@@ -195,6 +215,7 @@ The deployment process automatically:
 - ❌ Avoid committing plain-text passwords
 
 ### Examples Repository
+
 - ✅ Provide working templates
 - ✅ Include documentation for each example
 - ✅ Show different use cases

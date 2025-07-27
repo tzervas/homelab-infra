@@ -10,6 +10,18 @@ gitlab:
   global:
     edition: ee
 
+    # Security contexts for rootless deployment
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
     # Hosts Configuration
     hosts:
       domain: "${HOMELAB_DOMAIN:-homelab.local}"
@@ -35,18 +47,18 @@ gitlab:
         enabled: true
         autoSignInWithProvider: null
         syncProfileFromProvider: []
-        syncProfileAttributes: ['email']
-        allowSingleSignOn: ['openid_connect']
+        syncProfileAttributes: ["email"]
+        allowSingleSignOn: ["openid_connect"]
         blockAutoCreatedUsers: false
         autoLinkSamlUser: false
         autoLinkLdapUser: false
         providers:
-          - secret: gitlab-oidc-secret
+          - secret: gitlab-oidc-secret # pragma: allowlist secret
             key: provider
 
     # SMTP Configuration
     smtp:
-      enabled: false  # Set to true and configure in secrets
+      enabled: false # Set to true and configure in secrets
 
     # Time Zone
     timeZone: "${TIMEZONE:-America/New_York}"
@@ -54,7 +66,7 @@ gitlab:
   # Component Configuration
   postgresql:
     install: true
-    postgresqlPassword: ""  # Set in secrets
+    postgresqlPassword: "" # Set in secrets
 
   redis:
     install: true
@@ -62,16 +74,43 @@ gitlab:
   # GitLab Runner
   gitlab-runner:
     install: true
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     runners:
       config: |
         [[runners]]
           [runners.kubernetes]
             namespace = "gitlab"
             image = "ubuntu:22.04"
+            [runners.kubernetes.pod_security_context]
+              run_as_non_root = true
+              run_as_user = 1000
+              run_as_group = 1000
+              fs_group = 1000
+            [[runners.kubernetes.pod_security_context.seccomp_profile]]
+              type = "RuntimeDefault"
 
   # Registry Configuration
   registry:
     enabled: true
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     ingress:
       enabled: true
       tls:
@@ -79,10 +118,20 @@ gitlab:
 
   # Monitoring
   prometheus:
-    install: false  # We use external Prometheus
+    install: false # We use external Prometheus
 
   # Resource Configuration
   webservice:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     resources:
       requests:
         cpu: 500m
@@ -92,6 +141,16 @@ gitlab:
         memory: 2Gi
 
   sidekiq:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     resources:
       requests:
         cpu: 200m

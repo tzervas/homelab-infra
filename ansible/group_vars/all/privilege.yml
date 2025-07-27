@@ -1,0 +1,102 @@
+---
+# Privilege escalation configuration for homelab deployment
+# This file defines when and how privilege escalation should be used
+
+# Default deployment user (non-root)
+homelab_deployment_user: homelab-deploy
+homelab_deployment_group: homelab-deploy
+
+# Privilege escalation settings
+privilege_escalation:
+  # Use rootless deployment by default
+  default_become: false
+
+  # Commands that require privilege escalation
+  requires_root:
+    # Package management
+    - package_installation
+    - system_package_updates
+
+    # System service management
+    - systemd_service_management
+    - daemon_reload
+
+    # System directory creation/modification
+    - system_directory_setup
+    - kubernetes_system_setup
+
+    # User and group management
+    - user_creation
+    - group_management
+
+    # File permission changes in system directories
+    - system_file_permissions
+
+  # Tasks that can run as deployment user
+  rootless_tasks:
+    - application_deployment
+    - kubernetes_manifest_apply
+    - helm_operations
+    - configuration_file_updates
+    - user_home_operations
+    - docker_operations  # if user is in docker group
+    - testing_operations
+    - monitoring_setup
+
+# Security contexts for different deployment phases
+deployment_phases:
+  initial_setup:
+    # Initial system setup requires root for user creation
+    become: true
+    become_user: root
+
+  user_setup:
+    # Setting up deployment user requires root
+    become: true
+    become_user: root
+
+  application_deployment:
+    # Application deployment should use deployment user
+    become: false
+    remote_user: "{{ homelab_deployment_user }}"
+
+  service_management:
+    # Service operations may need conditional escalation
+    become: false
+    # Use task-level become: yes for specific service operations
+
+# Environment variables for rootless operations
+rootless_environment:
+  KUBECONFIG: "/home/{{ homelab_deployment_user }}/.kube/config"
+  HELM_CACHE_HOME: "/home/{{ homelab_deployment_user }}/.cache/helm"
+  HELM_CONFIG_HOME: "/home/{{ homelab_deployment_user }}/.config/helm"
+  HELM_DATA_HOME: "/home/{{ homelab_deployment_user }}/.local/share/helm"
+  DOCKER_HOST: "unix:///home/{{ homelab_deployment_user }}/.docker/desktop/docker.sock"
+
+# Sudo commands that are allowed without password for deployment user
+allowed_sudo_commands:
+  systemctl:
+    - "systemctl start k3s*"
+    - "systemctl stop k3s*"
+    - "systemctl restart k3s*"
+    - "systemctl enable k3s*"
+    - "systemctl disable k3s*"
+    - "systemctl status k3s*"
+    - "systemctl daemon-reload"
+
+  package_management:
+    - "apt update"
+    - "apt install curl wget git"
+    - "snap install kubectl helm"
+    - "snap refresh kubectl helm"
+
+  file_operations:
+    - "mkdir -p /etc/rancher/k3s"
+    - "mkdir -p /var/lib/rancher/k3s"
+    - "chown {{ homelab_deployment_user }}:{{ homelab_deployment_group }} /etc/rancher/k3s*"
+    - "chown {{ homelab_deployment_user }}:{{ homelab_deployment_group }} /var/lib/rancher/k3s*"
+
+  kubernetes:
+    - "/usr/local/bin/k3s*"
+    - "/opt/bin/k3s*"
+    - "/usr/bin/k3s*"

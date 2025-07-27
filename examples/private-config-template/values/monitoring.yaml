@@ -13,30 +13,30 @@ prometheus:
         slack_api_url: "${SLACK_WEBHOOK_URL}"
 
       route:
-        group_by: ['alertname']
+        group_by: ["alertname"]
         group_wait: 10s
         group_interval: 10s
         repeat_interval: 1h
-        receiver: 'web.hook'
+        receiver: "web.hook"
 
       receivers:
-      - name: 'web.hook'
-        email_configs:
-        - to: 'admin@homelab.local'
-          subject: 'Homelab Alert: {{ .GroupLabels.alertname }}'
-          body: |
-            {{ range .Alerts }}
-            Alert: {{ .Annotations.summary }}
-            Description: {{ .Annotations.description }}
-            {{ end }}
+        - name: "web.hook"
+          email_configs:
+            - to: "admin@homelab.local"
+              subject: "Homelab Alert: {{ .GroupLabels.alertname }}"
+              body: |
+                {{ range .Alerts }}
+                Alert: {{ .Annotations.summary }}
+                Description: {{ .Annotations.description }}
+                {{ end }}
 
-        slack_configs:
-        - channel: '#alerts'
-          title: 'Homelab Alert'
-          text: |
-            {{ range .Alerts }}
-            {{ .Annotations.summary }}
-            {{ end }}
+          slack_configs:
+            - channel: "#alerts"
+              title: "Homelab Alert"
+              text: |
+                {{ range .Alerts }}
+                {{ .Annotations.summary }}
+                {{ end }}
 
 grafana:
   # Admin credentials
@@ -78,7 +78,7 @@ loki:
 
     # Retention policies
     limits_config:
-      retention_period: 720h  # 30 days
+      retention_period: 720h # 30 days
 
 prometheus-node-exporter:
   # Node exporter configuration

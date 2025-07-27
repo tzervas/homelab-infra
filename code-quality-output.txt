@@ -1,0 +1,956 @@
+[0;34m[INFO][0m Starting code quality checks for homelab infrastructure
+[0;34m[INFO][0m Project root: /home/vector_weight/Documents/projects/homelab/homelab-infra
+[0;34m[INFO][0m Fix mode: false
+[0;34m[INFO][0m CI mode: false
+[0;34m[INFO][0m Fail-fast mode: false
+[0;34m[INFO][0m Targets: all
+[0;34m[INFO][0m Running Python code quality checks...
+[0;34m[INFO][0m Found 5340 Python files to check
+[0;34m[INFO][0m Running Ruff linter...
+scripts/testing/common.py:46:9: PLC0415 `import` should be at the top-level of a file
+   |
+44 |     """
+45 |     try:
+46 |         from kubernetes import client, config
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ PLC0415
+47 |
+48 |         return True, client, config
+   |
+
+scripts/testing/common.py:62:9: PLC0415 `import` should be at the top-level of a file
+   |
+60 |     """
+61 |     try:
+62 |         import requests
+   |         ^^^^^^^^^^^^^^^ PLC0415
+63 |
+64 |         return True, requests
+   |
+
+scripts/testing/common.py:78:9: PLC0415 `import` should be at the top-level of a file
+   |
+76 |     """
+77 |     try:
+78 |         import yaml
+   |         ^^^^^^^^^^^ PLC0415
+79 |
+80 |         return True, yaml
+   |
+
+scripts/testing/common.py:94:9: PLC0415 `import` should be at the top-level of a file
+   |
+92 |     """
+93 |     try:
+94 |         from jsonschema import Draft7Validator, ValidationError
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ PLC0415
+95 |
+96 |         return True, Draft7Validator, ValidationError
+   |
+
+scripts/testing/config_validator.py:329:5: PLC0415 `import` should be at the top-level of a file
+    |
+327 | def main() -> int:
+328 |     """Main function for standalone testing."""
+329 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+330 |
+331 |     parser = argparse.ArgumentParser(description="Validate homelab configuration files")
+    |
+
+scripts/testing/infrastructure_health.py:449:5: PLC0415 `import` should be at the top-level of a file
+    |
+447 | def main() -> int:
+448 |     """Main function for standalone testing."""
+449 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+450 |
+451 |     parser = argparse.ArgumentParser(description="Monitor homelab infrastructure health")
+    |
+
+scripts/testing/integration_tester.py:612:5: PLC0415 `import` should be at the top-level of a file
+    |
+610 | def main() -> int:
+611 |     """Main function for standalone testing."""
+612 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+613 |
+614 |     parser = argparse.ArgumentParser(description="Run comprehensive integration tests")
+    |
+
+scripts/testing/issue_tracker.py:516:5: ARG001 Unused function argument: `validation_type`
+    |
+514 |     component: str,
+515 |     failed_validations: list[str],
+516 |     validation_type: str = "validation",
+    |     ^^^^^^^^^^^^^^^ ARG001
+517 | ) -> None:
+518 |     """Create issues for validation failures."""
+    |
+
+scripts/testing/network_security.py:186:29: PLC0415 `import` should be at the top-level of a file
+    |
+184 |                     if secret.data and "tls.crt" in secret.data:
+185 |                         try:
+186 |                             import base64
+    |                             ^^^^^^^^^^^^^ PLC0415
+187 |
+188 |                             cert_data = base64.b64decode(secret.data["tls.crt"])
+    |
+
+scripts/testing/network_security.py:633:5: PLC0415 `import` should be at the top-level of a file
+    |
+631 | def main() -> int:
+632 |     """Main function for standalone testing."""
+633 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+634 |
+635 |     parser = argparse.ArgumentParser(description="Validate homelab network and security")
+    |
+
+scripts/testing/permission_verifier.py:132:13: PLC0415 `import` should be at the top-level of a file
+    |
+130 |         # Additional security - escape each argument properly
+131 |         try:
+132 |             from shlex import quote
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ PLC0415
+133 |
+134 |             # Create a list of properly escaped arguments
+    |
+
+scripts/testing/permission_verifier.py:605:5: PLC0415 `import` should be at the top-level of a file
+    |
+603 | def main() -> None:
+604 |     """Main function for standalone testing."""
+605 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+606 |
+607 |     parser = argparse.ArgumentParser(
+    |
+
+scripts/testing/permission_verifier.py:638:19: SLF001 Private member accessed: `_count_total_tests`
+    |
+637 |     # Exit with error code if any tests failed
+638 |     total_tests = verifier._count_total_tests(results)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ SLF001
+639 |     passed_tests = verifier._count_total_passed_tests(results)
+    |
+
+scripts/testing/permission_verifier.py:639:20: SLF001 Private member accessed: `_count_total_passed_tests`
+    |
+637 |     # Exit with error code if any tests failed
+638 |     total_tests = verifier._count_total_tests(results)
+639 |     passed_tests = verifier._count_total_passed_tests(results)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SLF001
+640 |
+641 |     if passed_tests < total_tests:
+    |
+
+scripts/testing/rootless_compatibility.py:129:17: PLC0415 `import` should be at the top-level of a file
+    |
+127 |             # Check network interfaces for bastion detection
+128 |             try:
+129 |                 import socket
+    |                 ^^^^^^^^^^^^^ PLC0415
+130 |
+131 |                 hostname = socket.gethostname()
+    |
+
+scripts/testing/rootless_compatibility.py:670:17: PLC0415 `import` should be at the top-level of a file
+    |
+668 |                 details["bridge_network"] = "available"
+669 |                 # Extract bridge IP
+670 |                 import re
+    |                 ^^^^^^^^^ PLC0415
+671 |
+672 |                 ip_match = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", ip_result.stdout)
+    |
+
+scripts/testing/rootless_compatibility.py:951:5: PLC0415 `import` should be at the top-level of a file
+    |
+949 | def main() -> None:
+950 |     """Main function for standalone testing."""
+951 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+952 |
+953 |     parser = argparse.ArgumentParser(description="Check rootless deployment compatibility")
+    |
+
+scripts/testing/service_checker.py:360:13: PLC0415 `import` should be at the top-level of a file
+    |
+358 |         """
+359 |         try:
+360 |             from kubernetes.utils.quantity import parse_quantity
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ PLC0415
+361 |
+362 |             # parse_quantity returns the value in base units
+    |
+
+scripts/testing/service_checker.py:398:13: PLC0415 `import` should be at the top-level of a file
+    |
+396 |         """
+397 |         try:
+398 |             from kubernetes.utils.quantity import parse_quantity
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ PLC0415
+399 |
+400 |             # parse_quantity returns bytes
+    |
+
+scripts/testing/service_checker.py:477:5: PLC0415 `import` should be at the top-level of a file
+    |
+475 | def main() -> int:
+476 |     """Main function for standalone testing."""
+477 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+478 |
+479 |     parser = argparse.ArgumentParser(description="Check homelab service deployments")
+    |
+
+scripts/testing/test_reporter.py:879:5: PLC0415 `import` should be at the top-level of a file
+    |
+877 | def main() -> int:
+878 |     """Main function for standalone testing."""
+879 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+880 |
+881 |     parser = argparse.ArgumentParser(description="Run comprehensive homelab test suite")
+    |
+
+scripts/validate_deployment.py:121:5: PLC0415 `import` should be at the top-level of a file
+    |
+119 | def main() -> int:
+120 |     """Main function for deployment validation."""
+121 |     import argparse
+    |     ^^^^^^^^^^^^^^^ PLC0415
+122 |
+123 |     parser = argparse.ArgumentParser(description="Validate deployment readiness")
+    |
+
+Found 22 errors.
+[0;31m[ERROR][0m Ruff found linting issues
+warning: The following rule may cause conflicts when used with the formatter: `COM812`. To avoid unexpected behavior, we recommend disabling this rule, either by removing it from the `lint.select` or `lint.extend-select` configuration, or adding it to the `lint.ignore` configuration.
+Would reformat: scripts/testing/common.py
+Would reformat: scripts/testing/rootless_compatibility.py
+Would reformat: scripts/testing/test_reporter.py
+Would reformat: scripts/testing/validate_deployment.py
+4 files would be reformatted, 11 files already formatted
+[0;31m[ERROR][0m Ruff found formatting issues
+[0;34m[INFO][0m Running MyPy type checking...
+mypy.ini: [mypy-scripts.testing.test_*]: Patterns must be fully-qualified module names, optionally with '*' in some components (e.g spam.*.eggs.*)
+mypy.ini: [mypy-scripts.testing.*_test]: Patterns must be fully-qualified module names, optionally with '*' in some components (e.g spam.*.eggs.*)
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/issue_tracker.py:333:18: error:
+Need type annotation for "groups"  [var-annotated]
+            groups = defaultdict(lambda: defaultdict(list))
+                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:17:5: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:17:5: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:124:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:158:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:229:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/infrastructure_health.py:294:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config.py:66:29: error:
+Incompatible types in assignment (expression has type "str | None", variable has
+type "str")  [assignment]
+        metallb_ip_range: str = os.getenv("METALLB_IP_RANGE")
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config.py:67:27: error:
+Incompatible types in assignment (expression has type "str | None", variable has
+type "str")  [assignment]
+        homelab_domain: str = os.getenv("HOMELAB_DOMAIN")
+                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config.py:68:23: error:
+Incompatible types in assignment (expression has type "str | None", variable has
+type "str")  [assignment]
+        dev_domain: str = os.getenv("HOMELAB_DEV_DOMAIN")
+                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config.py:221:1: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+    def __post_init__(self) -> None:
+    ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config_validator.py:104:21: error:
+Returning Any from function declared to return "dict[str, Any] | None"
+[no-any-return]
+                        return json.load(f)
+                        ^~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config_validator.py:105:17: error:
+Returning Any from function declared to return "dict[str, Any] | None"
+[no-any-return]
+                    return yaml.safe_load(f)
+                    ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/config_validator.py:257:9: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+            def _check_recursive(obj, path="") -> None:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:46:9: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+            from kubernetes import client, config
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:46:9: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+            from kubernetes import client, config
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:118:13: error:
+Item "None" of "Any | None" has no attribute "load_kube_config"  [union-attr]
+                config.load_kube_config(config_file=kubeconfig_path)
+                ^~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:121:17: error:
+Item "None" of "Any | None" has no attribute "load_incluster_config"
+[union-attr]
+                    config.load_incluster_config()
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:123:17: error:
+Item "None" of "Any | None" has no attribute "load_kube_config"  [union-attr]
+                    config.load_kube_config()
+                    ^~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/common.py:125:16: error:
+Item "None" of "Any | None" has no attribute "ApiClient"  [union-attr]
+            return client.ApiClient()
+                   ^~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:18:5: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:18:5: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:31:9: error:
+Name "ConfigValidator" already defined (possibly by an import)  [no-redef]
+            from config_validator import ConfigValidator
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:32:9: error:
+Name "HealthStatus" already defined (possibly by an import)  [no-redef]
+            from infrastructure_health import HealthStatus, Infrastructure...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:32:9: error:
+Name "InfrastructureHealthMonitor" already defined (possibly by an import)
+[no-redef]
+            from infrastructure_health import HealthStatus, Infrastructure...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:36:9: error:
+Name "HealthStatus" already defined (possibly by an import)  [no-redef]
+            class HealthStatus:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:147:9: error:
+Statement is unreachable  [unreachable]
+            for attempt in range(max_retries):
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:205:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:240:9: error:
+Need type annotation for "health_results" (hint:
+"health_results: dict[<type>, <type>] = ...")  [var-annotated]
+            health_results = {}
+            ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:245:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:287:21: error:
+Value of type "object" is not indexable  [index]
+            namespace = service_config["namespace"]
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:301:13: error:
+"object" has no attribute "get"  [attr-defined]
+                service_config.get("health_path"),
+                ^~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:467:31: error:
+Value of type "object" is not indexable  [index]
+                        namespace=self.services[service_name]["namespace"]...
+                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/service_checker.py:488:47: error:
+Argument 1 to "ServiceDeploymentChecker" has incompatible type
+"dict[Never, Never]"; expected "str | None"  [arg-type]
+            choices=list(ServiceDeploymentChecker({}).services.keys()),
+                                                  ^~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:19:5: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:19:5: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:26:5: error:
+Module "testing.common" has no attribute "setup_logger"; maybe "setup_logging"?
+[attr-defined]
+        from .common import setup_logger
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:40:5: error:
+Name "IssueTracker" already defined (possibly by an import)  [no-redef]
+        class IssueTracker:
+        ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:41:9: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+            def __init__(self, *args, **kwargs) -> None:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:44:9: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+            def add_issue(self, *args, **kwargs) -> None:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:165:32: error:
+List item 1 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["id", self.deployment_user],
+                                   ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:172:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "ls", f"/...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:182:21: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                        self.deployment_user,
+                        ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:193:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "docker",...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:242:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "sudo", "...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:249:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "sudo", "...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:256:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "sudo", "...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:263:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "sudo", "...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:270:40: error:
+List item 2 has incompatible type "str | None"; expected "str"  [list-item]
+                    command=["sudo", "-u", self.deployment_user, "sudo", "...
+                                           ^~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:324:9: error:
+Statement is unreachable  [unreachable]
+            tests = [
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/permission_verifier.py:387:9: error:
+Statement is unreachable  [unreachable]
+            results = []
+            ^~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:17:5: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:17:5: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:29:9: error:
+Name "HealthStatus" already defined (possibly by an import)  [no-redef]
+            from infrastructure_health import HealthStatus
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:30:9: error:
+Name "ServiceDeploymentChecker" already defined (possibly by an import)
+[no-redef]
+            from service_checker import ServiceDeploymentChecker
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:34:9: error:
+Name "HealthStatus" already defined (possibly by an import)  [no-redef]
+            class HealthStatus:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:172:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:240:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:292:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:406:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:513:5: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+        def _validate_pod_security_contexts(self, apps_v1) -> tuple[list[s...
+        ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/network_security.py:562:5: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+        def _validate_pod_security_standards(self, v1) -> tuple[list[str],...
+        ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:18:5: error:
+Module "kubernetes" has no attribute "client"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:18:5: error:
+Module "kubernetes" has no attribute "config"  [attr-defined]
+        from kubernetes import client, config
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:25:5: error:
+Module "testing.common" has no attribute "setup_logger"; maybe "setup_logging"?
+[attr-defined]
+        from .common import setup_logger
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:40:5: error:
+Name "SecurityStatus" already defined (possibly by an import)  [no-redef]
+        class SecurityStatus:
+        ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:297:9: error:
+Need type annotation for "issues" (hint: "issues: list[<type>] = ...")
+[var-annotated]
+            issues = []
+            ^~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:298:9: error:
+Need type annotation for "recommendations" (hint:
+"recommendations: list[<type>] = ...")  [var-annotated]
+            recommendations = []
+            ^~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:299:9: error:
+Need type annotation for "details" (hint: "details: dict[<type>, <type>] = ...")
+ [var-annotated]
+            details = {}
+            ^~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:309:9: error:
+Statement is unreachable  [unreachable]
+            try:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:435:13: error:
+Need type annotation for "values_files" (hint:
+"values_files: list[<type>] = ...")  [var-annotated]
+                values_files = []
+                ^~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:468:56: error:
+Incompatible types in assignment (expression has type "list[str]", target has
+type "int")  [assignment]
+    ...      details["files_without_security_sample"] = files_without_securit...
+                                                        ^~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:537:53: error:
+Incompatible types in assignment (expression has type "list[str]", target has
+type "str")  [assignment]
+                    details["non_executable_scripts"] = non_executable
+                                                        ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:630:47: error:
+Incompatible types in assignment (expression has type "int", target has type
+"str")  [assignment]
+                        details["existing_vms"] = vm_count
+                                                  ^~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:703:17: error:
+Statement is unreachable  [unreachable]
+                    details["k8s_access"] = "direct_from_vm"
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:719:17: error:
+Statement is unreachable  [unreachable]
+                    details["k8s_access"] = "direct_from_bastion"
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:733:17: error:
+Statement is unreachable  [unreachable]
+                    details["k8s_access"] = "direct_bare_metal"
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/rootless_compatibility.py:737:13: error:
+Statement is unreachable  [unreachable]
+                try:
+                ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:29:9: error:
+Name "ConfigValidator" already defined (possibly by an import)  [no-redef]
+            from config_validator import ConfigValidator
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:30:9: error:
+Name "InfrastructureHealthMonitor" already defined (possibly by an import)
+[no-redef]
+            from infrastructure_health import InfrastructureHealthMonitor
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:31:9: error:
+Name "NetworkSecurityValidator" already defined (possibly by an import)
+[no-redef]
+            from network_security import NetworkSecurityValidator
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:32:9: error:
+Name "ServiceDeploymentChecker" already defined (possibly by an import)
+[no-redef]
+            from service_checker import ServiceDeploymentChecker
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:36:9: error:
+Cannot assign to a type  [misc]
+            ConfigValidator = None
+            ^~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:36:27: error:
+Incompatible types in assignment (expression has type "None", variable has type
+"type[ConfigValidator]")  [assignment]
+            ConfigValidator = None
+                              ^~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:37:9: error:
+Cannot assign to a type  [misc]
+            InfrastructureHealthMonitor = None
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:37:39: error:
+Incompatible types in assignment (expression has type "None", variable has type
+"type[InfrastructureHealthMonitor]")  [assignment]
+            InfrastructureHealthMonitor = None
+                                          ^~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:38:9: error:
+Cannot assign to a type  [misc]
+            ServiceDeploymentChecker = None
+            ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:38:36: error:
+Incompatible types in assignment (expression has type "None", variable has type
+"type[ServiceDeploymentChecker]")  [assignment]
+            ServiceDeploymentChecker = None
+                                       ^~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:39:9: error:
+Cannot assign to a type  [misc]
+            NetworkSecurityValidator = None
+            ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:39:36: error:
+Incompatible types in assignment (expression has type "None", variable has type
+"type[NetworkSecurityValidator]")  [assignment]
+            NetworkSecurityValidator = None
+                                       ^~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:81:63: error:
+Function "ConfigValidator" could always be true in boolean context
+[truthy-function]
+    ...config_validator = ConfigValidator(log_level) if ConfigValidator else ...
+                                                        ^~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:84:16: error:
+Function "InfrastructureHealthMonitor" could always be true in boolean context
+[truthy-function]
+                if InfrastructureHealthMonitor
+                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:89:16: error:
+Function "ServiceDeploymentChecker" could always be true in boolean context
+[truthy-function]
+                if ServiceDeploymentChecker
+                   ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:94:16: error:
+Function "NetworkSecurityValidator" could always be true in boolean context
+[truthy-function]
+                if NetworkSecurityValidator
+                   ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:258:53: error:
+Incompatible types in assignment (expression has type "dict[str, str]", target
+has type "int")  [assignment]
+    ...                     request_kwargs["headers"] = {"Authorization": f"B...
+                                                        ^~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"SupportsItems[str | bytes | int | float, str | bytes | int | float | Iterable[str | bytes | int | float] | None] | tuple[str | bytes | int | float, str | bytes | int | float | Iterable[str | bytes | int | float] | None] | Iterable[tuple[str | bytes | int | float, str | bytes | int | float | Iterable[str | bytes | int | float] | None]] | str | bytes | None"
+ [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"Iterable[bytes] | str | bytes | SupportsRead[str | bytes] | list[tuple[Any, Any]] | tuple[tuple[Any, Any], ...] | Mapping[Any, Any] | None"
+ [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"Mapping[str, str | bytes | None] | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"CookieJar | MutableMapping[str, str] | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"Mapping[str, SupportsRead[str | bytes] | str | bytes | tuple[str | None, SupportsRead[str | bytes] | str | bytes] | tuple[str | None, SupportsRead[str | bytes] | str | bytes, str] | tuple[str | None, SupportsRead[str | bytes] | str | bytes, str, Mapping[str, str]]] | Iterable[tuple[str, SupportsRead[str | bytes] | str | bytes | tuple[str | None, SupportsRead[str | bytes] | str | bytes] | tuple[str | None, SupportsRead[str | bytes] | str | bytes, str] | tuple[str | None, SupportsRead[str | bytes] | str | bytes, str, Mapping[str, str]]]] | None"
+ [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None"
+ [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected "bool"
+[arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"MutableMapping[str, str] | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"Mapping[str, Iterable[Callable[[Response], Any]] | Callable[[Response], Any]] | None"
+ [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"bool | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"bool | str | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:260:48: error:
+Argument 2 to "get" has incompatible type "**dict[str, int]"; expected
+"str | tuple[str, str] | None"  [arg-type]
+                    response = requests.get(url, **request_kwargs)
+                                                   ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:273:42: error:
+Dict entry 0 has incompatible type "str": "None"; expected "str": "int"
+[dict-item]
+                    api_results[api_path] = {"status_code": None, "reachab...
+                                             ^~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:273:83: error:
+Dict entry 2 has incompatible type "str": "str"; expected "str": "int"
+[dict-item]
+    ...api_path] = {"status_code": None, "reachable": False, "error": str(e)}
+                                                             ^~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:507:21: error:
+Dict entry 2 has incompatible type "str": "int"; expected "str": "str"
+[dict-item]
+                        "target_port": target_port,
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/integration_tester.py:508:21: error:
+Dict entry 3 has incompatible type "str": "bool"; expected "str": "str"
+[dict-item]
+                        "tcp_connection_success": connectivity_ok,
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:35:9: error:
+Name "ConfigValidator" already defined (possibly by an import)  [no-redef]
+            from config_validator import ConfigValidator, ValidationResult
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:35:9: error:
+Name "ValidationResult" already defined (possibly by an import)  [no-redef]
+            from config_validator import ConfigValidator, ValidationResult
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:36:9: error:
+Name "ClusterHealth" already defined (possibly by an import)  [no-redef]
+            from infrastructure_health import ClusterHealth, Infrastructur...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:36:9: error:
+Name "InfrastructureHealthMonitor" already defined (possibly by an import)
+[no-redef]
+            from infrastructure_health import ClusterHealth, Infrastructur...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:37:9: error:
+Name "IntegrationConnectivityTester" already defined (possibly by an import)
+[no-redef]
+            from integration_tester import IntegrationConnectivityTester, ...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:37:9: error:
+Name "IntegrationTestResult" already defined (possibly by an import)  [no-redef]
+            from integration_tester import IntegrationConnectivityTester, ...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:38:9: error:
+Name "IssueCategory" already defined (possibly by an import)  [no-redef]
+            from issue_tracker import (
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:38:9: error:
+Name "IssueSeverity" already defined (possibly by an import)  [no-redef]
+            from issue_tracker import (
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:38:9: error:
+Name "IssueTracker" already defined (possibly by an import)  [no-redef]
+            from issue_tracker import (
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:38:9: error:
+Name "create_missing_items_issues" already defined (possibly by an import)
+[no-redef]
+            from issue_tracker import (
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:38:9: error:
+Name "create_security_context_issues" already defined (possibly by an import)
+[no-redef]
+            from issue_tracker import (
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:45:9: error:
+Name "NetworkSecurityValidator" already defined (possibly by an import)
+[no-redef]
+            from network_security import NetworkSecurityValidator, Securit...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:45:9: error:
+Name "SecurityStatus" already defined (possibly by an import)  [no-redef]
+            from network_security import NetworkSecurityValidator, Securit...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:46:9: error:
+Name "ServiceDeploymentChecker" already defined (possibly by an import)
+[no-redef]
+            from service_checker import ServiceDeploymentChecker, ServiceS...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:46:9: error:
+Name "ServiceStatus" already defined (possibly by an import)  [no-redef]
+            from service_checker import ServiceDeploymentChecker, ServiceS...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:52:9: error:
+Name "IssueTracker" already defined (possibly by an import)  [no-redef]
+            class IssueTracker:
+            ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:53:13: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+                def __init__(self, *args, **kwargs) -> None:
+                ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:56:13: error:
+Function is missing a type annotation for one or more arguments
+[no-untyped-def]
+                def add_issue(self, *args, **kwargs) -> None:
+                ^
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:214:20: error:
+Too many positional arguments for "run_comprehensive_integration_tests" of
+"IntegrationConnectivityTester"  [misc]
+                return self.integration_tester.run_comprehensive_integrati...
+                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:428:38: error:
+"ValidationResult" has no attribute "message"  [attr-defined]
+                        if "critical" in result.message.lower()
+                                         ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/test_reporter.py:433:29: error:
+"ValidationResult" has no attribute "message"  [attr-defined]
+                        message=result.message,
+                                ^~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:27:9: error:
+Name "IssueTracker" already defined (possibly by an import)  [no-redef]
+            from issue_tracker import IssueTracker
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:28:9: error:
+Name "PermissionVerifier" already defined (possibly by an import)  [no-redef]
+            from permission_verifier import PermissionVerifier
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:29:9: error:
+Name "RootlessCompatibilityChecker" already defined (possibly by an import)
+[no-redef]
+            from rootless_compatibility import RootlessCompatibilityChecke...
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:30:9: error:
+Name "HomelabTestReporter" already defined (possibly by an import)  [no-redef]
+            from test_reporter import HomelabTestReporter
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:59:9: error:
+Need type annotation for "results" (hint: "results: dict[<type>, <type>] = ...")
+ [var-annotated]
+            self.results = {}
+            ^~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:191:13: error:
+Value of type "dict[str, Any] | str | None" is not indexable  [index]
+                validation_results["compatibility_check"]["status"],
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:191:55: error:
+Invalid index type "str" for "str"; expected type
+"SupportsIndex | slice[Any, Any, Any]"  [index]
+                validation_results["compatibility_check"]["status"],
+                                                          ^~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:192:13: error:
+Value of type "dict[str, Any] | str | None" is not indexable  [index]
+                validation_results["permission_verification"]["status"],
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:192:59: error:
+Invalid index type "str" for "str"; expected type
+"SupportsIndex | slice[Any, Any, Any]"  [index]
+                validation_results["permission_verification"]["status"],
+                                                              ^~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:193:13: error:
+Value of type "dict[str, Any] | str | None" is not indexable  [index]
+                validation_results["infrastructure_tests"]["status"],
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:193:56: error:
+Invalid index type "str" for "str"; expected type
+"SupportsIndex | slice[Any, Any, Any]"  [index]
+                validation_results["infrastructure_tests"]["status"],
+                                                           ^~~~~~~~
+/home/vector_weight/Documents/projects/homelab/homelab-infra/scripts/testing/validate_deployment.py:204:42: error:
+Incompatible types in assignment (expression has type "float", target has type
+"dict[str, Any] | str | None")  [assignment]
+            validation_results["duration"] = time.time() - start_time
+                                             ^~~~~~~~~~~~~~~~~~~~~~~~
+Found 144 errors in 12 files (checked 13 source files)
+[1;33m[WARNING][0m MyPy found type issues
+[0;34m[INFO][0m Running Bandit security scan...
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[json]	INFO	JSON output written to file: bandit-report.json
+[1;33m[WARNING][0m Bandit found security issues
+[0;32m[SUCCESS][0m Python checks completed
+[0;34m[INFO][0m Running shell script quality checks...
+[0;34m[INFO][0m Found 26 shell files to check
+[1;33m[WARNING][0m ShellCheck not available
+[1;33m[WARNING][0m shfmt not available
+[0;32m[SUCCESS][0m Shell checks completed
+[0;34m[INFO][0m Running YAML/JSON validation...
+[0;34m[INFO][0m Running yamllint...
+helm/environments/values-secrets-template.yaml
+  18:81     warning  line too long (84 > 80 characters)  (line-length)
+  66:81     warning  line too long (88 > 80 characters)  (line-length)
+  67:81     warning  line too long (84 > 80 characters)  (line-length)
+  106:81    warning  line too long (83 > 80 characters)  (line-length)
+  130:81    warning  line too long (82 > 80 characters)  (line-length)
+  134:81    warning  line too long (82 > 80 characters)  (line-length)
+  135:81    warning  line too long (85 > 80 characters)  (line-length)
+
+helm/environments/values-prod.yaml
+  113:81    warning  line too long (84 > 80 characters)  (line-length)
+
+helm/environments/values-dev.yaml
+  92:81     warning  line too long (95 > 80 characters)  (line-length)
+
+kubernetes/monitoring/alerting/alertmanager.yaml
+  92:81     warning  line too long (87 > 80 characters)  (line-length)
+  105:81    warning  line too long (102 > 80 characters)  (line-length)
+  110:81    warning  line too long (86 > 80 characters)  (line-length)
+  186:81    warning  line too long (88 > 80 characters)  (line-length)
+  189:81    warning  line too long (85 > 80 characters)  (line-length)
+  198:81    warning  line too long (83 > 80 characters)  (line-length)
+  222:81    warning  line too long (90 > 80 characters)  (line-length)
+  233:81    warning  line too long (118 > 80 characters)  (line-length)
+  242:81    warning  line too long (131 > 80 characters)  (line-length)
+  247:81    warning  line too long (96 > 80 characters)  (line-length)
+  253:81    warning  line too long (96 > 80 characters)  (line-length)
+  256:81    warning  line too long (113 > 80 characters)  (line-length)
+  262:81    warning  line too long (99 > 80 characters)  (line-length)
+  265:81    warning  line too long (109 > 80 characters)  (line-length)
+  271:81    warning  line too long (97 > 80 characters)  (line-length)
+  282:81    warning  line too long (86 > 80 characters)  (line-length)
+  290:81    warning  line too long (111 > 80 characters)  (line-length)
+
+kubernetes/base/pod-security-standards.yaml
+  38:81     warning  line too long (83 > 80 characters)  (line-length)
+
+kubernetes/base/security-contexts.yaml
+  69:1      warning  wrong indentation: expected 2 but found 0  (indentation)
+  73:3      warning  wrong indentation: expected 4 but found 2  (indentation)
+  86:1      warning  wrong indentation: expected 2 but found 0  (indentation)
+  100:3     warning  wrong indentation: expected 4 but found 2  (indentation)
+  113:3     warning  wrong indentation: expected 4 but found 2  (indentation)
+  115:3     warning  wrong indentation: expected 4 but found 2  (indentation)
+  117:5     warning  wrong indentation: expected 6 but found 4  (indentation)
+  139:1     warning  wrong indentation: expected 2 but found 0  (indentation)
+  157:1     warning  wrong indentation: expected 2 but found 0  (indentation)
+
+[0;34m[INFO][0m Checking JSON syntax...
+[0;34m[INFO][0m Found 787 JSON files to check
+[0;31m[ERROR][0m Invalid JSON: ./.venv/lib/python3.11/site-packages/safety/formatters/schemas/v3_0.json

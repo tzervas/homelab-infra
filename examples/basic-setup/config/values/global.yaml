@@ -59,9 +59,9 @@ backup:
   enabled: true
   namespace: "backup"
   schedule:
-    gitlab: "0 2 * * *"      # Daily at 2 AM
-    database: "0 2 30 * *"   # Daily at 2:30 AM
-    config: "0 2 15 * *"     # Daily at 2:15 AM
+    gitlab: "0 2 * * *" # Daily at 2 AM
+    database: "0 2 30 * *" # Daily at 2:30 AM
+    config: "0 2 15 * *" # Daily at 2:15 AM
   retention:
     gitlab: "7d"
     database: "7d"

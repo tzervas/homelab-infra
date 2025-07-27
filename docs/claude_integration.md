@@ -113,11 +113,13 @@ This document outlines how we leverage the Claude CLI for enhancing our developm
 ## Usage Guidelines
 
 1. Command Structure
+
    ```bash
    claude [options] [command] [prompt]
    ```
 
 2. Common Operations
+
    ```bash
    # Interactive session
    claude
@@ -136,6 +138,7 @@ This document outlines how we leverage the Claude CLI for enhancing our developm
    ```
 
 3. Configuration Management
+
    ```bash
    # List all settings
    claude config list

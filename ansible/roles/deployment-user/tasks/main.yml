@@ -1,0 +1,100 @@
+---
+# deployment-user role tasks
+
+- name: Create deployment group
+  group:
+    name: "{{ deployment_group }}"
+    gid: "{{ deployment_gid }}"
+    state: present
+  become: yes
+
+- name: Create deployment user
+  user:
+    name: "{{ deployment_user }}"
+    uid: "{{ deployment_uid }}"
+    group: "{{ deployment_group }}"
+    groups: "{{ deployment_groups }}"
+    home: "{{ deployment_home }}"
+    shell: "{{ deployment_shell }}"
+    create_home: yes
+    state: present
+  become: yes
+
+- name: Create deployment directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ deployment_directories }}"
+  become: yes
+
+- name: Generate SSH key for deployment user
+  user:
+    name: "{{ deployment_user }}"
+    generate_ssh_key: yes
+    ssh_key_type: "{{ deployment_ssh_key_type }}"
+    ssh_key_file: "{{ deployment_ssh_dir }}/id_{{ deployment_ssh_key_type }}"
+  become: yes
+  become_user: "{{ deployment_user }}"
+
+- name: Set up sudoers configuration for deployment user
+  template:
+    src: sudoers.j2
+    dest: "/etc/sudoers.d/{{ deployment_user }}"
+    mode: '0440'
+    owner: root
+    group: root
+    validate: '/usr/sbin/visudo -cf %s'
+  become: yes
+  notify: restart_services
+
+- name: Copy environment configuration
+  template:
+    src: environment.j2
+    dest: "{{ deployment_home }}/.environment"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: '0644'
+  become: yes
+
+- name: Add environment sourcing to bashrc
+  lineinfile:
+    path: "{{ deployment_home }}/.bashrc"
+    line: "source {{ deployment_home }}/.environment"
+    create: yes
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: '0644'
+  become: yes
+
+- name: Create privilege escalation wrapper script
+  template:
+    src: sudo-wrapper.sh.j2
+    dest: "{{ deployment_home }}/.local/bin/homelab-sudo"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: '0755'
+  become: yes
+
+- name: Verify user can access docker (if docker group exists)
+  command: groups {{ deployment_user }}
+  register: user_groups
+  changed_when: false
+  become: yes
+
+- name: Display user groups
+  debug:
+    msg: "User {{ deployment_user }} is member of: {{ user_groups.stdout }}"
+
+- name: Test sudo access for deployment user
+  command: sudo -u {{ deployment_user }} sudo -l
+  register: sudo_test
+  changed_when: false
+  failed_when: false
+  become: yes
+
+- name: Display sudo privileges
+  debug:
+    msg: "Sudo test result: {{ sudo_test.stdout_lines | default(['No sudo privileges displayed']) }}"

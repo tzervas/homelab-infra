@@ -46,6 +46,7 @@ kubelet-arg:
 ```
 
 Then install with:
+
 ```bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.30.6+k3s1 sh -
 ```
@@ -151,6 +152,7 @@ sudo ufw allow 9500-9504/tcp
 ### Pod Security Standards
 
 The cluster is configured with Pod Security Standards:
+
 - **Privileged**: metallb-system, longhorn-system
 - **Baseline**: ingress-nginx
 - **Restricted**: monitoring, cert-manager (default)
@@ -160,11 +162,13 @@ The cluster is configured with Pod Security Standards:
 ### Common Issues
 
 1. **k3s fails to start**
+
    ```bash
    sudo journalctl -u k3s -f
    ```
 
 2. **Pods stuck in Pending state**
+
    ```bash
    kubectl describe pod <pod-name> -n <namespace>
    ```

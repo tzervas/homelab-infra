@@ -327,7 +327,7 @@ class IntegrationConnectivityTester:
             location = response.headers.get("location", "").lower()
             www_authenticate = response.headers.get("www-authenticate", "").lower()
             sso_location_keywords = ["keycloak", "sso", "login", "oauth", "openid"]
-            is_sso_redirect = response.status_code in [302, 303, 307] and any(
+            is_sso_redirect = response.status_code in {302, 303, 307} and any(
                 keyword in location for keyword in sso_location_keywords
             )
             is_sso_401 = response.status_code == 401 and any(
@@ -563,21 +563,32 @@ class IntegrationConnectivityTester:
 
         # Test service connectivity from server perspective
         for endpoint in self.service_endpoints.values():
-            results.append(self.test_service_connectivity(endpoint, "server"))
-            results.append(self.test_api_endpoints(endpoint, "server"))
+            results.extend(
+                [
+                    self.test_service_connectivity(endpoint, "server"),
+                    self.test_api_endpoints(endpoint, "server"),
+                ]
+            )
 
             # Workstation perspective tests if requested
             if include_workstation_tests:
-                results.append(self.test_service_connectivity(endpoint, "workstation"))
-                results.append(self.test_api_endpoints(endpoint, "workstation"))
+                results.extend(
+                    [
+                        self.test_service_connectivity(endpoint, "workstation"),
+                        self.test_api_endpoints(endpoint, "workstation"),
+                    ]
+                )
 
         # SSO integration tests
-        for endpoint in self.service_endpoints.values():
-            results.append(self.test_sso_integration_flow(endpoint))
+        results.extend(
+            [
+                self.test_sso_integration_flow(endpoint)
+                for endpoint in self.service_endpoints.values()
+            ]
+        )
 
         # Infrastructure-level tests
-        results.append(self.test_ingress_routing())
-        results.append(self.test_service_to_service_communication())
+        results.extend([self.test_ingress_routing(), self.test_service_to_service_communication()])
 
         # Log summary
         passed_tests = sum(1 for r in results if r.passed)

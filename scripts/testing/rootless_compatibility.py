@@ -725,12 +725,11 @@ class RootlessCompatibilityChecker:
 
                 # Check node readiness
                 ready_nodes = sum(
-                    1
-                    for node in nodes.items
-                    if any(
+                    any(
                         condition.type == "Ready" and condition.status == "True"
                         for condition in node.status.conditions
                     )
+                    for node in nodes.items
                 )
                 details["ready_nodes"] = ready_nodes
 
@@ -835,7 +834,7 @@ class RootlessCompatibilityChecker:
 
     def generate_compatibility_report(self, results: List[RootlessCompatibilityResult]) -> str:
         """Generate a comprehensive compatibility report."""
-        compatible_count = sum(1 for r in results if r.compatible)
+        compatible_count = sum(bool(r.compatible) for r in results)
         total_count = len(results)
 
         report = f"""
@@ -977,7 +976,7 @@ def main() -> None:
         print(report)
 
     # Exit with error code if there are incompatibilities
-    compatible_count = sum(1 for r in results if r.compatible)
+    compatible_count = sum(bool(r.compatible) for r in results)
     if compatible_count < len(results):
         sys.exit(1)
 

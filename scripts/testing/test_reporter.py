@@ -393,7 +393,7 @@ class HomelabTestReporter:
             "overall_status": overall_status,
             "test_duration": duration,
             "modules_run": sum(
-                1
+                bool(r is not None)
                 for r in [
                     config_results,
                     infra_health,
@@ -401,7 +401,6 @@ class HomelabTestReporter:
                     security_results,
                     integration_results,
                 ]
-                if r is not None
             ),
             "total_recommendations": len(result.recommendations),
         }

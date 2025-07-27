@@ -105,7 +105,26 @@ class PermissionVerifier:
             self.logger.warning(f"Could not initialize Kubernetes client: {e}")
 
     def _run_command(self, cmd: List[str], timeout: int = 30) -> Tuple[bool, str, str, int]:
-        """Run a command and return success status, stdout, stderr, and exit code."""
+        """Run a command and return success status, stdout, stderr, and exit code.
+
+        Args:
+            cmd: List of command arguments. First item must be the command name,
+                 subsequent items are arguments. Shell metacharacters are not allowed.
+            timeout: Command timeout in seconds.
+
+        Returns:
+            Tuple of (success, stdout, stderr, exit_code)
+
+        """
+        # Validate command list
+        if not cmd or not isinstance(cmd, list) or not all(isinstance(arg, str) for arg in cmd):
+            return False, "", "Invalid command format", 1
+
+        # Basic validation of command arguments - reject anything with shell metacharacters
+        shell_metacharacters = ["|", "&", ";", "<", ">", "(", ")", "$", "`", "\\", '"', "'"]
+        if any(any(char in arg for char in shell_metacharacters) for arg in cmd):
+            return False, "", "Command contains invalid characters", 1
+
         try:
             result = subprocess.run(
                 cmd, capture_output=True, text=True, timeout=timeout, check=False
@@ -452,6 +471,21 @@ class PermissionVerifier:
 
         return results
 
+    @staticmethod
+    def _count_passed_tests(test_results: List[PermissionResult]) -> int:
+        """Count number of passed tests in a list of results."""
+        return sum(bool(result.passed) for result in test_results)
+
+    @classmethod
+    def _count_total_passed_tests(cls, results: Dict[str, List[PermissionResult]]) -> int:
+        """Count total number of passed tests across all categories."""
+        return sum(cls._count_passed_tests(test_results) for test_results in results.values())
+
+    @staticmethod
+    def _count_total_tests(results: Dict[str, List[PermissionResult]]) -> int:
+        """Count total number of tests across all categories."""
+        return sum(len(test_results) for test_results in results.values())
+
     def run_comprehensive_permission_tests(self) -> Dict[str, List[PermissionResult]]:
         """Run all permission verification tests."""
         self.logger.info("Starting comprehensive permission verification...")
@@ -466,10 +500,8 @@ class PermissionVerifier:
         }
 
         # Summary logging
-        total_tests = sum(len(test_results) for test_results in results.values())
-        passed_tests = sum(
-            sum(1 for result in test_results if result.passed) for test_results in results.values()
-        )
+        total_tests = self._count_total_tests(results)
+        passed_tests = self._count_total_passed_tests(results)
 
         self.logger.info(
             f"Permission verification completed: {passed_tests}/{total_tests} tests passed"
@@ -484,10 +516,8 @@ class PermissionVerifier:
         report.append("")
 
         # Summary
-        total_tests = sum(len(test_results) for test_results in results.values())
-        passed_tests = sum(
-            sum(1 for result in test_results if result.passed) for test_results in results.values()
-        )
+        total_tests = self._count_total_tests(results)
+        passed_tests = self._count_total_passed_tests(results)
 
         report.append(f"**Overall Status**: {passed_tests}/{total_tests} tests passed")
         if passed_tests == total_tests:
@@ -501,7 +531,7 @@ class PermissionVerifier:
             if not test_results:
                 continue
 
-            category_passed = sum(1 for result in test_results if result.passed)
+            category_passed = self._count_passed_tests(test_results)
             category_total = len(test_results)
 
             report.append(f"## {category.replace('_', ' ').title()}")
@@ -574,10 +604,8 @@ def main() -> None:
         print(report)
 
     # Exit with error code if any tests failed
-    total_tests = sum(len(test_results) for test_results in results.values())
-    passed_tests = sum(
-        sum(1 for result in test_results if result.passed) for test_results in results.values()
-    )
+    total_tests = verifier._count_total_tests(results)
+    passed_tests = verifier._count_total_passed_tests(results)
 
     if passed_tests < total_tests:
         sys.exit(1)

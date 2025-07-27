@@ -40,6 +40,10 @@ CI_MODE=false
 SKIP_TESTS=false
 TARGETS=()
 
+# Configuration with defaults
+MAX_PYTHON_FILES=${MAX_PYTHON_FILES:-0}  # 0 means no limit
+MAX_SHELL_FILES=${MAX_SHELL_FILES:-0}   # 0 means no limit
+
 # Parse command line arguments
 show_help() {
   cat << EOF
@@ -48,11 +52,13 @@ Usage: $0 [OPTIONS] [TARGETS...]
 Comprehensive code quality checking and fixing for homelab infrastructure.
 
 OPTIONS:
-    --fix           Apply safe auto-fixes where possible
-    --verbose       Enable verbose output
-    --ci            Run in CI mode (stricter, no fixes)
-    --skip-tests    Skip running tests
-    --help          Show this help message
+    --fix              Apply safe auto-fixes where possible
+    --verbose          Enable verbose output
+    --ci               Run in CI mode (stricter, no fixes)
+    --skip-tests       Skip running tests
+    --max-py-files N   Maximum Python files to check (0 = no limit)
+    --max-sh-files N   Maximum shell files to check (0 = no limit)
+    --help             Show this help message
 
 TARGETS:
     python          Run Python-specific checks (ruff, mypy, bandit)
@@ -94,6 +100,16 @@ while [[ $# -gt 0 ]]; do
       SKIP_TESTS=true
       shift
       ;;
+    --max-py-files)
+      shift
+      MAX_PYTHON_FILES=$1
+      shift
+      ;;
+    --max-sh-files)
+      shift
+      MAX_SHELL_FILES=$1
+      shift
+      ;;
     --help)
       show_help
       exit 0
@@ -133,7 +149,20 @@ run_python_checks() {
   log_info "Running Python code quality checks..."
 
   local python_files
-  python_files=$(find . -name "*.py" -not -path "./untracked_backup/*" -not -path "./examples/*" | head -100)
+  local find_cmd="find . -type f -name \"*.py\" -not -path \"./untracked_backup/*\" -not -path \"./examples/*\" -not -path \"./venv/*\" -not -path \"./.pytest_cache/*\" -not -path \"*/__pycache__/*\""
+  
+  if [[ "$MAX_PYTHON_FILES" -gt 0 ]]; then
+    if [[ "$VERBOSE" == true ]]; then
+      log_info "Limiting to $MAX_PYTHON_FILES Python files"
+    fi
+    python_files=$(eval "$find_cmd" | head -n "$MAX_PYTHON_FILES")
+  else
+    python_files=$(eval "$find_cmd")
+  fi
+
+  local total_files
+  total_files=$(echo "$python_files" | wc -l)
+  log_info "Found $total_files Python files to check"
 
   if [[ -z "$python_files" ]]; then
     log_warning "No Python files found"
@@ -174,7 +203,20 @@ run_shell_checks() {
   log_info "Running shell script quality checks..."
 
   local shell_files
-  shell_files=$(find . -name "*.sh" -not -path "./untracked_backup/*" | head -50)
+  local find_cmd="find . -type f -name \"*.sh\" -not -path \"./untracked_backup/*\" -not -path \"./venv/*\""
+
+  if [[ "$MAX_SHELL_FILES" -gt 0 ]]; then
+    if [[ "$VERBOSE" == true ]]; then
+      log_info "Limiting to $MAX_SHELL_FILES shell files"
+    fi
+    shell_files=$(eval "$find_cmd" | head -n "$MAX_SHELL_FILES")
+  else
+    shell_files=$(eval "$find_cmd")
+  fi
+
+  local total_files
+  total_files=$(echo "$shell_files" | wc -l)
+  log_info "Found $total_files shell files to check"
 
   if [[ -z "$shell_files" ]]; then
     log_warning "No shell files found"
@@ -402,6 +444,8 @@ main() {
   log_info "Fix mode: $FIX_MODE"
   log_info "CI mode: $CI_MODE"
   log_info "Targets: ${TARGETS[*]}"
+  [[ "$MAX_PYTHON_FILES" -gt 0 ]] && log_info "Max Python files: $MAX_PYTHON_FILES"
+  [[ "$MAX_SHELL_FILES" -gt 0 ]] && log_info "Max shell files: $MAX_SHELL_FILES"
 
   check_dependencies
 

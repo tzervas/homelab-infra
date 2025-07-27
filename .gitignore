@@ -206,3 +206,21 @@ logs/
 *.old
 *.tmp
 *~
+
+# Internal documentation and tracking files
+pr-description-documentation.md
+code-quality-output.txt
+**/tooling-audit.md
+**/MYPY_CONFIGURATION.md
+**/claude_integration.md
+**/IMPLEMENTATION_SUMMARY.md
+**/MYPY_ENHANCEMENT_SUMMARY.md
+**/DEPLOYMENT-VALIDATION-REPORT.md
+**/DOCUMENTATION_CONSOLIDATION_SUMMARY.md
+**/BANDIT_SETUP_SUMMARY.md
+
+# Generated reports
+*-report.json
+*-report.txt
+*-summary.md
+*-output.txt

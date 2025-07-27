@@ -4,12 +4,13 @@ This module centralizes all configuration settings including service endpoints,
 timeouts, service definitions, and other configurable parameters.
 """
 
-import os
 from dataclasses import dataclass, field
+import os
 from typing import Any, Dict, List, Optional
 
 # Import environment variables early to make them available throughout the module
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -41,24 +42,28 @@ class TestingConfig:
 
     # Timeout settings
     # Timeout settings [from environment variables]
-    short_timeout: int = int(os.getenv('SHORT_TIMEOUT', '10'))
-    long_timeout: int = int(os.getenv('LONG_TIMEOUT', '30'))
-    retry_delay: int = int(os.getenv('RETRY_DELAY', '5'))
-    max_retries: int = int(os.getenv('MAX_RETRIES', '3'))
+    short_timeout: int = int(os.getenv("SHORT_TIMEOUT", "10"))
+    long_timeout: int = int(os.getenv("LONG_TIMEOUT", "30"))
+    retry_delay: int = int(os.getenv("RETRY_DELAY", "5"))
+    max_retries: int = int(os.getenv("MAX_RETRIES", "3"))
 
     # SSL verification settings [from environment variables]
-    verify_external_ssl: bool = os.getenv('VERIFY_EXTERNAL_SSL', 'True').lower() == 'true'
-    verify_internal_ssl: bool = os.getenv('VERIFY_INTERNAL_SSL', 'False').lower() == 'false'
+    verify_external_ssl: bool = os.getenv("VERIFY_EXTERNAL_SSL", "True").lower() == "true"
+    verify_internal_ssl: bool = os.getenv("VERIFY_INTERNAL_SSL", "False").lower() == "false"
 
     # Network settings [from environment variables]
-    metallb_ip_range: str = os.getenv('METALLB_IP_RANGE')
-    homelab_domain: str = os.getenv('HOMELAB_DOMAIN')
-    dev_domain: str = os.getenv('HOMELAB_DEV_DOMAIN')
+    metallb_ip_range: str = os.getenv("METALLB_IP_RANGE")
+    homelab_domain: str = os.getenv("HOMELAB_DOMAIN")
+    dev_domain: str = os.getenv("HOMELAB_DEV_DOMAIN")
 
     # Critical namespaces for health checking [from environment variables]
     critical_namespaces: List[str] = field(
         default_factory=lambda: [
-            namespace.strip() for namespace in os.getenv('CRITICAL_NAMESPACES', "kube-system,metallb-system,cert-manager,ingress-nginx,longhorn-system,monitoring").split(',')
+            namespace.strip()
+            for namespace in os.getenv(
+                "CRITICAL_NAMESPACES",
+                "kube-system,metallb-system,cert-manager,ingress-nginx,longhorn-system,monitoring",
+            ).split(",")
         ]
     )
 
@@ -113,32 +118,40 @@ class TestingConfig:
     service_definitions: Dict[str, ServiceDefinition] = field(
         default_factory=lambda: {
             "gitlab": ServiceDefinition(
-                namespace=os.getenv('GITLAB_NAMESPACE', 'gitlab-system'),
+                namespace=os.getenv("GITLAB_NAMESPACE", "gitlab-system"),
                 ports=[80, 443],
-                health_path="/-/health"
+                health_path="/-/health",
             ),
             "keycloak": ServiceDefinition(
-                namespace=os.getenv('KEYCLOAK_NAMESPACE', 'keycloak'),
+                namespace=os.getenv("KEYCLOAK_NAMESPACE", "keycloak"),
                 ports=[8080],
-                health_path="/auth/health/ready"
+                health_path="/auth/health/ready",
             ),
             "prometheus": ServiceDefinition(
-                namespace=os.getenv('MONITORING_NAMESPACE', 'monitoring'),
+                namespace=os.getenv("MONITORING_NAMESPACE", "monitoring"),
                 ports=[9090],
-                health_path="/-/healthy"
+                health_path="/-/healthy",
             ),
             "grafana": ServiceDefinition(
-                namespace=os.getenv('MONITORING_NAMESPACE', 'monitoring'),
+                namespace=os.getenv("MONITORING_NAMESPACE", "monitoring"),
                 ports=[3000],
-                health_path="/api/health"
+                health_path="/api/health",
             ),
             "nginx-ingress": ServiceDefinition(
-                namespace=os.getenv('INGRESS_NGINX_NAMESPACE', 'ingress-nginx'),
+                namespace=os.getenv("INGRESS_NGINX_NAMESPACE", "ingress-nginx"),
                 ports=[80, 443],
-                health_path="/healthz"
+                health_path="/healthz",
             ),
-            "cert-manager": ServiceDefinition(namespace=os.getenv('CERT_MANAGER_NAMESPACE', 'cert-manager'), ports=[], health_path=None),
-            "metallb": ServiceDefinition(namespace=os.getenv('METALLB_NAMESPACE', 'metallb-system'), ports=[], health_path=None),
+            "cert-manager": ServiceDefinition(
+                namespace=os.getenv("CERT_MANAGER_NAMESPACE", "cert-manager"),
+                ports=[],
+                health_path=None,
+            ),
+            "metallb": ServiceDefinition(
+                namespace=os.getenv("METALLB_NAMESPACE", "metallb-system"),
+                ports=[],
+                health_path=None,
+            ),
         }
     )
 
@@ -189,15 +202,16 @@ class TestingConfig:
         default_factory=lambda: [
             ("prometheus", "grafana", "Prometheus -> Grafana data source"),
             ("keycloak", "gitlab", "Keycloak -> GitLab SSO"),
-            ("keycloak", "grafana", "Keycloak -[0;000m -> Grafana SSO"),
+            ("keycloak", "grafana", "Keycloak -\x1b[0;000m -> Grafana SSO"),
         ]
     )
 
-def __post_init__(self):
-        """Initialize and validate configuration after instantiation."""
-        print(f"Using METALLB_IP_RANGE: {self.metallb_ip_range}")
-        print(f"Using HOMELAB_DOMAIN: {self.homelab_domain}")
-        print(f"Using CRITICAL_NAMESPACES: {self.critical_namespaces}")
+
+def __post_init__(self) -> None:
+    """Initialize and validate configuration after instantiation."""
+    print(f"Using METALLB_IP_RANGE: {self.metallb_ip_range}")
+    print(f"Using HOMELAB_DOMAIN: {self.homelab_domain}")
+    print(f"Using CRITICAL_NAMESPACES: {self.critical_namespaces}")
 
 
 # Default configuration instance
@@ -223,9 +237,9 @@ def get_config(overrides: Optional[Dict[str, Any]] = None) -> TestingConfig:
     config = TestingConfig()
 
     # Load from environment
-    config.metallb_ip_range = os.getenv('METALLB_IP_RANGE', config.metallb_ip_range)
-    config.homelab_domain = os.getenv('HOMELAB_DOMAIN', config.homelab_domain)
-    config.dev_domain = os.getenv('HOMELAB_DEV_DOMAIN', config.dev_domain)
+    config.metallb_ip_range = os.getenv("METALLB_IP_RANGE", config.metallb_ip_range)
+    config.homelab_domain = os.getenv("HOMELAB_DOMAIN", config.homelab_domain)
+    config.dev_domain = os.getenv("HOMELAB_DEV_DOMAIN", config.dev_domain)
 
     # Apply overrides
     for key, value in overrides.items():

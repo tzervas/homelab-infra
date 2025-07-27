@@ -150,7 +150,7 @@ run_python_checks() {
 
   local python_files
   local find_cmd="find . -type f -name \"*.py\" -not -path \"./untracked_backup/*\" -not -path \"./examples/*\" -not -path \"./venv/*\" -not -path \"./.pytest_cache/*\" -not -path \"*/__pycache__/*\""
-  
+
   if [[ "$MAX_PYTHON_FILES" -gt 0 ]]; then
     if [[ "$VERBOSE" == true ]]; then
       log_info "Limiting to $MAX_PYTHON_FILES Python files"

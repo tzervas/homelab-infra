@@ -207,16 +207,21 @@ run_ansible_playbook() {
     cd "$PROJECT_ROOT"
 
     # Prepare Ansible command
+    # Define Ansible command as an array and properly escape paths
     local ansible_cmd=(
         "ansible-playbook"
-        "-i" "ansible/inventory/hosts.yml"
-        "$playbook"
+        "-i"
+        "ansible/inventory/hosts.yml"
+        "${playbook}"
     )
 
-    # Add extra arguments
+    # Add extra arguments if present, maintaining array structure
     if [[ ${#extra_args[@]} -gt 0 ]]; then
         ansible_cmd+=("${extra_args[@]}")
     fi
+
+    # Execute command with proper array expansion to preserve argument separation
+    "${ansible_cmd[@]}"
 
     # Add verbosity if in debug mode
     if [[ "${DEBUG:-false}" == "true" ]]; then

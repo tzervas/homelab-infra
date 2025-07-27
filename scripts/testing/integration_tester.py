@@ -563,31 +563,26 @@ class IntegrationConnectivityTester:
 
         # Test service connectivity from server perspective
         for endpoint in self.service_endpoints.values():
-            results.extend(
-                [
-                    self.test_service_connectivity(endpoint, "server"),
-                    self.test_api_endpoints(endpoint, "server"),
-                ]
-            )
-
-            # Workstation perspective tests if requested
-            if include_workstation_tests:
-                results.extend(
-                    [
-                        self.test_service_connectivity(endpoint, "workstation"),
-                        self.test_api_endpoints(endpoint, "workstation"),
-                    ]
-                )
-
-        # SSO integration tests
-        results.extend(
-            [
-                self.test_sso_integration_flow(endpoint)
-                for endpoint in self.service_endpoints.values()
+            # Gather all tests for current endpoint
+            endpoint_tests = [
+                self.test_service_connectivity(endpoint, "server"),
+                self.test_api_endpoints(endpoint, "server")
             ]
-        )
+            
+            # Add workstation perspective tests if requested
+            if include_workstation_tests:
+                endpoint_tests.extend([
+                    self.test_service_connectivity(endpoint, "workstation"),
+                    self.test_api_endpoints(endpoint, "workstation")
+                ])
+            
+            # Add SSO test for this endpoint
+            endpoint_tests.append(self.test_sso_integration_flow(endpoint))
+            
+            # Add all endpoint tests
+            results.extend(endpoint_tests)
 
-        # Infrastructure-level tests
+        # Add infrastructure-level tests
         results.extend([self.test_ingress_routing(), self.test_service_to_service_communication()])
 
         # Log summary

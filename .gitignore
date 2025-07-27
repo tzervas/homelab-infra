@@ -119,14 +119,20 @@ node_modules/
 
 # Python
 # Python bytecode caching and compilation
-# Match any __pycache__ directory anywhere
+# Match any __pycache__ directory and its contents anywhere
 **/__pycache__/
 */**/__pycache__/
 **/*/__pycache__/
+**/__pycache__/**
+*/**/__pycache__/**
+**/*/__pycache__/**
 # Match any Python bytecode files anywhere
 **/*.py[cod]
 */**/*.py[cod]
 **/*/*.py[cod]
+**/*.cpython-*.py[cod]
+*/**/*.cpython-*.py[cod]
+**/*/*.cpython-*.py[cod]
 # Other Python compilation files
 **/*$py.class
 */**/*$py.class

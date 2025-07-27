@@ -1,5 +1,17 @@
 global:
   storageClass: "longhorn"
+  
+  # Security contexts for rootless deployment
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
 
 longhorn:
   enabled: true
@@ -52,6 +64,18 @@ longhorn:
     guaranteedReplicaManagerCPU: 12
 
   longhornManager:
+    securityContext:
+      runAsNonRoot: false  # Longhorn manager needs root for volume operations
+      runAsUser: 0
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - SYS_ADMIN
+          - DAC_OVERRIDE
+          - MKNOD
+      seccompProfile:
+        type: RuntimeDefault
     resources:
       limits:
         cpu: 200m
@@ -61,6 +85,20 @@ longhorn:
         memory: 128Mi
 
   longhornDriver:
+    securityContext:
+      runAsNonRoot: false  # Longhorn driver needs root for storage operations
+      runAsUser: 0
+      privileged: true  # Required for volume mounting
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - SYS_ADMIN
+          - DAC_OVERRIDE
+          - MKNOD
+          - SYS_RESOURCE
+      seccompProfile:
+        type: RuntimeDefault
     resources:
       limits:
         cpu: 200m
@@ -70,6 +108,16 @@ longhorn:
         memory: 128Mi
 
   longhornUI:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     resources:
       limits:
         cpu: 200m

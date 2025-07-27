@@ -1,12 +1,34 @@
 global:
   domain: "homelab.local"
   storageClass: "longhorn"
+  
+  # Security contexts for rootless deployment
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
 
 kube-prometheus-stack:
   enabled: true
 
   prometheus:
     prometheusSpec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
       retention: "30d"
       retentionSize: "45GB"
       storageSpec:
@@ -35,6 +57,16 @@ kube-prometheus-stack:
 
   alertmanager:
     alertmanagerSpec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
       storage:
         volumeClaimTemplate:
           spec:
@@ -60,6 +92,16 @@ kube-prometheus-stack:
     enabled: true
 
   prometheusOperator:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     resources:
       limits:
         cpu: 200m
@@ -93,6 +135,16 @@ loki:
       grpc_server_max_send_msg_size: 8388608
 
   singleBinary:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      fsGroup: 10001
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
     resources:
       limits:
         cpu: 1000m
@@ -107,6 +159,17 @@ loki:
 
 promtail:
   enabled: true
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 0  # Promtail needs root to read log files
+    runAsGroup: 0
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - DAC_READ_SEARCH
+    seccompProfile:
+      type: RuntimeDefault
   config:
     clients:
       - url: http://loki:3100/loki/api/v1/push
@@ -120,6 +183,17 @@ promtail:
 
 grafana:
   enabled: true
+  
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
 
   persistence:
     enabled: true

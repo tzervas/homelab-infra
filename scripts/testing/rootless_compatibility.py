@@ -13,16 +13,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+
 try:
     from kubernetes import client, config
-    from kubernetes.client.rest import ApiException
 
     KUBERNETES_AVAILABLE = True
 except ImportError:
     KUBERNETES_AVAILABLE = False
 
 try:
-    from .common import safe_import, setup_logger
+    from .common import setup_logger
     from .network_security import SecurityStatus
 except ImportError:
     # Fallback imports
@@ -206,7 +206,7 @@ class RootlessCompatibilityChecker:
 
             missing_dirs = []
             for dir_path in required_dirs:
-                if not os.path.exists(dir_path):
+                if not Path(dir_path).exists():
                     missing_dirs.append(dir_path)
 
             if missing_dirs:
@@ -215,13 +215,13 @@ class RootlessCompatibilityChecker:
 
             # Check environment configuration
             env_file = f"{self.deployment_home}/.environment"
-            if not os.path.exists(env_file):
+            if not Path(env_file).exists():
                 issues.append(f"Environment file {env_file} not found")
                 recommendations.append("Create .environment file with proper configuration")
 
             # Check sudo configuration
             sudoers_file = f"/etc/sudoers.d/{self.deployment_user}"
-            if not os.path.exists(sudoers_file):
+            if not Path(sudoers_file).exists():
                 issues.append(f"Sudoers file {sudoers_file} not found")
                 recommendations.append("Configure sudo access for deployment user")
 
@@ -517,11 +517,9 @@ class RootlessCompatibilityChecker:
                 )
 
             # Check Python dependencies
-            try:
-                import kubernetes
-
+            if KUBERNETES_AVAILABLE:
                 details["kubernetes_client"] = "available"
-            except ImportError:
+            else:
                 issues.append("Kubernetes Python client not available")
                 recommendations.append("Install kubernetes Python package")
 

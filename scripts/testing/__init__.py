@@ -22,16 +22,16 @@ except ImportError as e:
     warnings.warn(f"ImportError in scripts.testing.__init__: {e}", ImportWarning)
 
 __all__ = [
-    "ConfigValidator",
-    "ValidationResult",
-    "InfrastructureHealthMonitor",
     "ClusterHealth",
-    "ServiceDeploymentChecker",
-    "ServiceStatus",
-    "NetworkSecurityValidator",
-    "SecurityStatus",
+    "ConfigValidator",
+    "HomelabTestReporter",
+    "InfrastructureHealthMonitor",
     "IntegrationConnectivityTester",
     "IntegrationTestResult",
-    "HomelabTestReporter",
+    "NetworkSecurityValidator",
+    "SecurityStatus",
+    "ServiceDeploymentChecker",
+    "ServiceStatus",
     "TestSuiteResult",
+    "ValidationResult",
 ]

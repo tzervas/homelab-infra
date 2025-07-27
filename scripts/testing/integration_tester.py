@@ -17,6 +17,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
+
 # Import our testing modules
 try:
     from .config_validator import ConfigValidator
@@ -155,6 +156,7 @@ class IntegrationConnectivityTester:
         self,
         endpoint: ServiceEndpoint,
         perspective: str = "server",
+        *,
         verify_ssl: bool | None = None,
     ) -> IntegrationTestResult:
         """Test basic connectivity to a service endpoint."""
@@ -555,6 +557,7 @@ class IntegrationConnectivityTester:
 
     def run_comprehensive_integration_tests(
         self,
+        *,
         include_workstation_tests: bool = False,
     ) -> list[IntegrationTestResult]:
         """Run all integration tests."""
@@ -643,7 +646,9 @@ def main() -> int:
         ]
     else:
         # Run comprehensive tests
-        results = tester.run_comprehensive_integration_tests(args.include_workstation)
+        results = tester.run_comprehensive_integration_tests(
+            include_workstation_tests=args.include_workstation,
+        )
 
     # Display results
     print("\n🔗 Integration & Connectivity Test Results:")

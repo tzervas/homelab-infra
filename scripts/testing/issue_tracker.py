@@ -109,6 +109,7 @@ class IssueTracker:
         category: IssueCategory,
         details: dict[str, Any] | None = None,
         recommendations: list[str] | None = None,
+        *,
         affects_deployment: bool = False,
     ) -> None:
         """Add a new issue to the tracker."""
@@ -320,7 +321,7 @@ class IssueTracker:
             self.issues,
             key=lambda x: (
                 severity_order[x.severity],
-                x.affects_deployment and -1 or 0,  # Deployment blocking issues first
+                (x.affects_deployment and -1) or 0,  # Deployment blocking issues first
                 x.component,
                 x.message,
             ),

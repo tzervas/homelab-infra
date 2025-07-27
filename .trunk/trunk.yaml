@@ -67,6 +67,13 @@ lint:
     ansible-lint:
       config: .ansible-lint
 
+    bandit:
+      args:
+        - -ll # LOW severity threshold
+        - -i # LOW confidence threshold
+        - --skip
+        - B101,B601,B104,B108,B404,B603,B607
+
   # Ignore specific paths and patterns
   ignore:
     - node_modules/

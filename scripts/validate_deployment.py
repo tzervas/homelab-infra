@@ -5,18 +5,16 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 try:
-    from testing.rootless_compatibility import (
-        RootlessCompatibilityChecker,
-        RootlessCompatibilityResult,
-    )
-    from testing.test_reporter import HomelabTestReporter, TestSuiteResult
+    from testing.rootless_compatibility import RootlessCompatibilityChecker
+    from testing.test_reporter import HomelabTestReporter
 except ImportError:
     try:
-        from rootless_compatibility import RootlessCompatibilityChecker, RootlessCompatibilityResult
-        from test_reporter import HomelabTestReporter, TestSuiteResult
+        from rootless_compatibility import RootlessCompatibilityChecker
+        from test_reporter import HomelabTestReporter
     except ImportError:
         print("Error: Required testing modules not found.")
         print("Please run this script from the project root directory.")
@@ -40,6 +38,7 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
 def validate_deployment_readiness(
     kubeconfig_path: str | None = None,
     deployment_user: str | None = None,
+    *,
     include_workstation: bool = False,
     output_file: str | None = None,
     log_level: str = "INFO",
@@ -107,7 +106,7 @@ def validate_deployment_readiness(
 
     # Export validation report
     if not output_file:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
         output_file = f"deployment_validation_{timestamp}.json"
 
     logger.info(f"Writing validation report to {output_file}")

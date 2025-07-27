@@ -33,6 +33,8 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "jsonschema>=4.19.0",
+    "ansible-core>=2.16.0",  # Required by ansible-lint
+    "python-dotenv>=1.0.0",  # For environment variable management
 ]
 
 [project.optional-dependencies]
@@ -46,7 +48,11 @@ dev = [
     "bandit[toml]>=1.7.5",  # Security linting
     "safety>=3.0.0",  # Dependency vulnerability scanning
     "yamllint>=1.35.0",  # YAML linting
-    "ansible-lint>=24.9.0",  # Ansible playbook linting
+    "ansible-lint>=24.9.2",  # Ansible linting
+    # Type stub packages for better type checking
+    "types-PyYAML>=6.0.12",
+    "types-requests>=2.31.0",
+    "types-jsonschema>=4.19.0",
 ]
 
 test = [
@@ -61,7 +67,6 @@ lint = [
     "mypy>=1.5.0",
     "bandit[toml]>=1.7.5",
     "yamllint>=1.35.0",
-    "ansible-lint>=24.9.0",
 ]
 
 [project.urls]
@@ -95,34 +100,71 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "D",   # pydocstyle
-    "UP",  # pyupgrade
-    "ARG", # flake8-unused-arguments
-    "COM", # flake8-commas
-    "PTH", # flake8-use-pathlib
-    "SIM", # flake8-simplify
-    "TRY", # tryceratops
-    "FBT", # flake8-boolean-trap
-    "RUF", # Ruff-specific rules
-    "G",   # flake8-logging-format
-    "ANN", # flake8-annotations
-    "BLE", # flake8-blind-except
-    "A",   # flake8-builtins
-    "ERA", # eradicate
-    "PL",  # pylint
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+    "ANN",  # flake8-annotations
+    "ASYNC",# flake8-async
+    "S",    # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "FBT",  # flake8-boolean-trap
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "COM",  # flake8-commas
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "EM",   # flake8-errmsg
+    "EXE",  # flake8-executable
+    "FA",   # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PYI",  # flake8-pyi
+    "PT",   # flake8-pytest-style
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SLOT", # flake8-slots
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "TCH",  # flake8-type-checking
+    "INT",  # flake8-gettext
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "TD",   # flake8-todos
+    "FIX",  # flake8-fixme
+    "ERA",  # eradicate
+    "PD",   # pandas-vet
+    "PGH",  # pygrep-hooks
+    "PL",   # pylint
+    "TRY",  # tryceratops
+    "FLY",  # flynt
+    "NPY",  # NumPy-specific rules
+    "AIR",  # Airflow
     "PERF", # Perflint
+    "FURB", # refurb
+    "LOG",  # flake8-logging
+    "RUF",  # Ruff-specific rules
 ]
 ignore = [
-    "E501",   # line too long (handled by formatter)
-    "B008",   # do not perform function calls in argument defaults
-    "C901",   # too complex
-    "S101",   # assert used
+    "E501",    # line too long (handled by formatter)
+    "B008",    # do not perform function calls in argument defaults
+    "C901",    # too complex
     "PLR2004", # Magic value comparisons
+    "PLR0912", # Too many branches
+    "PLR0911", # Too many return statements
+    "PLR0913", # Too many arguments to function call
+    "PLR0915", # Too many statements
     "G004",    # Logging f-strings
     "TRY003",  # Avoid specifying long messages outside exception class
     "TRY401",  # Redundant exception in logging.exception
@@ -137,10 +179,10 @@ ignore = [
     "FA100",   # Missing from __future__ import annotations
     "ERA001",  # Commented code
     "E722",    # Bare except
-    "PLR0912", # Too many branches
-    "PLR0911", # Too many return statements
     "N807",    # Function name should not start with __
     "D401",    # First line of docstring should be in imperative mood
+    "D212",    # Multi-line docstring summary should start at the first line
+    "D213",    # Multi-line docstring summary should start at the second line
     "B028",    # No explicit stacklevel in warnings
     "TRY300",  # Consider else block
     "TRY301",  # Abstract raise to inner function
@@ -149,33 +191,161 @@ ignore = [
     "ANN003",  # Missing **kwargs annotation
     "PERF401", # List comprehension
     "RUF001",  # Ambiguous unicode character
+    "RUF002",  # Docstring contains ambiguous characters
+    "RUF009",  # Do not perform function call in dataclass defaults
     "SIM102",  # Use single if statement
     "S110",    # try-except-pass without logging
-    "RUF009",  # Do not perform function call in dataclass defaults
+    "TD002",   # Missing author in TODO
+    "TD003",   # Missing issue link on the line following this TODO
+    "FIX002",  # Line contains TODO
+    "T20",     # Disallow print statements (we'll enable in dev/debug)
+    "PD",      # pandas-vet (not using pandas)
+    "NPY",     # NumPy-specific rules (not using numpy)
+    "AIR",     # Airflow (not using airflow)
+    "DJ",      # Django (not using django)
+    "INP001",  # File is part of an implicit namespace package
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/testing/__init__.py" = ["F401"]  # Unused imports in __init__
-"scripts/testing/test_*.py" = ["S101"]    # Allow assert in tests
-"scripts/testing/*.py" = ["ANN101", "ANN102", "D100", "D101", "D102", "D103", "D104", "D105", "D107"]
+# Init files can have unused imports for re-exporting
+"__init__.py" = ["F401", "F403", "D104"]
+"**/__init__.py" = ["F401", "F403", "D104"]
+
+# Test files have special requirements
+"test_*.py" = [
+    "S101",    # Allow assert in tests
+    "S106",    # Allow hardcoded passwords in tests
+    "S105",    # Allow hardcoded secrets in tests
+    "PLR2004", # Allow magic values in tests
+    "ARG001",  # Unused function argument (fixtures)
+    "ARG002",  # Unused method argument
+    "FBT001",  # Boolean positional arg in function definition
+    "FBT002",  # Boolean default value in function definition
+    "FBT003",  # Boolean positional value in function call
+    "D100",    # Missing docstring in public module
+    "D101",    # Missing docstring in public class
+    "D102",    # Missing docstring in public method
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+    "ANN",     # All annotations (tests don't need strict typing)
+]
+"*_test.py" = [
+    "S101",    # Allow assert in tests
+    "S106",    # Allow hardcoded passwords in tests
+    "S105",    # Allow hardcoded secrets in tests
+    "PLR2004", # Allow magic values in tests
+    "ARG001",  # Unused function argument (fixtures)
+    "ARG002",  # Unused method argument
+    "FBT001",  # Boolean positional arg in function definition
+    "FBT002",  # Boolean default value in function definition
+    "FBT003",  # Boolean positional value in function call
+    "D100",    # Missing docstring in public module
+    "D101",    # Missing docstring in public class
+    "D102",    # Missing docstring in public method
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+    "ANN",     # All annotations (tests don't need strict typing)
+]
+"tests/**/*.py" = [
+    "S101",    # Allow assert in tests
+    "S106",    # Allow hardcoded passwords in tests
+    "S105",    # Allow hardcoded secrets in tests
+    "PLR2004", # Allow magic values in tests
+    "ARG001",  # Unused function argument (fixtures)
+    "ARG002",  # Unused method argument
+    "FBT",     # Boolean trap allowed in tests
+    "D",       # All docstring rules (tests are self-documenting)
+    "ANN",     # All annotations (tests don't need strict typing)
+]
+
+# Scripts have looser requirements for docstrings
+"scripts/testing/*.py" = [
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107",
+    "T201",  # Allow print statements in scripts
+]
+
+# Configuration files
+"setup.py" = ["D100"]
+"conf.py" = ["D100"]
+"docs/conf.py" = ["D100", "INP001"]
+
+# Migration files often have complex logic
+"migrations/*.py" = ["E501", "C901"]
+"**/migrations/*.py" = ["E501", "C901"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.isort]
+known-first-party = ["scripts"]
+combine-as-imports = true
+force-wrap-aliases = true
+lines-after-imports = 2
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = true
+mark-parentheses = true
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+suppress-dummy-args = true
+
+[tool.ruff.lint.pylint]
+max-args = 6
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# Additional ruff settings
+[tool.ruff.lint.flake8-type-checking]
+exempt-modules = ["typing", "typing_extensions"]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+runtime-evaluated-decorators = ["attrs.define", "attrs.frozen"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
 [tool.mypy]
 python_version = "3.10"
+# Stricter type checking options
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+strict_optional = true
+warn_unreachable = true
+# Additional strictness flags
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
 check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
+# Import handling
 follow_imports = "normal"
-ignore_missing_imports = true
+ignore_missing_imports = false  # Changed to false to catch missing type stubs
+# Additional useful flags
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+# Namespace packages support
+namespace_packages = true
+explicit_package_bases = true
 
+# Module overrides for third-party libraries without type stubs
 [[tool.mypy.overrides]]
 module = "kubernetes.*"
 ignore_missing_imports = true
@@ -184,30 +354,164 @@ ignore_missing_imports = true
 module = "yaml.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "ansible.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ansible_core.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dotenv.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "bandit.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "safety.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "yamllint.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ansible_lint.*"
+ignore_missing_imports = true
+
+# For test files, we can be a bit more lenient
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = "scripts.testing.test_*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+# Additional third-party library overrides
+[[tool.mypy.overrides]]
+module = "pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "_pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pkg_resources.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "setuptools.*"
+ignore_missing_imports = true
+
 [tool.bandit]
-exclude_dirs = ["tests", "untracked_backup"]
-skips = ["B101", "B601"]
+# Comprehensive security scanning configuration
+# Exclude directories that don't need security scanning
+exclude_dirs = [
+    "tests",
+    "untracked_backup",
+    ".venv",
+    "venv",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    "examples",  # Example configurations don't need security scanning
+    ".trunk",    # Trunk tool configuration
+    "docs",      # Documentation
+]
 
-[tool.black]
-line-length = 100
-target-version = ['py310']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.cache
-  | \.git
-  | \.mypy_cache
-  | \.pytest_cache
-  | \.ruff_cache
-  | __pycache__
-  | untracked_backup
-)/
-'''
+# Configure severity levels
+# Only report issues with LOW severity or higher
+severity = "LOW"
 
-[tool.isort]
-profile = "black"
-line_length = 100
+# Configure confidence levels
+# Only report issues with LOW confidence or higher
+confidence = "LOW"
+
+# Specific test IDs to skip based on project needs
+skips = [
+    "B101",  # assert_used - We use assertions in our code for validation
+    "B601",  # paramiko_calls - May be needed for SSH operations
+    "B104",  # hardcoded_bind_all_interfaces - K3s/K8s configs may bind to 0.0.0.0
+    "B108",  # hardcoded_tmp_directory - May use /tmp for temporary files
+    "B404",  # import_subprocess - We use subprocess for system commands
+    "B603",  # subprocess_without_shell_equals_true - Controlled subprocess usage
+    "B607",  # start_process_with_partial_path - Acceptable for known commands
+]
+
+# Additional test configuration
+[tool.bandit.hardcoded_password_string]
+# Skip specific patterns that are not actual passwords
+word_list = [
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "secrete",
+]
+
+[tool.bandit.hardcoded_password_funcarg]
+# Skip password checks in specific function arguments
+qualname_list = [
+    "requests.get",
+    "requests.post",
+    "requests.put",
+    "requests.patch",
+]
+
+[tool.bandit.shell_injection]
+# Configure shell injection checks
+no_shell = [
+    "os.execl",
+    "os.execle",
+    "os.execlp",
+    "os.execlpe",
+    "os.execv",
+    "os.execve",
+    "os.execvp",
+    "os.execvpe",
+    "os.spawnl",
+    "os.spawnle",
+    "os.spawnlp",
+    "os.spawnlpe",
+    "os.spawnv",
+    "os.spawnve",
+    "os.spawnvp",
+    "os.spawnvpe",
+    "os.startfile",
+]
+
+shell = [
+    "os.system",
+    "os.popen",
+    "subprocess.Popen",
+    "subprocess.run",
+    "subprocess.call",
+    "subprocess.check_call",
+    "subprocess.check_output",
+    "commands.getoutput",
+    "commands.getstatusoutput",
+]
+
+subprocess = [
+    "subprocess.Popen",
+    "subprocess.run",
+    "subprocess.call",
+    "subprocess.check_call",
+    "subprocess.check_output",
+]
+
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -229,8 +533,25 @@ markers = [
 [tool.bandit.assert_used]
 skips = ["*_test.py", "test_*.py"]
 
-# YAML Lint configuration
-[tool.yamllint]
-extends = "relaxed"
-rules.line-length.max = 120
-rules.comments.min-spaces-from-content = 1
+# Per-file ignore patterns
+[tool.bandit.any_other_function_with_shell_equals_true]
+# Skip shell=True checks for specific files where it's necessary
+skips = [
+    "scripts/testing/network_security.py",  # Network testing may require shell commands
+    "scripts/testing/infrastructure_health.py",  # System health checks
+]
+
+[tool.bandit.hardcoded_password_default]
+# Skip hardcoded password checks in example/template files
+skips = [
+    "examples/*",
+    "*template*",
+    "*example*",
+]
+
+# Note: yamllint configuration can be placed in a separate .yamllint file
+# if more complex configuration is needed
+
+# Ansible-lint uses external configuration file
+[tool.ansible-lint]
+config-file = ".ansible-lint"

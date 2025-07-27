@@ -118,10 +118,11 @@ fix-commit-history.sh
 node_modules/
 
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+# Python bytecode caching
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
 .Python
 build/
 develop-eggs/

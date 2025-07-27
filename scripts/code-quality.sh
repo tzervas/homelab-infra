@@ -38,6 +38,7 @@ FIX_MODE=false
 VERBOSE=false
 CI_MODE=false
 SKIP_TESTS=false
+FAIL_FAST=${FAIL_FAST:-${CI_MODE}}
 TARGETS=()
 
 # Configuration with defaults
@@ -60,6 +61,8 @@ OPTIONS:
     --max-py-files N   Maximum Python files to check (0 = no limit)
     --max-sh-files N   Maximum shell files to check (0 = no limit)
     --max-json-files N Maximum JSON files to check (0 = no limit)
+    --fail-fast       Exit immediately on test failures (default: true in CI)
+    --no-fail-fast    Continue on test failures
     --help             Show this help message
 
 TARGETS:
@@ -115,6 +118,14 @@ while [[ $# -gt 0 ]]; do
     --max-json-files)
       shift
       MAX_JSON_FILES=$1
+      shift
+      ;;
+    --fail-fast)
+      FAIL_FAST=true
+      shift
+      ;;
+    --no-fail-fast)
+      FAIL_FAST=false
       shift
       ;;
     --help)
@@ -474,11 +485,28 @@ run_tests() {
   fi
 
   log_info "Running tests..."
+  log_info "Fail-fast mode: $FAIL_FAST"
 
-  if command -v pytest &> /dev/null; then
-    pytest scripts/testing/ -v || log_warning "Some tests failed"
+  if ! command -v pytest &> /dev/null; then
+    if [[ "$CI_MODE" == true ]] || [[ "$FAIL_FAST" == true ]]; then
+      log_error "pytest not available in CI/fail-fast mode. Exiting."
+      exit 1
+    else
+      log_warning "pytest not available, skipping tests"
+      return 0
+    fi
+  fi
+
+  # Run pytest with detailed output
+  if ! pytest scripts/testing/ -v; then
+    if [[ "$FAIL_FAST" == true ]]; then
+      log_error "Tests failed in fail-fast mode. Exiting."
+      exit 1
+    else
+      log_warning "Tests failed but continuing due to no-fail-fast mode."
+    fi
   else
-    log_warning "pytest not available, skipping tests"
+    log_success "All tests passed!"
   fi
 
   log_success "Tests completed"
@@ -490,6 +518,7 @@ main() {
   log_info "Project root: $PROJECT_ROOT"
   log_info "Fix mode: $FIX_MODE"
   log_info "CI mode: $CI_MODE"
+  log_info "Fail-fast mode: $FAIL_FAST"
   log_info "Targets: ${TARGETS[*]}"
   [[ "$MAX_PYTHON_FILES" -gt 0 ]] && log_info "Max Python files: $MAX_PYTHON_FILES"
   [[ "$MAX_SHELL_FILES" -gt 0 ]] && log_info "Max shell files: $MAX_SHELL_FILES"

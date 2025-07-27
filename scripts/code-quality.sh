@@ -43,6 +43,7 @@ TARGETS=()
 # Configuration with defaults
 MAX_PYTHON_FILES=${MAX_PYTHON_FILES:-0}  # 0 means no limit
 MAX_SHELL_FILES=${MAX_SHELL_FILES:-0}   # 0 means no limit
+MAX_JSON_FILES=${MAX_JSON_FILES:-0}     # 0 means no limit
 
 # Parse command line arguments
 show_help() {
@@ -58,6 +59,7 @@ OPTIONS:
     --skip-tests       Skip running tests
     --max-py-files N   Maximum Python files to check (0 = no limit)
     --max-sh-files N   Maximum shell files to check (0 = no limit)
+    --max-json-files N Maximum JSON files to check (0 = no limit)
     --help             Show this help message
 
 TARGETS:
@@ -108,6 +110,11 @@ while [[ $# -gt 0 ]]; do
     --max-sh-files)
       shift
       MAX_SHELL_FILES=$1
+      shift
+      ;;
+    --max-json-files)
+      shift
+      MAX_JSON_FILES=$1
       shift
       ;;
     --help)
@@ -263,14 +270,54 @@ run_yaml_checks() {
 
   # JSON validation
   log_info "Checking JSON syntax..."
+  
   local json_files
-  json_files=$(find . -name "*.json" -not -path "./untracked_backup/*" -not -path "./.vscode/*")
+  local find_cmd="find . -type f -name \"*.json\" -not -path \"./untracked_backup/*\" -not -path \"./.vscode/*\" -not -path \"./node_modules/*\" -not -path \"*/.pytest_cache/*\""
+  
+  if [[ "$MAX_JSON_FILES" -gt 0 ]]; then
+    if [[ "$VERBOSE" == true ]]; then
+      log_info "Limiting to $MAX_JSON_FILES JSON files"
+    fi
+    json_files=$(eval "$find_cmd" | head -n "$MAX_JSON_FILES")
+  else
+    json_files=$(eval "$find_cmd")
+  fi
 
+  local total_files
+  total_files=$(echo "$json_files" | wc -l)
+  log_info "Found $total_files JSON files to check"
+
+  if [[ -z "$json_files" ]]; then
+    log_warning "No JSON files found"
+    return 0
+  fi
+
+  # Check each JSON file for validity
+  local invalid_count=0
   for file in $json_files; do
-    if ! python3 -m json.tool "$file" > /dev/null; then
+    if ! python3 -m json.tool "$file" > /dev/null 2>/dev/null; then
       log_error "Invalid JSON: $file"
+      ((invalid_count++))
+    elif [[ "$VERBOSE" == true ]]; then
+      log_info "Valid JSON: $file"
     fi
   done
+
+  # Report results
+  if [[ $invalid_count -eq 0 ]]; then
+    log_success "All JSON files are valid"
+  else
+    log_warning "Found $invalid_count invalid JSON files"
+  fi
+
+  # Check if we hit the file limit
+  if [[ "$MAX_JSON_FILES" -gt 0 ]]; then
+    local actual_total
+    actual_total=$(eval "$find_cmd" | wc -l)
+    if [[ $actual_total -gt $total_files ]]; then
+      log_warning "Only checked $total_files of $actual_total JSON files (increase --max-json-files to check more)"
+    fi
+  fi
 
   log_success "YAML/JSON checks completed"
 }
@@ -446,6 +493,7 @@ main() {
   log_info "Targets: ${TARGETS[*]}"
   [[ "$MAX_PYTHON_FILES" -gt 0 ]] && log_info "Max Python files: $MAX_PYTHON_FILES"
   [[ "$MAX_SHELL_FILES" -gt 0 ]] && log_info "Max shell files: $MAX_SHELL_FILES"
+  [[ "$MAX_JSON_FILES" -gt 0 ]] && log_info "Max JSON files: $MAX_JSON_FILES"
 
   check_dependencies
 

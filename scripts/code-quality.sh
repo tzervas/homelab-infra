@@ -281,10 +281,10 @@ run_yaml_checks() {
 
   # JSON validation
   log_info "Checking JSON syntax..."
-  
+
   local json_files
   local find_cmd="find . -type f -name \"*.json\" -not -path \"./untracked_backup/*\" -not -path \"./.vscode/*\" -not -path \"./node_modules/*\" -not -path \"*/.pytest_cache/*\""
-  
+
   if [[ "$MAX_JSON_FILES" -gt 0 ]]; then
     if [[ "$VERBOSE" == true ]]; then
       log_info "Limiting to $MAX_JSON_FILES JSON files"

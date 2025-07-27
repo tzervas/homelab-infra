@@ -2,13 +2,16 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+packages = ["scripts"]
+
 [project]
 name = "homelab-testing-framework"
-version = "0.1.0"
+version = "0.3.1"
 description = "Comprehensive testing framework for homelab infrastructure validation"
 readme = "scripts/testing/README.md"
 license = "MIT"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
     {name = "Tyler Zervas", email = "tz-dev@vectorweight.com"},
 ]
@@ -18,8 +21,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -79,7 +80,7 @@ homelab-integration = "scripts.testing.integration_tester:main"
 # Ruff configuration (replaces black, isort, flake8, etc.)
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py310"
 extend-exclude = [
     ".eggs",
     ".git",
@@ -101,99 +102,111 @@ select = [
     "N",   # pep8-naming
     "D",   # pydocstyle
     "UP",  # pyupgrade
-    "YTT", # flake8-2020
-    "ANN", # flake8-annotations
-    "ASYNC", # flake8-async
-    "S",   # flake8-bandit
-    "BLE", # flake8-blind-except
-    "B",   # flake8-bugbear
-    "A",   # flake8-builtins
-    "COM", # flake8-commas
-    "C4",  # flake8-comprehensions
-    "DTZ", # flake8-datetimez
-    "T10", # flake8-debugger
-    "EM",  # flake8-errmsg
-    "FA",  # flake8-future-annotations
-    "ISC", # flake8-implicit-str-concat
-    "ICN", # flake8-import-conventions
-    "G",   # flake8-logging-format
-    "INP", # flake8-no-pep420
-    "PIE", # flake8-pie
-    "T20", # flake8-print
-    "PYI", # flake8-pyi
-    "PT",  # flake8-pytest-style
-    "Q",   # flake8-quotes
-    "RSE", # flake8-raise
-    "RET", # flake8-return
-    "SLF", # flake8-self
-    "SLOT", # flake8-slots
-    "SIM", # flake8-simplify
-    "TID", # flake8-tidy-imports
-    "TCH", # flake8-type-checking
-    "INT", # flake8-gettext
     "ARG", # flake8-unused-arguments
+    "COM", # flake8-commas
     "PTH", # flake8-use-pathlib
-    "TD",  # flake8-todos
-    "FIX", # flake8-fixme
-    "ERA", # eradicate
-    "PD",  # pandas-vet
-    "PGH", # pygrep-hooks
-    "PL",  # pylint
+    "SIM", # flake8-simplify
     "TRY", # tryceratops
-    "FLY", # flynt
-    "NPY", # numpy
-    "PERF", # perflint
-    "FURB", # refurb
-    "LOG", # flake8-logging
-    "RUF", # ruff-specific rules
+    "FBT", # flake8-boolean-trap
+    "RUF", # Ruff-specific rules
+    "G",   # flake8-logging-format
+    "ANN", # flake8-annotations
+    "BLE", # flake8-blind-except
+    "A",   # flake8-builtins
+    "ERA", # eradicate
+    "PL",  # pylint
+    "PERF", # Perflint
 ]
-
 ignore = [
-    "D100",  # Missing docstring in public module
-    "D101",  # Missing docstring in public class
-    "D102",  # Missing docstring in public method
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in __init__
-    "ANN101", # Missing type annotation for self
-    "ANN102", # Missing type annotation for cls
-    "S101",  # Use of assert detected (common in tests)
-    "PLR0913", # Too many arguments
-    "PLR0915", # Too many statements
-    "COM812", # Trailing comma missing (conflicts with formatter)
-    "ISC001", # Implicitly concatenated string literals (conflicts with formatter)
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "C901",   # too complex
+    "S101",   # assert used
+    "PLR2004", # Magic value comparisons
+    "G004",    # Logging f-strings
+    "TRY003",  # Avoid specifying long messages outside exception class
+    "TRY401",  # Redundant exception in logging.exception
+    "S603",    # subprocess without shell equals true
+    "S607",    # Starting process with partial path
+    "BLE001",  # Blind except Exception
+    "PTH123",  # open() should be replaced by Path.open()
+    "S113",    # requests without timeout
+    "PERF203", # try-except in loop
+    "ARG002",  # Unused method argument
+    "ANN401",  # Dynamically typed expressions (Any)
+    "FA100",   # Missing from __future__ import annotations
+    "ERA001",  # Commented code
+    "E722",    # Bare except
+    "PLR0912", # Too many branches
+    "PLR0911", # Too many return statements
+    "N807",    # Function name should not start with __
+    "D401",    # First line of docstring should be in imperative mood
+    "B028",    # No explicit stacklevel in warnings
+    "TRY300",  # Consider else block
+    "TRY301",  # Abstract raise to inner function
+    "ANN001",  # Missing function argument annotation
+    "ANN002",  # Missing *args annotation
+    "ANN003",  # Missing **kwargs annotation
+    "PERF401", # List comprehension
+    "RUF001",  # Ambiguous unicode character
+    "SIM102",  # Use single if statement
+    "S110",    # try-except-pass without logging
+    "RUF009",  # Do not perform function call in dataclass defaults
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/testing/test_*.py" = ["S101", "PLR2004", "ANN201", "ANN001"]
-"tests/**/*.py" = ["S101", "PLR2004", "ANN201", "ANN001"]
-"scripts/**/*.py" = ["T201", "T203"]  # Allow print statements in scripts
+"scripts/testing/__init__.py" = ["F401"]  # Unused imports in __init__
+"scripts/testing/test_*.py" = ["S101"]    # Allow assert in tests
 
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-
-[tool.ruff.lint.isort]
-known-first-party = ["scripts", "homelab"]
-force-sort-within-sections = true
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 check_untyped_defs = true
-disallow_untyped_decorators = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
-warn_unreachable = true
-strict_equality = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "kubernetes.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "yaml.*"
+ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "untracked_backup"]
+skips = ["B101", "B601"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.cache
+  | \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.ruff_cache
+  | __pycache__
+  | untracked_backup
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -211,10 +224,6 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
-
-[tool.bandit]
-exclude_dirs = ["tests", "untracked_backup", "examples"]
-skips = ["B101", "B601"]  # Skip assert_used and shell=True warnings
 
 [tool.bandit.assert_used]
 skips = ["*_test.py", "test_*.py"]

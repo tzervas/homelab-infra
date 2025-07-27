@@ -12,7 +12,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any
 
 try:
     from kubernetes import client, config
@@ -53,11 +53,11 @@ class PermissionTest:
     """Represents a permission test with expected result."""
 
     name: str
-    command: List[str]
+    command: list[str]
     expected_success: bool
     description: str
     category: str = "general"
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -81,8 +81,8 @@ class PermissionVerifier:
 
     def __init__(
         self,
-        deployment_user: Optional[str] = None,
-        kubeconfig_path: Optional[str] = None,
+        deployment_user: str | None = None,
+        kubeconfig_path: str | None = None,
         log_level: str = "INFO",
     ) -> None:
         """Initialize the permission verifier."""
@@ -94,7 +94,7 @@ class PermissionVerifier:
         if KUBERNETES_AVAILABLE:
             self._init_kubernetes_client(kubeconfig_path)
 
-    def _init_kubernetes_client(self, kubeconfig_path: Optional[str]) -> None:
+    def _init_kubernetes_client(self, kubeconfig_path: str | None) -> None:
         """Initialize Kubernetes API client."""
         try:
             if kubeconfig_path:
@@ -106,7 +106,7 @@ class PermissionVerifier:
         except Exception as e:
             self.logger.warning(f"Could not initialize Kubernetes client: {e}")
 
-    def _run_command(self, cmd: List[str], timeout: int = 30) -> Tuple[bool, str, str, int]:
+    def _run_command(self, cmd: list[str], timeout: int = 30) -> tuple[bool, str, str, int]:
         """Run a command and return success status, stdout, stderr, and exit code.
 
         Args:
@@ -157,7 +157,7 @@ class PermissionVerifier:
         except Exception as e:
             return False, "", str(e), 1
 
-    def test_deployment_user_permissions(self) -> List[PermissionResult]:
+    def test_deployment_user_permissions(self) -> list[PermissionResult]:
         """Test deployment user basic permissions."""
         tests = [
             PermissionTest(
@@ -230,7 +230,7 @@ class PermissionVerifier:
 
         return results
 
-    def test_sudo_permissions(self) -> List[PermissionResult]:
+    def test_sudo_permissions(self) -> list[PermissionResult]:
         """Test deployment user sudo permissions."""
         tests = [
             PermissionTest(
@@ -308,7 +308,7 @@ class PermissionVerifier:
 
         return results
 
-    def test_kubernetes_permissions(self) -> List[PermissionResult]:
+    def test_kubernetes_permissions(self) -> list[PermissionResult]:
         """Test Kubernetes access permissions."""
         if not self.k8s_client:
             return []
@@ -367,7 +367,7 @@ class PermissionVerifier:
 
         return results
 
-    def verify_security_contexts(self) -> List[PermissionResult]:
+    def verify_security_contexts(self) -> list[PermissionResult]:
         """Verify security contexts are properly applied."""
         if not self.k8s_client:
             return []
@@ -489,21 +489,21 @@ class PermissionVerifier:
         return results
 
     @staticmethod
-    def _count_passed_tests(test_results: List[PermissionResult]) -> int:
+    def _count_passed_tests(test_results: list[PermissionResult]) -> int:
         """Count number of passed tests in a list of results."""
         return sum(bool(result.passed) for result in test_results)
 
     @classmethod
-    def _count_total_passed_tests(cls, results: Dict[str, List[PermissionResult]]) -> int:
+    def _count_total_passed_tests(cls, results: dict[str, list[PermissionResult]]) -> int:
         """Count total number of passed tests across all categories."""
         return sum(cls._count_passed_tests(test_results) for test_results in results.values())
 
     @staticmethod
-    def _count_total_tests(results: Dict[str, List[PermissionResult]]) -> int:
+    def _count_total_tests(results: dict[str, list[PermissionResult]]) -> int:
         """Count total number of tests across all categories."""
         return sum(len(test_results) for test_results in results.values())
 
-    def run_comprehensive_permission_tests(self) -> Dict[str, List[PermissionResult]]:
+    def run_comprehensive_permission_tests(self) -> dict[str, list[PermissionResult]]:
         """Run all permission verification tests."""
         self.logger.info("Starting comprehensive permission verification...")
 
@@ -526,7 +526,7 @@ class PermissionVerifier:
 
         return results
 
-    def generate_permission_report(self, results: Dict[str, List[PermissionResult]]) -> str:
+    def generate_permission_report(self, results: dict[str, list[PermissionResult]]) -> str:
         """Generate a comprehensive permission verification report."""
         report = []
         report.append("# Permission Verification Report")

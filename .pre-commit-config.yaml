@@ -110,11 +110,20 @@ repos:
       - id: gitleaks
 
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+    rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
-        exclude: ^(.*\.lock|.*\.log|bandit-report\.json)$
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: |
+          (?x)^(
+            .*\.cache/.*|
+            node_modules/.*|
+            .ruff_cache/.*|
+            .mypy_cache/.*|
+            .*\.lock|
+            .*\.log|
+            bandit-report\.json
+          )$
 
   # Documentation linting
   - repo: https://github.com/igorshubovych/markdownlint-cli

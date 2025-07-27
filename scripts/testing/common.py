@@ -4,6 +4,8 @@ This module provides shared logging configuration and import fallback logic
 to reduce boilerplate across all testing modules.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, Optional, Tuple, Type
 import warnings

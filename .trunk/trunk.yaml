@@ -36,14 +36,14 @@ lint:
     - mypy@1.9.0
     - bandit@1.7.8
     - ansible-lint@24.2.0
-  
+
   # Tool-specific configuration
   settings:
     markdownlint:
       config:
-        MD013: false  # Line length
-        MD024: false  # Multiple headers with same content
-        MD033: false  # Inline HTML
+        MD013: false # Line length
+        MD024: false # Multiple headers with same content
+        MD033: false # Inline HTML
 
     ruff:
       extend-select:
@@ -58,8 +58,8 @@ lint:
         - "B"
         - "A"
       ignore:
-        - "ANN101"  # Missing type annotation for self
-        - "ANN102"  # Missing type annotation for cls
+        - "ANN101" # Missing type annotation for self
+        - "ANN102" # Missing type annotation for cls
 
     black:
       line-length: 100
@@ -94,7 +94,7 @@ lint:
           run: markdownlint ${target}
           success_codes: [0]
           read_output_from: stdout
-    
+
     - name: shellcheck
       files: ["*.sh"]
       commands:
@@ -125,7 +125,7 @@ actions:
       run: trunk fmt --no-progress ${staged_files}
       triggers: [pre-commit]
       cleanup: true
-      
+
 # Formatting configuration
 format:
   enabled:

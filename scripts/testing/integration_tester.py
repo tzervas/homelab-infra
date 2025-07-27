@@ -12,7 +12,7 @@ import logging
 import socket
 import sys
 import time
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -46,7 +46,7 @@ class IntegrationTestResult:
     status: str  # "pass", "fail", "warning", "skip"
     message: str
     duration: float = 0.0
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     from_perspective: str = "server"  # "server" or "workstation"
 
     @property
@@ -63,7 +63,7 @@ class ServiceEndpoint:
     internal_url: str
     external_url: str
     health_path: str
-    api_paths: List[str] = field(default_factory=list)
+    api_paths: list[str] = field(default_factory=list)
     requires_auth: bool = False
     sso_enabled: bool = False
 
@@ -71,7 +71,7 @@ class ServiceEndpoint:
 class IntegrationConnectivityTester:
     """Comprehensive integration and connectivity testing."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the integration tester."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
@@ -155,7 +155,7 @@ class IntegrationConnectivityTester:
         self,
         endpoint: ServiceEndpoint,
         perspective: str = "server",
-        verify_ssl: Optional[bool] = None,
+        verify_ssl: bool | None = None,
     ) -> IntegrationTestResult:
         """Test basic connectivity to a service endpoint."""
         start_time = time.time()
@@ -532,7 +532,7 @@ class IntegrationConnectivityTester:
             },
         )
 
-    def get_auth_token(self, endpoint: ServiceEndpoint) -> Optional[str]:
+    def get_auth_token(self, endpoint: ServiceEndpoint) -> str | None:
         """Get authentication token for the endpoint.
 
         Override this method to provide actual authentication logic.
@@ -544,13 +544,13 @@ class IntegrationConnectivityTester:
         raise NotImplementedError(msg)
 
     @classmethod
-    def get_service_names(cls) -> List[str]:
+    def get_service_names(cls) -> list[str]:
         """Get list of available service names."""
         return ["gitlab", "keycloak", "prometheus", "grafana"]
 
     def run_comprehensive_integration_tests(
         self, include_workstation_tests: bool = False
-    ) -> List[IntegrationTestResult]:
+    ) -> list[IntegrationTestResult]:
         """Run all integration tests."""
         self.logger.info("Starting comprehensive integration testing...")
 

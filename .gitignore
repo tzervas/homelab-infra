@@ -1,3 +1,7 @@
+# Claude AI configuration files
+.claude/*.json
+!.claude/settings.local.json
+
 # Local .terraform directories
 **/.terraform/*
 
@@ -84,6 +88,22 @@ scripts/setup_ssh.sh
 **/*_private.json
 docs/private_repo_info.md
 
+# Sensitive values and secrets
+**/values-secrets.yaml
+**/secrets.yaml
+**/*-secrets.yaml
+.credentials/
+vault.yml
+*vault*
+
+# Test results and temporary files
+test_results/
+test-results/
+coverage/
+tmp/
+temp/
+.tmp/
+
 # Local Development Overrides
 *.local.yaml
 *.local.yml
@@ -95,3 +115,102 @@ docs/private_repo_info.md
 untracked_backup/
 .private_backup/
 fix-commit-history.sh
+node_modules/
+
+# Python
+# Python bytecode caching and compilation
+# Match any __pycache__ directory and its contents anywhere
+**/__pycache__/
+*/**/__pycache__/
+**/*/__pycache__/
+**/__pycache__/**
+*/**/__pycache__/**
+**/*/__pycache__/**
+# Match any Python bytecode files anywhere
+**/*.py[cod]
+*/**/*.py[cod]
+**/*/*.py[cod]
+**/*.cpython-*.py[cod]
+*/**/*.cpython-*.py[cod]
+**/*/*.cpython-*.py[cod]
+# Other Python compilation files
+**/*$py.class
+*/**/*$py.class
+**/*/*.so
+**/*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.cache/
+.mypy_cache/
+.ruff_cache/
+bandit-report.json
+
+# Pre-commit
+.pre-commit-config.yaml.bak
+.secrets.baseline
+
+# Temporary script files
+*-tmp.sh
+*-backup.sh
+update-*.sh
+delete-*.sh
+cherry-pick-*.sh
+code-review-*.md
+
+# Cache directories
+.cache/
+*.cache
+
+# Logs
+*.log
+logs/
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Generated files
+*.generated
+*.auto.tfvars

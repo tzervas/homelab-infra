@@ -1,13 +1,12 @@
-"""
-Common utilities for the homelab testing framework.
+"""Common utilities for the homelab testing framework.
 
 This module provides shared logging configuration and import fallback logic
 to reduce boilerplate across all testing modules.
 """
 
 import logging
-import warnings
 from typing import Any, Dict, Optional, Tuple, Type
+import warnings
 
 
 def setup_logging(module_name: str, log_level: str = "INFO") -> logging.Logger:
@@ -19,6 +18,7 @@ def setup_logging(module_name: str, log_level: str = "INFO") -> logging.Logger:
 
     Returns:
         Configured logger instance
+
     """
     logger = logging.getLogger(module_name)
     logger.setLevel(getattr(logging, log_level.upper()))
@@ -26,9 +26,7 @@ def setup_logging(module_name: str, log_level: str = "INFO") -> logging.Logger:
     # Only add handler if no handlers exist
     if not logger.handlers:
         handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
@@ -40,9 +38,11 @@ def safe_import_kubernetes() -> Tuple[bool, Optional[Any], Optional[Any]]:
 
     Returns:
         Tuple of (available, client_module, config_module)
+
     """
     try:
         from kubernetes import client, config
+
         return True, client, config
     except ImportError as e:
         warnings.warn(f"Kubernetes client not available: {e}", ImportWarning)
@@ -54,9 +54,11 @@ def safe_import_requests() -> Tuple[bool, Optional[Any]]:
 
     Returns:
         Tuple of (available, requests_module)
+
     """
     try:
         import requests
+
         return True, requests
     except ImportError as e:
         warnings.warn(f"Requests library not available: {e}", ImportWarning)
@@ -68,9 +70,11 @@ def safe_import_yaml() -> Tuple[bool, Optional[Any]]:
 
     Returns:
         Tuple of (available, yaml_module)
+
     """
     try:
         import yaml
+
         return True, yaml
     except ImportError as e:
         warnings.warn(f"YAML library not available: {e}", ImportWarning)
@@ -82,9 +86,11 @@ def safe_import_jsonschema() -> Tuple[bool, Optional[Type], Optional[Type]]:
 
     Returns:
         Tuple of (available, Draft7Validator, ValidationError)
+
     """
     try:
         from jsonschema import Draft7Validator, ValidationError
+
         return True, Draft7Validator, ValidationError
     except ImportError as e:
         warnings.warn(f"JSONSchema library not available: {e}", ImportWarning)
@@ -99,6 +105,7 @@ def get_kubernetes_client(kubeconfig_path: Optional[str] = None) -> Optional[Any
 
     Returns:
         Kubernetes API client or None if unavailable
+
     """
     k8s_available, client, config = safe_import_kubernetes()
     if not k8s_available:
@@ -127,19 +134,19 @@ def format_duration(seconds: float) -> str:
 
     Returns:
         Formatted duration string
+
     """
     if seconds < 1:
         return f"{seconds*1000:.0f}ms"
-    elif seconds < 60:
+    if seconds < 60:
         return f"{seconds:.1f}s"
-    elif seconds < 3600:
+    if seconds < 3600:
         minutes = int(seconds // 60)
         secs = int(seconds % 60)
         return f"{minutes}m{secs}s"
-    else:
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        return f"{hours}h{minutes}m"
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    return f"{hours}h{minutes}m"
 
 
 def get_status_icon(status: str) -> str:
@@ -150,6 +157,7 @@ def get_status_icon(status: str) -> str:
 
     Returns:
         Unicode icon for the status
+
     """
     status_icons = {
         "pass": "✅",
@@ -163,7 +171,7 @@ def get_status_icon(status: str) -> str:
         "secure": "🔒",
         "vulnerable": "🚨",
         "ready": "✅",
-        "in_progress": "🔄"
+        "in_progress": "🔄",
     }
     return status_icons.get(status.lower(), "❓")
 
@@ -177,10 +185,11 @@ def truncate_string(text: str, max_length: int = 100) -> str:
 
     Returns:
         Truncated string with ellipsis if needed
+
     """
     if len(text) <= max_length:
         return text
-    return text[:max_length-3] + "..."
+    return text[: max_length - 3] + "..."
 
 
 def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -192,6 +201,7 @@ def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) 
 
     Returns:
         Merged configuration dictionary
+
     """
     merged = base_config.copy()
 

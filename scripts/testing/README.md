@@ -29,11 +29,13 @@ scripts/testing/
 ## 🛠️ Requirements
 
 ### Python Dependencies
+
 ```bash
 pip install kubernetes requests pyyaml jsonschema
 ```
 
 ### System Requirements
+
 - Python 3.8+
 - kubectl configured for your cluster
 - Network access to your homelab services
@@ -42,6 +44,7 @@ pip install kubernetes requests pyyaml jsonschema
 ## 🎯 Quick Start
 
 ### Run Complete Test Suite
+
 ```bash
 # Run all tests with comprehensive reporting
 python scripts/testing/test_reporter.py
@@ -54,6 +57,7 @@ python scripts/testing/test_reporter.py --output-format all
 ```
 
 ### Run Individual Test Modules
+
 ```bash
 # Configuration validation
 python scripts/testing/config_validator.py --directory ansible/inventory
@@ -74,6 +78,7 @@ python scripts/testing/integration_tester.py --include-workstation
 ## 📊 Test Categories
 
 ### 1. Configuration Validation
+
 - **YAML/JSON Schema Validation**: Validates against defined schemas
 - **Ansible Inventory Validation**: Checks host definitions and group variables
 - **Helm Values Validation**: Validates Helm chart values files
@@ -81,12 +86,14 @@ python scripts/testing/integration_tester.py --include-workstation
 - **Sensitive Data Detection**: Identifies potential credential leakage
 
 **Usage:**
+
 ```bash
 python scripts/testing/config_validator.py --directory ansible/inventory
 python scripts/testing/config_validator.py --file helm/environments/dev/values.yaml
 ```
 
 ### 2. Infrastructure Health Monitoring
+
 - **Cluster Connectivity**: Tests Kubernetes API server connectivity
 - **Node Status**: Validates all nodes are healthy and ready
 - **Core Components**: Checks API server, etcd, scheduler, controller-manager
@@ -94,12 +101,14 @@ python scripts/testing/config_validator.py --file helm/environments/dev/values.y
 - **Network Connectivity**: Tests inter-node communication
 
 **Usage:**
+
 ```bash
 python scripts/testing/infrastructure_health.py
 python scripts/testing/infrastructure_health.py --kubeconfig ~/.kube/config
 ```
 
 ### 3. Service Deployment Validation
+
 - **Pod Status Monitoring**: Tracks pod health with intelligent retry logic
 - **Service Readiness**: Validates readiness and liveness probes
 - **Resource Usage**: Monitors CPU and memory consumption
@@ -107,6 +116,7 @@ python scripts/testing/infrastructure_health.py --kubeconfig ~/.kube/config
 - **Deployment Rollout Status**: Validates successful deployments
 
 **Services Monitored:**
+
 - GitLab
 - Keycloak
 - Prometheus
@@ -116,12 +126,14 @@ python scripts/testing/infrastructure_health.py --kubeconfig ~/.kube/config
 - MetalLB
 
 **Usage:**
+
 ```bash
 python scripts/testing/service_checker.py
 python scripts/testing/service_checker.py --service gitlab --namespace gitlab
 ```
 
 ### 4. Network & Security Validation
+
 - **Network Connectivity**: External and internal network testing
 - **TLS Certificate Validation**: Certificate presence and expiry checking
 - **Network Policy Enforcement**: Tests network segmentation policies
@@ -130,6 +142,7 @@ python scripts/testing/service_checker.py --service gitlab --namespace gitlab
 - **RBAC Security**: Validates role-based access controls
 
 **Usage:**
+
 ```bash
 python scripts/testing/network_security.py
 python scripts/testing/network_security.py --check tls
@@ -137,6 +150,7 @@ python scripts/testing/network_security.py --check metallb
 ```
 
 ### 5. Integration & Connectivity Testing
+
 - **End-to-End Service Connectivity**: Tests all service endpoints
 - **SSO Integration Flows**: Validates Keycloak SSO with GitLab/Grafana
 - **Ingress Routing**: Tests external access through ingress controllers
@@ -145,6 +159,7 @@ python scripts/testing/network_security.py --check metallb
 - **API Endpoint Validation**: Tests all critical API endpoints
 
 **Usage:**
+
 ```bash
 python scripts/testing/integration_tester.py
 python scripts/testing/integration_tester.py --include-workstation
@@ -152,6 +167,7 @@ python scripts/testing/integration_tester.py --service gitlab --perspective serv
 ```
 
 ### 6. Test Reporting & Aggregation
+
 - **Comprehensive Test Orchestration**: Runs all test modules in sequence
 - **Multiple Output Formats**: JSON, Markdown, and console reporting
 - **Metrics Calculation**: Test success rates, duration analysis
@@ -159,6 +175,7 @@ python scripts/testing/integration_tester.py --service gitlab --perspective serv
 - **Actionable Recommendations**: Specific remediation suggestions
 
 **Usage:**
+
 ```bash
 python scripts/testing/test_reporter.py --output-format json
 python scripts/testing/test_reporter.py --output-format markdown --output-file report
@@ -168,6 +185,7 @@ python scripts/testing/test_reporter.py --config-paths ansible/inventory helm/en
 ## 🏠 Homelab-Specific Configuration
 
 ### Service Endpoints
+
 The testing framework is pre-configured for your homelab services:
 
 ```python
@@ -185,11 +203,13 @@ grafana: https://grafana.homelab.local
 ```
 
 ### MetalLB Configuration
+
 - **IP Range**: 192.168.25.200-192.168.25.250
 - **L2Advertisement Mode**: Tests load balancer IP assignment
 - **Service Validation**: Ensures LoadBalancer services get external IPs
 
 ### Network Policies
+
 - **default-deny-all**: Tests default traffic blocking
 - **allow-dns**: Validates DNS resolution permissions
 - **monitoring-ingress**: Tests monitoring stack connectivity
@@ -197,6 +217,7 @@ grafana: https://grafana.homelab.local
 ## 📈 Report Formats
 
 ### JSON Output
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:00Z",
@@ -216,6 +237,7 @@ grafana: https://grafana.homelab.local
 ```
 
 ### Markdown Report
+
 ```markdown
 # Homelab Infrastructure Test Report
 *Generated: 2024-01-15 10:30:00*
@@ -236,6 +258,7 @@ grafana: https://grafana.homelab.local
 ```
 
 ### Console Output
+
 ```
 🚀 Starting Homelab Infrastructure Test Suite...
 
@@ -267,6 +290,7 @@ grafana: https://grafana.homelab.local
 ## 🔧 Advanced Usage
 
 ### Custom Configuration Paths
+
 ```bash
 python scripts/testing/test_reporter.py \
   --config-paths ansible/inventory helm/environments \
@@ -276,6 +300,7 @@ python scripts/testing/test_reporter.py \
 ```
 
 ### Environment Variables
+
 ```bash
 export KUBECONFIG=~/.kube/homelab-config
 export TEST_LOG_LEVEL=DEBUG
@@ -284,6 +309,7 @@ python scripts/testing/test_reporter.py
 ```
 
 ### Integration with CI/CD
+
 ```yaml
 # .github/workflows/homelab-tests.yml
 - name: Run Homelab Tests
@@ -304,6 +330,7 @@ python scripts/testing/test_reporter.py
 ### Common Issues
 
 **Kubernetes Connection Failed**
+
 ```bash
 # Check kubeconfig
 kubectl cluster-info
@@ -313,6 +340,7 @@ python scripts/testing/infrastructure_health.py --kubeconfig ~/.kube/config
 ```
 
 **Service Timeout Errors**
+
 ```bash
 # Check service status
 kubectl get pods -A
@@ -323,6 +351,7 @@ python scripts/testing/integration_tester.py --timeout 60
 ```
 
 **Permission Denied**
+
 ```bash
 # Check RBAC permissions
 kubectl auth can-i get pods --all-namespaces
@@ -333,6 +362,7 @@ kubectl create clusterrolebinding homelab-tester --clusterrole=view --serviceacc
 ```
 
 ### Debug Mode
+
 ```bash
 # Enable debug logging
 python scripts/testing/test_reporter.py --log-level DEBUG
@@ -344,6 +374,7 @@ python scripts/testing/service_checker.py --service gitlab --log-level DEBUG
 ## 🚀 Best Practices
 
 ### Regular Testing Schedule
+
 ```bash
 # Daily health checks
 0 8 * * * /usr/bin/python3 /path/to/scripts/testing/infrastructure_health.py
@@ -353,12 +384,14 @@ python scripts/testing/service_checker.py --service gitlab --log-level DEBUG
 ```
 
 ### Test-Driven Infrastructure
+
 1. **Pre-Deployment**: Validate configurations before applying
 2. **Post-Deployment**: Verify successful deployment and integration
 3. **Continuous Monitoring**: Regular health and security checks
 4. **Change Validation**: Test after infrastructure modifications
 
 ### Alerting Integration
+
 ```bash
 # Slack notification on failures
 python scripts/testing/test_reporter.py | grep -q "FAIL" && curl -X POST -H 'Content-type: application/json' --data '{"text":"Homelab tests failed!"}' YOUR_SLACK_WEBHOOK_URL
@@ -367,6 +400,7 @@ python scripts/testing/test_reporter.py | grep -q "FAIL" && curl -X POST -H 'Con
 ## 📝 Contributing
 
 ### Adding New Tests
+
 1. Create test methods following the existing pattern
 2. Use dataclasses for structured results
 3. Include comprehensive error handling
@@ -374,6 +408,7 @@ python scripts/testing/test_reporter.py | grep -q "FAIL" && curl -X POST -H 'Con
 5. Update documentation and usage examples
 
 ### Module Integration
+
 All modules use consistent interfaces and can be imported individually or used together through the test reporter.
 
 ## 🔐 Security Considerations

@@ -5,41 +5,48 @@ Welcome to the comprehensive documentation for the GitLab + Keycloak Homelab Inf
 ## 📚 Documentation Overview
 
 ### 🚀 Getting Started
+
 - **[Quick Start Guide](setup/quick-start.md)** - Get your homelab running in 30 minutes
 - **[Prerequisites](setup/prerequisites.md)** - System requirements and preparation
 - **[Architecture Overview](setup/architecture.md)** - Understanding the system design
 
 ### ⚙️ Setup & Installation
+
 - **[Initial Setup](setup/initial-setup.md)** - First-time installation process
 - **[Network Configuration](setup/network-configuration.md)** - Network planning and setup
 - **[SSH Key Setup](setup/ssh-keys.md)** - Secure authentication configuration
 - **[DNS Configuration](setup/dns-setup.md)** - Domain and DNS requirements
 
 ### 🔧 Configuration Management
+
 - **[Environment Variables](configuration/environment-variables.md)** - Complete .env configuration guide
 - **[Private Configuration](configuration/private-configuration.md)** - Managing secrets and private settings
 - **[Helm Values](configuration/helm-values.md)** - Customizing application deployments
 - **[Service Configuration](configuration/services.md)** - Individual service settings
 
 ### 🏗️ Deployment
+
 - **[Deployment Overview](deployment/README.md)** - Deployment process and phases
 - **[VM Testing](deployment/vm-testing.md)** - Testing with virtual machines
 - **[Bare Metal Deployment](deployment/bare-metal.md)** - Production deployment
 - **[CI/CD Integration](deployment/cicd.md)** - Automated deployment pipelines
 
 ### 🔐 Security
+
 - **[Bastion Host Security](security/bastion-host.md)** - Secure access patterns
 - **[GPG Signing](security/gpg-signing.md)** - Commit signing and verification
 - **[TLS/SSL Configuration](security/tls-ssl.md)** - Certificate management
 - **[Security Best Practices](security/best-practices.md)** - Comprehensive security guide
 
 ### 🛠️ Operations
+
 - **[Monitoring & Alerting](operations/monitoring.md)** - Prometheus and Grafana setup
 - **[Backup & Recovery](operations/backup-recovery.md)** - Data protection strategies
 - **[Maintenance](operations/maintenance.md)** - Regular maintenance tasks
 - **[Scaling](operations/scaling.md)** - Growing your homelab
 
 ### 🔍 Troubleshooting
+
 - **[Common Issues](troubleshooting/common-issues.md)** - Frequently encountered problems
 - **[Debugging Guide](troubleshooting/debugging.md)** - Systematic troubleshooting
 - **[Recovery Procedures](troubleshooting/recovery.md)** - Disaster recovery
@@ -48,22 +55,26 @@ Welcome to the comprehensive documentation for the GitLab + Keycloak Homelab Inf
 ## 🎯 Quick Navigation
 
 ### New to Homelabs?
+
 1. Read the [Architecture Overview](setup/architecture.md)
 2. Check [Prerequisites](setup/prerequisites.md)
 3. Follow the [Quick Start Guide](setup/quick-start.md)
 
 ### Ready to Deploy?
+
 1. Complete [Initial Setup](setup/initial-setup.md)
 2. Configure [Environment Variables](configuration/environment-variables.md)
 3. Start with [VM Testing](deployment/vm-testing.md)
 4. Move to [Bare Metal Deployment](deployment/bare-metal.md)
 
 ### Need to Customize?
+
 1. Review [Private Configuration](configuration/private-configuration.md)
 2. Modify [Helm Values](configuration/helm-values.md)
 3. Adjust [Service Configuration](configuration/services.md)
 
 ### Production Operations?
+
 1. Set up [Monitoring & Alerting](operations/monitoring.md)
 2. Configure [Backup & Recovery](operations/backup-recovery.md)
 3. Review [Security Best Practices](security/best-practices.md)

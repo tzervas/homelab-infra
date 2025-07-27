@@ -1,34 +1,32 @@
 #!/usr/bin/env python3
-"""
-Integration & Connectivity Tester for Homelab Infrastructure
+"""Integration & Connectivity Tester for Homelab Infrastructure.
 
 This module performs comprehensive end-to-end testing of service connectivity,
 SSO integration, ingress routing, and validates the complete system integration.
 """
 
-import json
+from dataclasses import dataclass, field
 import logging
-import requests
 import socket
-import subprocess
 import sys
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
+
+import requests
 
 # Import our testing modules
 try:
     from .config_validator import ConfigValidator
     from .infrastructure_health import InfrastructureHealthMonitor
-    from .service_checker import ServiceDeploymentChecker
     from .network_security import NetworkSecurityValidator
+    from .service_checker import ServiceDeploymentChecker
 except ImportError:
     try:
         from config_validator import ConfigValidator
         from infrastructure_health import InfrastructureHealthMonitor
-        from service_checker import ServiceDeploymentChecker
         from network_security import NetworkSecurityValidator
+        from service_checker import ServiceDeploymentChecker
     except ImportError:
         # Fallback for standalone usage
         print("Warning: Some testing modules not available. Running with limited functionality.")
@@ -41,6 +39,7 @@ except ImportError:
 @dataclass
 class IntegrationTestResult:
     """Result of an integration test."""
+
     test_name: str
     status: str  # "pass", "fail", "warning", "skip"
     message: str
@@ -57,6 +56,7 @@ class IntegrationTestResult:
 @dataclass
 class ServiceEndpoint:
     """Service endpoint configuration."""
+
     name: str
     internal_url: str
     external_url: str
@@ -69,16 +69,28 @@ class ServiceEndpoint:
 class IntegrationConnectivityTester:
     """Comprehensive integration and connectivity testing."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO"):
+    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
         """Initialize the integration tester."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
 
         # Initialize testing modules
         self.config_validator = ConfigValidator(log_level) if ConfigValidator else None
-        self.infra_monitor = InfrastructureHealthMonitor(kubeconfig_path, log_level) if InfrastructureHealthMonitor else None
-        self.service_checker = ServiceDeploymentChecker(kubeconfig_path, log_level) if ServiceDeploymentChecker else None
-        self.security_validator = NetworkSecurityValidator(kubeconfig_path, log_level) if NetworkSecurityValidator else None
+        self.infra_monitor = (
+            InfrastructureHealthMonitor(kubeconfig_path, log_level)
+            if InfrastructureHealthMonitor
+            else None
+        )
+        self.service_checker = (
+            ServiceDeploymentChecker(kubeconfig_path, log_level)
+            if ServiceDeploymentChecker
+            else None
+        )
+        self.security_validator = (
+            NetworkSecurityValidator(kubeconfig_path, log_level)
+            if NetworkSecurityValidator
+            else None
+        )
 
         # Service endpoint configuration for homelab
         self.service_endpoints = {
@@ -89,7 +101,7 @@ class IntegrationConnectivityTester:
                 health_path="/-/health",
                 api_paths=["/api/v4/projects", "/api/v4/user"],
                 requires_auth=True,
-                sso_enabled=True
+                sso_enabled=True,
             ),
             "keycloak": ServiceEndpoint(
                 name="Keycloak",
@@ -98,7 +110,7 @@ class IntegrationConnectivityTester:
                 health_path="/auth/health/ready",
                 api_paths=["/auth/realms/homelab", "/auth/admin/master/console"],
                 requires_auth=True,
-                sso_enabled=False  # Keycloak is the SSO provider
+                sso_enabled=False,  # Keycloak is the SSO provider
             ),
             "prometheus": ServiceEndpoint(
                 name="Prometheus",
@@ -107,7 +119,7 @@ class IntegrationConnectivityTester:
                 health_path="/-/healthy",
                 api_paths=["/api/v1/query", "/api/v1/targets"],
                 requires_auth=False,
-                sso_enabled=True
+                sso_enabled=True,
             ),
             "grafana": ServiceEndpoint(
                 name="Grafana",
@@ -116,8 +128,8 @@ class IntegrationConnectivityTester:
                 health_path="/api/health",
                 api_paths=["/api/datasources", "/api/dashboards/home"],
                 requires_auth=True,
-                sso_enabled=True
-            )
+                sso_enabled=True,
+            ),
         }
 
         # Test timeouts
@@ -131,9 +143,7 @@ class IntegrationConnectivityTester:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
@@ -143,7 +153,7 @@ class IntegrationConnectivityTester:
         self,
         endpoint: ServiceEndpoint,
         perspective: str = "server",
-        verify_ssl: bool = None
+        verify_ssl: Optional[bool] = None,
     ) -> IntegrationTestResult:
         """Test basic connectivity to a service endpoint."""
         start_time = time.time()
@@ -168,7 +178,7 @@ class IntegrationConnectivityTester:
                 urljoin(test_url, endpoint.health_path),
                 timeout=self.short_timeout,
                 verify=verify_ssl,
-                allow_redirects=True
+                allow_redirects=True,
             )
 
             duration = time.time() - start_time
@@ -183,18 +193,17 @@ class IntegrationConnectivityTester:
                     details={
                         "url": test_url,
                         "status_code": response.status_code,
-                        "response_time": duration
-                    }
+                        "response_time": duration,
+                    },
                 )
-            else:
-                return IntegrationTestResult(
-                    test_name=f"{endpoint.name}_connectivity",
-                    status="fail",
-                    message=f"{endpoint.name} returned {response.status_code}",
-                    duration=duration,
-                    from_perspective=perspective,
-                    details={"url": test_url, "status_code": response.status_code}
-                )
+            return IntegrationTestResult(
+                test_name=f"{endpoint.name}_connectivity",
+                status="fail",
+                message=f"{endpoint.name} returned {response.status_code}",
+                duration=duration,
+                from_perspective=perspective,
+                details={"url": test_url, "status_code": response.status_code},
+            )
 
         except requests.exceptions.Timeout:
             duration = time.time() - start_time
@@ -204,20 +213,22 @@ class IntegrationConnectivityTester:
                 message=f"{endpoint.name} connection timeout",
                 duration=duration,
                 from_perspective=perspective,
-                details={"url": test_url, "error": "timeout"}
+                details={"url": test_url, "error": "timeout"},
             )
         except Exception as e:
             duration = time.time() - start_time
             return IntegrationTestResult(
                 test_name=f"{endpoint.name}_connectivity",
                 status="fail",
-                message=f"{endpoint.name} connection failed: {str(e)}",
+                message=f"{endpoint.name} connection failed: {e!s}",
                 duration=duration,
                 from_perspective=perspective,
-                details={"url": test_url, "error": str(e)}
+                details={"url": test_url, "error": str(e)},
             )
 
-    def test_api_endpoints(self, endpoint: ServiceEndpoint, perspective: str = "server") -> IntegrationTestResult:
+    def test_api_endpoints(
+        self, endpoint: ServiceEndpoint, perspective: str = "server"
+    ) -> IntegrationTestResult:
         """Test API endpoint accessibility."""
         start_time = time.time()
         base_url = endpoint.internal_url if perspective == "server" else endpoint.external_url
@@ -231,7 +242,7 @@ class IntegrationConnectivityTester:
                 request_kwargs = {
                     "timeout": self.short_timeout,
                     "verify": False,
-                    "allow_redirects": True
+                    "allow_redirects": True,
                 }
 
                 # Add authentication if required
@@ -246,18 +257,14 @@ class IntegrationConnectivityTester:
                 reachable = response.status_code < 500 and response.status_code != 404
                 api_results[api_path] = {
                     "status_code": response.status_code,
-                    "reachable": reachable
+                    "reachable": reachable,
                 }
 
                 if reachable:
                     successful_apis += 1
 
             except Exception as e:
-                api_results[api_path] = {
-                    "status_code": None,
-                    "reachable": False,
-                    "error": str(e)
-                }
+                api_results[api_path] = {"status_code": None, "reachable": False, "error": str(e)}
 
         duration = time.time() - start_time
         total_apis = len(endpoint.api_paths)
@@ -281,8 +288,8 @@ class IntegrationConnectivityTester:
             details={
                 "api_results": api_results,
                 "successful_apis": successful_apis,
-                "total_apis": total_apis
-            }
+                "total_apis": total_apis,
+            },
         )
 
     def test_sso_integration_flow(self, endpoint: ServiceEndpoint) -> IntegrationTestResult:
@@ -294,7 +301,7 @@ class IntegrationConnectivityTester:
                 test_name=f"{endpoint.name}_sso_flow",
                 status="skip",
                 message=f"{endpoint.name} does not use SSO",
-                duration=0.0
+                duration=0.0,
             )
 
         try:
@@ -305,7 +312,7 @@ class IntegrationConnectivityTester:
                     test_name=f"{endpoint.name}_sso_flow",
                     status="fail",
                     message="Keycloak endpoint not configured",
-                    duration=time.time() - start_time
+                    duration=time.time() - start_time,
                 )
 
             # Check if service redirects to Keycloak for authentication
@@ -313,23 +320,18 @@ class IntegrationConnectivityTester:
 
             session = requests.Session()
             response = session.get(
-                protected_url,
-                timeout=self.long_timeout,
-                verify=False,
-                allow_redirects=False
+                protected_url, timeout=self.long_timeout, verify=False, allow_redirects=False
             )
 
             # Refined SSO detection logic to reduce false positives
             location = response.headers.get("location", "").lower()
             www_authenticate = response.headers.get("www-authenticate", "").lower()
             sso_location_keywords = ["keycloak", "sso", "login", "oauth", "openid"]
-            is_sso_redirect = (
-                response.status_code in [302, 303, 307]
-                and any(keyword in location for keyword in sso_location_keywords)
+            is_sso_redirect = response.status_code in {302, 303, 307} and any(
+                keyword in location for keyword in sso_location_keywords
             )
-            is_sso_401 = (
-                response.status_code == 401
-                and any(keyword in www_authenticate for keyword in ["bearer", "keycloak", "oauth", "openid"])
+            is_sso_401 = response.status_code == 401 and any(
+                keyword in www_authenticate for keyword in ["bearer", "keycloak", "oauth", "openid"]
             )
             sso_indicators = [is_sso_redirect, is_sso_401]
 
@@ -344,30 +346,29 @@ class IntegrationConnectivityTester:
                     details={
                         "status_code": response.status_code,
                         "location_header": response.headers.get("location", ""),
-                        "sso_detected": True
-                    }
+                        "sso_detected": True,
+                    },
                 )
-            else:
-                return IntegrationTestResult(
-                    test_name=f"{endpoint.name}_sso_flow",
-                    status="warning",
-                    message=f"{endpoint.name} SSO flow unclear",
-                    duration=duration,
-                    details={
-                        "status_code": response.status_code,
-                        "location_header": response.headers.get("location", ""),
-                        "sso_detected": False
-                    }
-                )
+            return IntegrationTestResult(
+                test_name=f"{endpoint.name}_sso_flow",
+                status="warning",
+                message=f"{endpoint.name} SSO flow unclear",
+                duration=duration,
+                details={
+                    "status_code": response.status_code,
+                    "location_header": response.headers.get("location", ""),
+                    "sso_detected": False,
+                },
+            )
 
         except Exception as e:
             duration = time.time() - start_time
             return IntegrationTestResult(
                 test_name=f"{endpoint.name}_sso_flow",
                 status="fail",
-                message=f"{endpoint.name} SSO test failed: {str(e)}",
+                message=f"{endpoint.name} SSO test failed: {e!s}",
                 duration=duration,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
     def test_ingress_routing(self) -> IntegrationTestResult:
@@ -392,13 +393,13 @@ class IntegrationConnectivityTester:
                 # HTTP connectivity test
                 try:
                     # Add a parameter to the method or use instance variable
-                    verify_ssl = getattr(self, 'verify_external_ssl', True)
+                    verify_ssl = getattr(self, "verify_external_ssl", True)
 
                     response = requests.head(
                         endpoint.external_url,
                         timeout=self.short_timeout,
                         verify=verify_ssl,
-                        allow_redirects=True
+                        allow_redirects=True,
                     )
                     http_ok = response.status_code < 500
                 except:
@@ -408,7 +409,7 @@ class IntegrationConnectivityTester:
                     "domain": domain,
                     "dns_resolution": dns_ok,
                     "http_reachable": http_ok,
-                    "overall_ok": dns_ok and http_ok
+                    "overall_ok": dns_ok and http_ok,
                 }
 
                 if dns_ok and http_ok:
@@ -420,7 +421,7 @@ class IntegrationConnectivityTester:
                     "dns_resolution": False,
                     "http_reachable": False,
                     "overall_ok": False,
-                    "error": str(e)
+                    "error": str(e),
                 }
 
         duration = time.time() - start_time
@@ -444,8 +445,8 @@ class IntegrationConnectivityTester:
             details={
                 "routing_results": routing_results,
                 "successful_routes": successful_routes,
-                "total_services": total_services
-            }
+                "total_services": total_services,
+            },
         )
 
     def test_service_to_service_communication(self) -> IntegrationTestResult:
@@ -468,7 +469,10 @@ class IntegrationConnectivityTester:
                 target_endpoint = self.service_endpoints.get(target)
 
                 if not source_endpoint or not target_endpoint:
-                    comm_results[description] = {"status": "skip", "reason": "Endpoint not configured"}
+                    comm_results[description] = {
+                        "status": "skip",
+                        "reason": "Endpoint not configured",
+                    }
                     continue
 
                 # Simple connectivity test from source to target
@@ -476,8 +480,8 @@ class IntegrationConnectivityTester:
 
                 # Use ping test as a proxy for network connectivity
                 parsed_url = urlparse(target_url)
-                target_host = parsed_url.netloc.split(':')[0]
-                target_port = parsed_url.port or (443 if parsed_url.scheme == 'https' else 80)
+                target_host = parsed_url.netloc.split(":")[0]
+                target_port = parsed_url.port or (443 if parsed_url.scheme == "https" else 80)
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(2)
@@ -492,17 +496,14 @@ class IntegrationConnectivityTester:
                     "status": "pass" if connectivity_ok else "fail",
                     "target_host": target_host,
                     "target_port": target_port,
-                    "tcp_connection_success": connectivity_ok
+                    "tcp_connection_success": connectivity_ok,
                 }
 
                 if connectivity_ok:
                     successful_comms += 1
 
             except Exception as e:
-                comm_results[description] = {
-                    "status": "fail",
-                    "error": str(e)
-                }
+                comm_results[description] = {"status": "fail", "error": str(e)}
 
         duration = time.time() - start_time
         total_tests = len(communication_tests)
@@ -525,8 +526,8 @@ class IntegrationConnectivityTester:
             details={
                 "communication_results": comm_results,
                 "successful_communications": successful_comms,
-                "total_tests": total_tests
-            }
+                "total_tests": total_tests,
+            },
         )
 
     def get_auth_token(self, endpoint: ServiceEndpoint) -> Optional[str]:
@@ -534,17 +535,20 @@ class IntegrationConnectivityTester:
 
         Override this method to provide actual authentication logic.
         """
-        raise NotImplementedError(
+        msg = (
             "Authentication required but get_auth_token() not implemented. "
             "Override this method or set auth tokens via environment variables."
         )
+        raise NotImplementedError(msg)
 
     @classmethod
     def get_service_names(cls) -> List[str]:
         """Get list of available service names."""
         return ["gitlab", "keycloak", "prometheus", "grafana"]
 
-    def run_comprehensive_integration_tests(self, include_workstation_tests: bool = False) -> List[IntegrationTestResult]:
+    def run_comprehensive_integration_tests(
+        self, include_workstation_tests: bool = False
+    ) -> List[IntegrationTestResult]:
         """Run all integration tests."""
         self.logger.info("Starting comprehensive integration testing...")
 
@@ -558,22 +562,28 @@ class IntegrationConnectivityTester:
                 self.logger.warning("Infrastructure health critical - some tests may fail")
 
         # Test service connectivity from server perspective
-        for service_name, endpoint in self.service_endpoints.items():
-            results.append(self.test_service_connectivity(endpoint, "server"))
-            results.append(self.test_api_endpoints(endpoint, "server"))
-
-            # Workstation perspective tests if requested
+        for endpoint in self.service_endpoints.values():
+            # Gather all tests for current endpoint
+            endpoint_tests = [
+                self.test_service_connectivity(endpoint, "server"),
+                self.test_api_endpoints(endpoint, "server")
+            ]
+            
+            # Add workstation perspective tests if requested
             if include_workstation_tests:
-                results.append(self.test_service_connectivity(endpoint, "workstation"))
-                results.append(self.test_api_endpoints(endpoint, "workstation"))
+                endpoint_tests.extend([
+                    self.test_service_connectivity(endpoint, "workstation"),
+                    self.test_api_endpoints(endpoint, "workstation")
+                ])
+            
+            # Add SSO test for this endpoint
+            endpoint_tests.append(self.test_sso_integration_flow(endpoint))
+            
+            # Add all endpoint tests
+            results.extend(endpoint_tests)
 
-        # SSO integration tests
-        for service_name, endpoint in self.service_endpoints.items():
-            results.append(self.test_sso_integration_flow(endpoint))
-
-        # Infrastructure-level tests
-        results.append(self.test_ingress_routing())
-        results.append(self.test_service_to_service_communication())
+        # Add infrastructure-level tests
+        results.extend([self.test_ingress_routing(), self.test_service_to_service_communication()])
 
         # Log summary
         passed_tests = sum(1 for r in results if r.passed)
@@ -584,23 +594,28 @@ class IntegrationConnectivityTester:
         return results
 
 
-def main():
+def main() -> int:
     """Main function for standalone testing."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Run comprehensive integration tests")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
-    parser.add_argument("--include-workstation", action="store_true",
-                       help="Include workstation perspective tests")
-    parser.add_argument("--service", choices=IntegrationConnectivityTester.get_service_names(),
-                       help="Test specific service only")
+    parser.add_argument(
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+    )
+    parser.add_argument(
+        "--include-workstation", action="store_true", help="Include workstation perspective tests"
+    )
+    parser.add_argument(
+        "--service",
+        choices=IntegrationConnectivityTester.get_service_names(),
+        help="Test specific service only",
+    )
 
     args = parser.parse_args()
 
     tester = IntegrationConnectivityTester(
-        kubeconfig_path=args.kubeconfig,
-        log_level=args.log_level
+        kubeconfig_path=args.kubeconfig, log_level=args.log_level
     )
 
     if args.service:
@@ -609,26 +624,38 @@ def main():
         results = [
             tester.test_service_connectivity(endpoint, "server"),
             tester.test_api_endpoints(endpoint, "server"),
-            tester.test_sso_integration_flow(endpoint)
+            tester.test_sso_integration_flow(endpoint),
         ]
     else:
         # Run comprehensive tests
         results = tester.run_comprehensive_integration_tests(args.include_workstation)
 
     # Display results
-    print(f"\n🔗 Integration & Connectivity Test Results:")
+    print("\n🔗 Integration & Connectivity Test Results:")
 
     passed_tests = sum(1 for r in results if r.passed)
     failed_tests = sum(1 for r in results if r.status == "fail")
     warning_tests = sum(1 for r in results if r.status == "warning")
     skipped_tests = sum(1 for r in results if r.status == "skip")
-    total_tests = len(results)
+    len(results)
 
     print(f"Results: {passed_tests}✅ {failed_tests}❌ {warning_tests}⚠️ {skipped_tests}⏭️")
 
     for result in results:
-        icon = "✅" if result.passed else "❌" if result.status == "fail" else "⚠️" if result.status == "warning" else "⏭️"
-        perspective_info = f" ({result.from_perspective})" if hasattr(result, 'from_perspective') and result.from_perspective != "server" else ""
+        icon = (
+            "✅"
+            if result.passed
+            else "❌"
+            if result.status == "fail"
+            else "⚠️"
+            if result.status == "warning"
+            else "⏭️"
+        )
+        perspective_info = (
+            f" ({result.from_perspective})"
+            if hasattr(result, "from_perspective") and result.from_perspective != "server"
+            else ""
+        )
         print(f"\n{icon} {result.test_name.replace('_', ' ').title()}{perspective_info}:")
         print(f"  {result.message}")
         if result.duration > 0:

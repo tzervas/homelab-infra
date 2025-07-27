@@ -68,17 +68,20 @@ kubectl get secrets -n gitlab -o yaml > certificates-backup.yaml
 ### GitLab Data Restore
 
 1. **Stop GitLab services**
+
 ```bash
 kubectl scale deployment gitlab-webservice --replicas=0 -n gitlab
 kubectl scale deployment gitlab-sidekiq --replicas=0 -n gitlab
 ```
 
 2. **Restore from backup**
+
 ```bash
 kubectl exec -n gitlab deployment/gitlab-webservice -- gitlab-backup restore BACKUP=<timestamp>
 ```
 
 3. **Restart services**
+
 ```bash
 kubectl scale deployment gitlab-webservice --replicas=1 -n gitlab
 kubectl scale deployment gitlab-sidekiq --replicas=1 -n gitlab
@@ -89,9 +92,11 @@ kubectl scale deployment gitlab-sidekiq --replicas=1 -n gitlab
 1. **Create maintenance window**
 2. **Stop application connections**
 3. **Restore database**
+
 ```bash
 kubectl exec -n gitlab deployment/postgresql -- psql -U gitlab -d gitlabhq_production < backup.sql
 ```
+
 4. **Verify data integrity**
 5. **Resume operations**
 

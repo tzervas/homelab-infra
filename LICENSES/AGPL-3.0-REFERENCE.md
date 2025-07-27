@@ -2,7 +2,8 @@
 
 This directory contains projects that are licensed under the GNU Affero General Public License v3.0.
 
-## Projects using AGPLv3:
+## Projects using AGPLv3
+
 - Grafana
 - Loki
 - Promtail
@@ -10,7 +11,8 @@ This directory contains projects that are licensed under the GNU Affero General 
 ## License Information
 
 The full text of the GNU Affero General Public License v3.0 can be found at:
-- **Official Source**: https://www.gnu.org/licenses/agpl-3.0.txt
+
+- **Official Source**: <https://www.gnu.org/licenses/agpl-3.0.txt>
 - **SPDX Identifier**: AGPL-3.0-or-later
 
 ## Key Points for Our Usage
@@ -23,6 +25,7 @@ The full text of the GNU Affero General Public License v3.0 can be found at:
 ## Compliance
 
 Our usage complies with AGPLv3 requirements because:
+
 - We use unmodified versions deployed via official Helm charts
 - We provide clear attribution in ATTRIBUTIONS.md
 - We reference the official license text location

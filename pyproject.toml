@@ -38,10 +38,29 @@ dependencies = [
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
-    "black>=23.7.0",
-    "isort>=5.12.0",
+    "ruff>=0.6.0",  # Replaces black, isort, flake8, etc.
     "mypy>=1.5.0",
     "pre-commit>=3.3.0",
+    # Additional dev tools for code quality
+    "bandit[toml]>=1.7.5",  # Security linting
+    "safety>=3.0.0",  # Dependency vulnerability scanning
+    "yamllint>=1.35.0",  # YAML linting
+    "ansible-lint>=24.9.0",  # Ansible playbook linting
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+lint = [
+    "ruff>=0.6.0",
+    "mypy>=1.5.0",
+    "bandit[toml]>=1.7.5",
+    "yamllint>=1.35.0",
+    "ansible-lint>=24.9.0",
 ]
 
 [project.urls]
@@ -57,27 +76,109 @@ homelab-service-check = "scripts.testing.service_checker:main"
 homelab-security = "scripts.testing.network_security:main"
 homelab-integration = "scripts.testing.integration_tester:main"
 
-[tool.black]
+# Ruff configuration (replaces black, isort, flake8, etc.)
+[tool.ruff]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311", "py312"]
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
+target-version = "py38"
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+    "untracked_backup",
+    "examples",
+]
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "YTT", # flake8-2020
+    "ANN", # flake8-annotations
+    "ASYNC", # flake8-async
+    "S",   # flake8-bandit
+    "BLE", # flake8-blind-except
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "COM", # flake8-commas
+    "C4",  # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    "EM",  # flake8-errmsg
+    "FA",  # flake8-future-annotations
+    "ISC", # flake8-implicit-str-concat
+    "ICN", # flake8-import-conventions
+    "G",   # flake8-logging-format
+    "INP", # flake8-no-pep420
+    "PIE", # flake8-pie
+    "T20", # flake8-print
+    "PYI", # flake8-pyi
+    "PT",  # flake8-pytest-style
+    "Q",   # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SLF", # flake8-self
+    "SLOT", # flake8-slots
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "TCH", # flake8-type-checking
+    "INT", # flake8-gettext
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "TD",  # flake8-todos
+    "FIX", # flake8-fixme
+    "ERA", # eradicate
+    "PD",  # pandas-vet
+    "PGH", # pygrep-hooks
+    "PL",  # pylint
+    "TRY", # tryceratops
+    "FLY", # flynt
+    "NPY", # numpy
+    "PERF", # perflint
+    "FURB", # refurb
+    "LOG", # flake8-logging
+    "RUF", # ruff-specific rules
+]
+
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D107",  # Missing docstring in __init__
+    "ANN101", # Missing type annotation for self
+    "ANN102", # Missing type annotation for cls
+    "S101",  # Use of assert detected (common in tests)
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "COM812", # Trailing comma missing (conflicts with formatter)
+    "ISC001", # Implicitly concatenated string literals (conflicts with formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/testing/test_*.py" = ["S101", "PLR2004", "ANN201", "ANN001"]
+"tests/**/*.py" = ["S101", "PLR2004", "ANN201", "ANN001"]
+"scripts/**/*.py" = ["T201", "T203"]  # Allow print statements in scripts
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+known-first-party = ["scripts", "homelab"]
+force-sort-within-sections = true
 
 [tool.mypy]
 python_version = "3.8"
@@ -96,7 +197,7 @@ strict_equality = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config"
+addopts = "-ra -q --strict-markers --strict-config --cov=scripts --cov-report=term-missing --cov-report=html"
 testpaths = [
     "tests",
     "scripts/testing",
@@ -105,3 +206,21 @@ python_files = [
     "test_*.py",
     "*_test.py",
 ]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "untracked_backup", "examples"]
+skips = ["B101", "B601"]  # Skip assert_used and shell=True warnings
+
+[tool.bandit.assert_used]
+skips = ["*_test.py", "test_*.py"]
+
+# YAML Lint configuration
+[tool.yamllint]
+extends = "relaxed"
+rules.line-length.max = 120
+rules.comments.min-spaces-from-content = 1

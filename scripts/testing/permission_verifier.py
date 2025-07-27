@@ -5,12 +5,14 @@ This module verifies that the deployment user has proper permissions
 and that security contexts are correctly applied across the infrastructure.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import logging
 import os
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 try:
     from kubernetes import client, config
@@ -121,13 +123,14 @@ class PermissionVerifier:
             return False, "", "Invalid command format", 1
 
         # Basic validation of command arguments - reject anything with shell metacharacters
-        shell_metacharacters = ["|", "&", ";", "<", ">", "(", ")", "$", "`", "\\", "\"", "'"]
+        shell_metacharacters = ["|", "&", ";", "<", ">", "(", ")", "$", "`", "\\", '"', "'"]
         if any(any(char in arg for char in shell_metacharacters) for arg in cmd):
             return False, "", "Command contains invalid characters", 1
 
         # Additional security - escape each argument properly
         try:
             from shlex import quote
+
             # Create a list of properly escaped arguments
             escaped_cmd = [quote(arg) for arg in cmd]
             # Validate escaped command
@@ -141,7 +144,7 @@ class PermissionVerifier:
                 text=True,
                 timeout=timeout,
                 check=False,
-                shell=False  # Explicitly disable shell interpretation
+                shell=False,  # Explicitly disable shell interpretation
             )
             return (
                 result.returncode == 0,

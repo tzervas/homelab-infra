@@ -173,7 +173,7 @@ repos:
         pass_filenames: false
 
 # Global configuration
-default_stages: [commit]
+default_stages: [pre-commit]
 fail_fast: false
 minimum_pre_commit_version: "3.3.0"
 

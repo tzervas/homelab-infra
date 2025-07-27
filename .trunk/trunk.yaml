@@ -3,18 +3,21 @@
 version: 0.1
 cli:
   version: 1.24.0
+
 # Trunk provides extensibility via plugins. (https://docs.trunk.io/plugins)
 plugins:
   sources:
     - id: trunk
       ref: v1.7.1
       uri: https://github.com/trunk-io/plugins
+
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
     - go@1.21.0
     - node@22.16.0
     - python@3.10.8
+
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
@@ -27,10 +30,116 @@ lint:
     - tflint@0.58.1
     - trufflehog@3.90.2
     - yamllint@1.37.1
+    - black@24.3.0
+    - isort@5.13.2
+    - ruff@0.3.4
+    - mypy@1.9.0
+    - bandit@1.7.8
+    - ansible-lint@24.2.0
+  
+  # Tool-specific configuration
+  settings:
+    markdownlint:
+      config:
+        MD013: false  # Line length
+        MD024: false  # Multiple headers with same content
+        MD033: false  # Inline HTML
+
+    ruff:
+      extend-select:
+        - "F"
+        - "E"
+        - "W"
+        - "C90"
+        - "I"
+        - "N"
+        - "UP"
+        - "ANN"
+        - "B"
+        - "A"
+      ignore:
+        - "ANN101"  # Missing type annotation for self
+        - "ANN102"  # Missing type annotation for cls
+
+    black:
+      line-length: 100
+
+    ansible-lint:
+      config: .ansible-lint
+
+  # Ignore specific paths and patterns
+  ignore:
+    - node_modules/
+    - .venv/
+    - .mypy_cache/
+    - .ruff_cache/
+    - .pytest_cache/
+    - .trunk/
+    - tmp/
+    - venv/
+    - ENV/
+    - env/
+    - dist/
+    - build/
+    - "**/*.pyc"
+    - "**/__pycache__/"
+
+  # Configure tool-specific settings
+  definitions:
+    - name: markdownlint
+      files: ["*.md"]
+      commands:
+        - name: lint
+          output: pass_fail
+          run: markdownlint ${target}
+          success_codes: [0]
+          read_output_from: stdout
+    
+    - name: shellcheck
+      files: ["*.sh"]
+      commands:
+        - name: lint
+          output: pass_fail
+          run: shellcheck -x ${target}
+          success_codes: [0]
+          read_output_from: stdout
+
+# Actions configuration for various git hooks and automated tasks
 actions:
-  disabled:
-    - trunk-announce
-    - trunk-check-pre-push
-    - trunk-fmt-pre-commit
   enabled:
     - trunk-upgrade-available
+    - trunk-check-pre-push
+    - trunk-fmt-pre-commit
+  disabled:
+    - trunk-announce
+
+  definitions:
+    - id: trunk-check-pre-push
+      description: Run Trunk checks before pushing
+      run: trunk check --no-progress ${push_files}
+      triggers: [pre-push]
+      cleanup: true
+
+    - id: trunk-fmt-pre-commit
+      description: Format files before committing
+      run: trunk fmt --no-progress ${staged_files}
+      triggers: [pre-commit]
+      cleanup: true
+      
+# Formatting configuration
+format:
+  enabled:
+    - black
+    - isort
+    - prettier
+    - shfmt
+  ignore:
+    - .git/
+    - .trunk/
+    - node_modules/
+    - .venv/
+    - venv/
+    - ENV/
+    - env/
+    - dist/
+    - build/

@@ -5,12 +5,14 @@ This module performs comprehensive end-to-end testing of service connectivity,
 SSO integration, ingress routing, and validates the complete system integration.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import logging
 import socket
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -566,19 +568,21 @@ class IntegrationConnectivityTester:
             # Gather all tests for current endpoint
             endpoint_tests = [
                 self.test_service_connectivity(endpoint, "server"),
-                self.test_api_endpoints(endpoint, "server")
+                self.test_api_endpoints(endpoint, "server"),
             ]
-            
+
             # Add workstation perspective tests if requested
             if include_workstation_tests:
-                endpoint_tests.extend([
-                    self.test_service_connectivity(endpoint, "workstation"),
-                    self.test_api_endpoints(endpoint, "workstation")
-                ])
-            
+                endpoint_tests.extend(
+                    [
+                        self.test_service_connectivity(endpoint, "workstation"),
+                        self.test_api_endpoints(endpoint, "workstation"),
+                    ]
+                )
+
             # Add SSO test for this endpoint
             endpoint_tests.append(self.test_sso_integration_flow(endpoint))
-            
+
             # Add all endpoint tests
             results.extend(endpoint_tests)
 

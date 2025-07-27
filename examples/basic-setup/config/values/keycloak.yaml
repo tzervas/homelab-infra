@@ -94,16 +94,45 @@ keycloak:
       enabled: true
       namespace: "monitoring"
 
-  # Security Context
+  # Security Context - Enhanced for rootless deployment
   podSecurityContext:
     enabled: true
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
     fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
 
   containerSecurityContext:
     enabled: true
     runAsNonRoot: true
     runAsUser: 1001
+    runAsGroup: 1001
     allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false  # Keycloak needs write access
+    seccompProfile:
+      type: RuntimeDefault
     capabilities:
       drop:
         - ALL
+        
+  # Database security context
+  postgresql:
+    enabled: true
+    primary:
+      securityContext:
+        enabled: true
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+    auth:
+      database: "keycloak"
+      username: "keycloak"
+      # password: set in secrets

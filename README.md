@@ -18,11 +18,56 @@ This repository contains the complete infrastructure configuration for a homelab
 
 ### Prerequisites
 
-- A homelab server with SSH access
-- kubectl configured
-- Helm 3.x installed
-- Ansible installed
-- At least 16GB RAM and 200GB disk space
+- **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges
+- **Resources**: Minimum 4GB RAM, 2 CPU cores, 50GB storage  
+- **Network**: Static IP configuration recommended
+- **Tools**: Git, Docker (will be installed by setup script)
+
+### 🔒 Rootless Deployment (Recommended)
+
+This homelab uses security-hardened, rootless deployment with dedicated deployment user and minimal privileges:
+
+#### 1. Initial Server Setup
+
+```bash
+# Clone repository on homelab server
+git clone https://github.com/tzervas/homelab-infra.git
+cd homelab-infra
+
+# Run secure deployment setup (requires initial sudo)
+sudo ./scripts/deployment/setup-secure-deployment.sh
+
+# This creates:
+# - homelab-deploy user with minimal sudo permissions
+# - Proper directory structure and SSH configuration
+# - Docker access and environment setup
+```
+
+#### 2. Quick Validation
+
+```bash
+# Switch to deployment user
+su - homelab-deploy
+
+# Run comprehensive validation
+python3 scripts/testing/validate_deployment.py
+
+# Expected output: "✅ All validations passed - deployment is ready!"
+```
+
+#### 3. Deploy Infrastructure
+
+```bash
+# Deploy core infrastructure
+./scripts/deployment/deploy-with-privileges.sh deploy all
+
+# Check deployment status
+./scripts/deployment/deploy-with-privileges.sh status
+```
+
+### 📋 Traditional Deployment
+
+For traditional deployment with existing tools:
 
 ### Configuration Setup
 
@@ -142,7 +187,88 @@ This repository includes public documentation in the `docs/` directory. Detailed
 - **Loki**: Log aggregation
 - **Promtail**: Log collection agent
 
+## 🧪 Testing and Validation
+
+This homelab includes a comprehensive testing framework with issue tracking and prioritized reporting:
+
+### Comprehensive Testing Suite
+
+```bash
+# Run all tests with detailed issue reporting
+python3 scripts/testing/test_reporter.py --output-format all --export-issues
+
+# Quick compatibility check
+python3 scripts/testing/rootless_compatibility.py
+
+# Permission verification
+python3 scripts/testing/permission_verifier.py
+
+# Security validation
+python3 scripts/testing/network_security.py
+
+# Complete deployment validation
+python3 scripts/testing/validate_deployment.py
+```
+
+### Test Categories
+
+- **🔧 Configuration Validation**: YAML/JSON schema validation, Ansible inventory checks
+- **🏥 Infrastructure Health**: Kubernetes cluster health, node status, component monitoring  
+- **🚀 Service Deployment**: Pod readiness, resource allocation, deployment status
+- **🔒 Network Security**: TLS certificates, network policies, RBAC, security contexts
+- **🔗 Integration Testing**: Service connectivity, SSO flows, end-to-end workflows
+- **📊 Issue Tracking**: Comprehensive counting, severity classification, prioritized reporting
+
+### Test Output Examples
+
+```bash
+🚨 ISSUE SUMMARY:
+  Total Issues: 23
+  Deployment Blocking: 5
+
+🚨 CRITICAL ISSUES (2):
+  - kubernetes_security_contexts: 15 privileged containers found (showing 5)
+  - service_gitlab: Service not ready - 0/3 pods running
+
+📊 Issues by Severity:
+  🚨 Critical: 2
+  ⚠️ High: 8  
+  ⚡ Medium: 13
+
+🔧 Most Problematic Components:
+  - kubernetes_security_contexts: 15 issues
+  - service_deployment: 8 issues
+```
+
+## 📚 Documentation
+
+- **[Rootless Deployment Guide](docs/rootless-deployment-guide.md)**: Comprehensive security-hardened deployment
+- **[Deployment Checklist](docs/deployment-checklist.md)**: Step-by-step validation checklist
+- **[Architecture Overview](docs/architecture.md)**: System design and component relationships
+- **[Security Guide](docs/security.md)**: Security best practices and configurations
+
 ## Deployment Commands
+
+### Rootless Deployment (Recommended)
+
+```bash
+# Check prerequisites
+./scripts/deployment/deploy-with-privileges.sh check
+
+# Deploy components individually
+./scripts/deployment/deploy-with-privileges.sh deploy k3s
+./scripts/deployment/deploy-with-privileges.sh deploy metallb
+./scripts/deployment/deploy-with-privileges.sh deploy cert-manager
+./scripts/deployment/deploy-with-privileges.sh deploy gitlab
+
+# Or deploy everything
+./scripts/deployment/deploy-with-privileges.sh deploy all
+
+# Check status
+./scripts/deployment/deploy-with-privileges.sh status
+```
+
+### Traditional Deployment
 
 ```bash
 # Deploy specific environment

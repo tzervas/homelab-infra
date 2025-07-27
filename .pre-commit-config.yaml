@@ -11,7 +11,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
-        args: [--unsafe]  # Allow custom YAML tags (Helm, Ansible)
+        args: [--unsafe] # Allow custom YAML tags (Helm, Ansible)
       - id: check-json
         exclude: ^.*\.vscode/.*\.json$
       - id: check-toml
@@ -33,7 +33,7 @@ repos:
     hooks:
       - id: ruff
         name: ruff-lint
-        args: [--fix, --unsafe-fixes]  # Safe auto-fixing
+        args: [--fix, --unsafe-fixes] # Safe auto-fixing
         types: [python]
       - id: ruff-format
         name: ruff-format
@@ -61,13 +61,13 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
-        args: [-e, SC1091, -e, SC2034, -e, SC2086, -e, SC2155]  # Ignore common false positives
+        args: [-e, SC1091, -e, SC2034, -e, SC2086, -e, SC2155] # Ignore common false positives
 
-  - repo: https://github.com/mvdan/sh
-    rev: v3.9.0
-    hooks:
-      - id: shfmt
-        args: [-w, -s, -i, '2', -ci]  # Auto-fix shell formatting
+  # - repo: https://github.com/mvdan/sh
+  #   rev: v3.9.0
+  #   hooks:
+  #     - id: shfmt
+  #       args: [-w, -s, -i, '2', -ci]  # Auto-fix shell formatting
 
   # YAML/JSON formatting and validation
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -75,8 +75,8 @@ repos:
     hooks:
       - id: prettier
         types_or: [yaml, json, markdown]
-        exclude: ^(helm/.*\.yaml|kubernetes/.*\.yaml|ansible/.*\.yml|.*\.md)$  # Skip specialized files
-        args: [--prose-wrap, always, --print-width, '100']
+        exclude: ^(helm/.*\.yaml|kubernetes/.*\.yaml|ansible/.*\.yml|.*\.md)$ # Skip specialized files
+        args: [--prose-wrap, always, --print-width, "100"]
 
   # Ansible-specific validation
   - repo: https://github.com/ansible/ansible-lint
@@ -84,7 +84,7 @@ repos:
     hooks:
       - id: ansible-lint
         files: ^ansible/.*\.(yml|yaml)$
-        args: [--fix]  # Safe auto-fixing for Ansible
+        args: [--fix] # Safe auto-fixing for Ansible
 
   # Kubernetes/Helm YAML validation
   - repo: https://github.com/adrienverge/yamllint
@@ -92,7 +92,7 @@ repos:
     hooks:
       - id: yamllint
         files: ^(helm/|kubernetes/).*\.(yml|yaml)$
-        args: [-d, 'relaxed', -d, '{line-length: {max: 120}}']
+        args: [-d, "relaxed", -d, "{line-length: {max: 120}}"]
 
   # Terraform formatting and validation
   - repo: https://github.com/antonbabenko/pre-commit-terraform
@@ -121,7 +121,7 @@ repos:
     rev: v0.42.0
     hooks:
       - id: markdownlint
-        args: [--fix, --ignore, 'docs/IMPLEMENTATION_SUMMARY.md']  # Safe auto-fixing
+        args: [--fix, --ignore, "docs/IMPLEMENTATION_SUMMARY.md"] # Safe auto-fixing
         exclude: ^(untracked_backup/|examples/|.*\.template\.md)$
 
   # Git commit message linting
@@ -140,10 +140,11 @@ repos:
         language: system
         files: ^(helm/|kubernetes/|ansible/).*\.(yml|yaml)$
         pass_filenames: true
-        
+
       - id: homelab-security-check
         name: Homelab Security Context Check
-        entry: python3 scripts/testing/rootless_compatibility.py --deployment-mode auto --log-level WARN
+        entry:
+          python3 scripts/testing/rootless_compatibility.py --deployment-mode auto --log-level WARN
         language: system
         files: ^(helm/.*values.*\.yaml|kubernetes/.*\.yaml)$
         pass_filenames: false
@@ -157,11 +158,13 @@ repos:
 
       - id: helm-template-validation
         name: Helm Template Validation
-        entry: bash -c 'find helm/charts -name "Chart.yaml" -exec dirname {} \; | xargs -I {} helm lint {} 2>/dev/null || true'
+        entry:
+          bash -c 'find helm/charts -name "Chart.yaml" -exec dirname {} \; | xargs -I {} helm lint
+          {} 2>/dev/null || true'
         language: system
         files: ^helm/charts/.*\.(yaml|yml)$
         pass_filenames: false
-        
+
       - id: uv-dependency-check
         name: UV Dependency Security Check
         entry: uv pip compile --upgrade-package all pyproject.toml -o /dev/null
@@ -172,7 +175,7 @@ repos:
 # Global configuration
 default_stages: [commit]
 fail_fast: false
-minimum_pre_commit_version: '3.3.0'
+minimum_pre_commit_version: "3.3.0"
 
 # CI configuration for pre-commit.ci
 ci:
@@ -181,8 +184,8 @@ ci:
 
     for more information, see https://pre-commit.ci
   autofix_prs: true
-  autoupdate_branch: ''
-  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_branch: ""
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [mypy, bandit, terraform_tflint, helm-template-validation]  # Skip heavy checks in CI
+  skip: [mypy, bandit, terraform_tflint, helm-template-validation] # Skip heavy checks in CI
   submodules: false

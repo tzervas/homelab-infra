@@ -23,6 +23,7 @@ try:
     from .service_checker import ServiceDeploymentChecker, ServiceStatus
     from .network_security import NetworkSecurityValidator, SecurityStatus
     from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
+    from .issue_tracker import IssueTracker, IssueSeverity, IssueCategory, create_missing_items_issues, create_security_context_issues
 except ImportError:
     try:
         from config_validator import ConfigValidator, ValidationResult
@@ -30,9 +31,15 @@ except ImportError:
         from service_checker import ServiceDeploymentChecker, ServiceStatus
         from network_security import NetworkSecurityValidator, SecurityStatus
         from integration_tester import IntegrationConnectivityTester, IntegrationTestResult
+        from issue_tracker import IssueTracker, IssueSeverity, IssueCategory, create_missing_items_issues, create_security_context_issues
     except ImportError as e:
         print(f"Warning: Could not import some testing modules: {e}")
         print("Some functionality may be limited.")
+        # Create mock classes if issue tracker is not available
+        class IssueTracker:
+            def __init__(self, *args, **kwargs): pass
+            def add_issue(self, *args, **kwargs): pass
+            def format_summary_report(self): return "Issue tracking not available"
 
 
 @dataclass
@@ -67,6 +74,9 @@ class HomelabTestReporter:
         self.service_checker = None
         self.security_validator = None
         self.integration_tester = None
+        
+        # Initialize issue tracker
+        self.issue_tracker = IssueTracker(max_issues_per_component=10, max_total_display=50)
 
         try:
             if 'ConfigValidator' in globals():
@@ -286,12 +296,24 @@ class HomelabTestReporter:
 
         self.logger.info("🚀 Starting comprehensive homelab testing suite...")
 
-        # Run all test modules
+        # Clear previous issues
+        self.issue_tracker.clear()
+        
+        # Run all test modules and collect issues
         config_results = self.run_config_validation(config_paths)
+        self._process_config_issues(config_results)
+        
         infra_health = self.run_infrastructure_health_check()
+        self._process_infrastructure_issues(infra_health)
+        
         service_status = self.run_service_deployment_check()
+        self._process_service_issues(service_status)
+        
         security_results = self.run_network_security_validation()
+        self._process_security_issues(security_results)
+        
         integration_results = self.run_integration_tests(include_workstation_tests)
+        self._process_integration_issues(integration_results)
 
         duration = time.time() - start_time
 
@@ -339,6 +361,179 @@ class HomelabTestReporter:
 
         return result
 
+    def _process_config_issues(self, config_results: Optional[List[ValidationResult]]) -> None:
+        """Process configuration validation results and add to issue tracker."""
+        if not config_results:
+            return
+        
+        for result in config_results:
+            if not result.is_valid:
+                severity = IssueSeverity.HIGH if "critical" in result.message.lower() else IssueSeverity.MEDIUM
+                self.issue_tracker.add_issue(
+                    component=f"config_{result.file_type}",
+                    message=result.message,
+                    severity=severity,
+                    category=IssueCategory.CONFIGURATION,
+                    details={"file_path": result.file_path, "errors": result.errors},
+                    affects_deployment=severity == IssueSeverity.HIGH
+                )
+
+    def _process_infrastructure_issues(self, infra_health: Optional[ClusterHealth]) -> None:
+        """Process infrastructure health results and add to issue tracker."""
+        if not infra_health:
+            return
+        
+        # Process cluster status
+        if infra_health.cluster_status == "critical":
+            self.issue_tracker.add_issue(
+                component="kubernetes_cluster",
+                message="Cluster is in critical state",
+                severity=IssueSeverity.CRITICAL,
+                category=IssueCategory.DEPLOYMENT,
+                affects_deployment=True
+            )
+        elif infra_health.cluster_status == "warning":
+            self.issue_tracker.add_issue(
+                component="kubernetes_cluster", 
+                message="Cluster has warning conditions",
+                severity=IssueSeverity.HIGH,
+                category=IssueCategory.DEPLOYMENT,
+                affects_deployment=True
+            )
+        
+        # Process node issues
+        if hasattr(infra_health, 'node_statuses') and infra_health.node_statuses:
+            unhealthy_nodes = [node for node, status in infra_health.node_statuses.items() if status != "ready"]
+            if unhealthy_nodes:
+                create_missing_items_issues(
+                    tracker=self.issue_tracker,
+                    component="kubernetes_nodes",
+                    missing_items=unhealthy_nodes,
+                    item_type="unhealthy node",
+                    severity=IssueSeverity.HIGH,
+                    category=IssueCategory.DEPLOYMENT
+                )
+
+    def _process_service_issues(self, service_status: Optional[Dict[str, ServiceStatus]]) -> None:
+        """Process service deployment results and add to issue tracker."""
+        if not service_status:
+            return
+        
+        for service_name, status in service_status.items():
+            if not status.is_ready:
+                severity = IssueSeverity.CRITICAL if status.status == "failed" else IssueSeverity.HIGH
+                self.issue_tracker.add_issue(
+                    component=f"service_{service_name}",
+                    message=f"Service not ready: {status.message}",
+                    severity=severity,
+                    category=IssueCategory.DEPLOYMENT,
+                    details={
+                        "pod_count": status.pod_count,
+                        "ready_pods": status.ready_pods,
+                        "namespace": status.namespace
+                    },
+                    affects_deployment=True
+                )
+
+    def _process_security_issues(self, security_results: Optional[List[SecurityStatus]]) -> None:
+        """Process security validation results and add to issue tracker."""
+        if not security_results:
+            return
+        
+        for security_status in security_results:
+            if not security_status.is_secure:
+                # Map security status to issue severity
+                if security_status.status == "vulnerable":
+                    severity = IssueSeverity.CRITICAL
+                elif security_status.status == "warning":
+                    severity = IssueSeverity.HIGH
+                else:
+                    severity = IssueSeverity.MEDIUM
+                
+                # Extract detailed counts from security status
+                details = security_status.details
+                message = security_status.message
+                
+                # Handle specific security issues with counts
+                if "privileged_containers_shown" in details:
+                    total_privileged = details.get("total_privileged_containers", 0)
+                    total_missing = details.get("total_missing_contexts", 0)
+                    
+                    if total_privileged > 0:
+                        privileged_containers = details.get("privileged_containers_shown", [])
+                        create_security_context_issues(
+                            tracker=self.issue_tracker,
+                            component="kubernetes_security_contexts",
+                            privileged_containers=privileged_containers,
+                            missing_contexts=[]
+                        )
+                        
+                        # Add summary issue with total count
+                        if total_privileged > len(privileged_containers):
+                            self.issue_tracker.add_issue(
+                                component="kubernetes_security_contexts",
+                                message=f"Total of {total_privileged} privileged containers found (showing {len(privileged_containers)})",
+                                severity=IssueSeverity.CRITICAL,
+                                category=IssueCategory.SECURITY,
+                                details={"total_count": total_privileged},
+                                affects_deployment=True
+                            )
+                    
+                    if total_missing > 0:
+                        missing_contexts = details.get("missing_contexts_shown", [])
+                        create_security_context_issues(
+                            tracker=self.issue_tracker,
+                            component="kubernetes_security_contexts",
+                            privileged_containers=[],
+                            missing_contexts=missing_contexts
+                        )
+                        
+                        # Add summary issue with total count
+                        if total_missing > len(missing_contexts):
+                            self.issue_tracker.add_issue(
+                                component="kubernetes_security_contexts",
+                                message=f"Total of {total_missing} missing security contexts (showing {len(missing_contexts)})",
+                                severity=IssueSeverity.HIGH,
+                                category=IssueCategory.SECURITY,
+                                details={"total_count": total_missing},
+                                affects_deployment=True
+                            )
+                else:
+                    # Generic security issue
+                    self.issue_tracker.add_issue(
+                        component=f"security_{security_status.component}",
+                        message=message,
+                        severity=severity,
+                        category=IssueCategory.SECURITY,
+                        details=details,
+                        recommendations=security_status.recommendations,
+                        affects_deployment=severity in [IssueSeverity.CRITICAL, IssueSeverity.HIGH]
+                    )
+
+    def _process_integration_issues(self, integration_results: Optional[List[IntegrationTestResult]]) -> None:
+        """Process integration test results and add to issue tracker."""
+        if not integration_results:
+            return
+        
+        for test_result in integration_results:
+            if test_result.status == "fail":
+                self.issue_tracker.add_issue(
+                    component=f"integration_{test_result.test_name}",
+                    message=f"Integration test failed: {test_result.message}",
+                    severity=IssueSeverity.HIGH,
+                    category=IssueCategory.CONNECTIVITY,
+                    details=test_result.details,
+                    affects_deployment=True
+                )
+            elif test_result.status == "warning":
+                self.issue_tracker.add_issue(
+                    component=f"integration_{test_result.test_name}",
+                    message=f"Integration test warning: {test_result.message}",
+                    severity=IssueSeverity.MEDIUM,
+                    category=IssueCategory.CONNECTIVITY,
+                    details=test_result.details
+                )
+
     def export_json_report(self, result: TestSuiteResult, filename: Optional[str] = None) -> str:
         """Export results to JSON format."""
         if not filename:
@@ -375,6 +570,49 @@ class HomelabTestReporter:
             for key, value in result.summary.items():
                 f.write(f"- **{key.replace('_', ' ').title()}:** {value}\n")
             f.write("\n")
+
+            # Issue Summary section (prioritized issues with counts)
+            issue_summary = self.issue_tracker.generate_summary()
+            if issue_summary.total_issues > 0:
+                f.write("## Issue Summary\n\n")
+                f.write(f"**Total Issues**: {issue_summary.total_issues}\n")
+                f.write(f"**Deployment Blocking**: {issue_summary.deployment_blocking}\n\n")
+                
+                # Critical issues (always show all)
+                critical_issues = self.issue_tracker.get_critical_issues()
+                if critical_issues:
+                    f.write("### 🚨 Critical Issues (Must Fix)\n\n")
+                    for issue in critical_issues:
+                        f.write(f"- **{issue.component}**: {issue.message}\n")
+                    f.write("\n")
+                
+                # Issue breakdown by severity
+                f.write("### Issues by Severity\n\n")
+                for severity in IssueSeverity:
+                    count = issue_summary.by_severity[severity]
+                    if count > 0:
+                        icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[severity.value]
+                        f.write(f"- {icon} **{severity.value.title()}**: {count}\n")
+                f.write("\n")
+                
+                # Top issues by component
+                f.write("### Top Issues by Component\n\n")
+                from collections import Counter
+                component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
+                for component, count in component_counts.most_common(10):
+                    component_issues = [i for i in issue_summary.top_issues if i.component == component]
+                    if component_issues:
+                        highest_severity = min(component_issues, key=lambda x: list(IssueSeverity).index(x.severity))
+                        severity_icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[highest_severity.severity.value]
+                        f.write(f"**{severity_icon} {component}** ({count} issues)\n")
+                        
+                        # Show sample issues for this component
+                        for issue in component_issues[:2]:
+                            f.write(f"  - {issue.message}\n")
+                        
+                        if count > 2:
+                            f.write(f"  - ... and {count - 2} more issues\n")
+                        f.write("\n")
 
             # Metrics section
             if result.metrics:
@@ -428,6 +666,22 @@ class HomelabTestReporter:
         self.logger.info(f"Markdown report exported to: {filepath}")
         return str(filepath)
 
+    def export_issue_report(self, filename: Optional[str] = None) -> str:
+        """Export a dedicated issue report with comprehensive counting and prioritization."""
+        if not filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"homelab_issues_report_{timestamp}.md"
+
+        filepath = self.results_dir / filename
+
+        with open(filepath, 'w') as f:
+            # Generate comprehensive issue report
+            issue_report = self.issue_tracker.format_summary_report()
+            f.write(issue_report)
+
+        self.logger.info(f"Issue report exported to: {filepath}")
+        return str(filepath)
+
     def print_console_summary(self, result: TestSuiteResult) -> None:
         """Print a comprehensive console summary."""
         print(f"\n🏠 HOMELAB INFRASTRUCTURE TEST REPORT")
@@ -437,9 +691,43 @@ class HomelabTestReporter:
         print(f"Overall Status: {result.overall_status.upper()}")
         print(f"{'='*60}\n")
 
+        # Issue Summary with counts
+        issue_summary = self.issue_tracker.generate_summary()
+        if issue_summary.total_issues > 0:
+            print("🚨 ISSUE SUMMARY:")
+            print(f"  Total Issues: {issue_summary.total_issues}")
+            print(f"  Deployment Blocking: {issue_summary.deployment_blocking}")
+            
+            # Critical issues (always show)
+            critical_issues = self.issue_tracker.get_critical_issues()
+            if critical_issues:
+                print(f"\n🚨 CRITICAL ISSUES ({len(critical_issues)}):")
+                for issue in critical_issues[:5]:  # Show top 5 critical
+                    print(f"  - {issue.component}: {issue.message}")
+                if len(critical_issues) > 5:
+                    print(f"  ... and {len(critical_issues) - 5} more critical issues")
+            
+            # Issue breakdown by severity
+            print(f"\n📊 Issues by Severity:")
+            for severity in IssueSeverity:
+                count = issue_summary.by_severity[severity]
+                if count > 0:
+                    icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[severity.value]
+                    print(f"  {icon} {severity.value.title()}: {count}")
+            
+            # Top problematic components
+            from collections import Counter
+            component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
+            if component_counts:
+                print(f"\n🔧 Most Problematic Components:")
+                for component, count in component_counts.most_common(5):
+                    print(f"  - {component}: {count} issues")
+        else:
+            print("✅ NO ISSUES FOUND - SYSTEM IS HEALTHY!")
+
         # Summary metrics
         if result.metrics:
-            print("📊 METRICS SUMMARY:")
+            print("\n📊 METRICS SUMMARY:")
             for category, metrics in result.metrics.items():
                 if isinstance(metrics, dict):
                     print(f"\n{category.replace('_', ' ').title()}:")
@@ -449,10 +737,26 @@ class HomelabTestReporter:
                         else:
                             print(f"  {key.replace('_', ' ').title()}: {value}")
 
-        # Recommendations
-        if result.recommendations:
-            print(f"\n💡 RECOMMENDATIONS ({len(result.recommendations)}):")
-            for i, rec in enumerate(result.recommendations, 1):
+        # Recommendations (enhanced with issue tracker recommendations)
+        all_recommendations = result.recommendations or []
+        
+        # Add top recommendations from issue tracker
+        if issue_summary.total_issues > 0:
+            critical_recommendations = []
+            for issue in self.issue_tracker.get_critical_issues():
+                critical_recommendations.extend(issue.recommendations[:2])  # Top 2 per critical issue
+            
+            # Remove duplicates and add to recommendations
+            unique_critical_recs = []
+            for rec in critical_recommendations:
+                if rec not in all_recommendations and rec not in unique_critical_recs:
+                    unique_critical_recs.append(rec)
+            
+            all_recommendations.extend(unique_critical_recs[:5])  # Add top 5 unique critical recommendations
+
+        if all_recommendations:
+            print(f"\n💡 RECOMMENDATIONS ({len(all_recommendations)}):")
+            for i, rec in enumerate(all_recommendations, 1):
                 print(f"  {i}. {rec}")
 
         print(f"\n{'='*60}")
@@ -468,9 +772,11 @@ def main():
     parser.add_argument("--config-paths", nargs="+", help="Specific configuration paths to validate")
     parser.add_argument("--include-workstation", action="store_true",
                        help="Include workstation perspective tests")
-    parser.add_argument("--output-format", choices=["console", "json", "markdown", "all"],
+    parser.add_argument("--output-format", choices=["console", "json", "markdown", "issues", "all"],
                        default="console", help="Output format for results")
     parser.add_argument("--output-file", help="Custom output filename (without extension)")
+    parser.add_argument("--export-issues", action="store_true",
+                       help="Export a detailed issue report")
 
     args = parser.parse_args()
 
@@ -494,6 +800,9 @@ def main():
 
     if args.output_format in ["markdown", "all"]:
         reporter.export_markdown_report(result, args.output_file)
+
+    if args.output_format in ["issues", "all"] or args.export_issues:
+        reporter.export_issue_report(args.output_file)
 
     return 0 if result.overall_status != "fail" else 1
 

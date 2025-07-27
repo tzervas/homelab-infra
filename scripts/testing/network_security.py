@@ -385,7 +385,7 @@ class NetworkSecurityValidator:
             )
 
     def validate_rbac_security(self) -> SecurityStatus:
-        """Validate RBAC and security policies."""
+        """Validate RBAC and security policies including rootless deployment checks."""
         if not self.k8s_client:
             return SecurityStatus(
                 check_type="rbac_security",
@@ -396,6 +396,8 @@ class NetworkSecurityValidator:
 
         try:
             rbac_v1 = client.RbacAuthorizationV1Api(self.k8s_client)
+            v1 = client.CoreV1Api(self.k8s_client)
+            apps_v1 = client.AppsV1Api(self.k8s_client)
 
             # Check ClusterRoles and ClusterRoleBindings
             cluster_roles = rbac_v1.list_cluster_role()
@@ -408,19 +410,56 @@ class NetworkSecurityValidator:
                     admin_bindings.append(binding.metadata.name)
 
             # Check service accounts
-            v1 = client.CoreV1Api(self.k8s_client)
             service_accounts = v1.list_service_account_for_all_namespaces()
+
+            # Validate security contexts for rootless deployment
+            privileged_containers, missing_contexts, total_privileged, total_missing = self._validate_pod_security_contexts(apps_v1)
+            pss_issues, total_pss_issues = self._validate_pod_security_standards(v1)
+            
+            security_issues = privileged_containers + missing_contexts
 
             total_roles = len(cluster_roles.items)
             total_bindings = len(cluster_role_bindings.items)
             total_sa = len(service_accounts.items)
 
-            if len(admin_bindings) <= 3:  # Reasonable number of admin bindings
-                status = "secure"
-                message = f"RBAC configured: {total_roles} roles, {total_bindings} bindings"
-            else:
+            # Determine overall status with comprehensive counting
+            total_security_issues = total_privileged + total_missing + total_pss_issues
+            
+            if len(admin_bindings) > 3:
                 status = "warning"
                 message = f"Review needed: {len(admin_bindings)} cluster-admin bindings"
+            elif total_security_issues > 0:
+                status = "warning"
+                if total_privileged > 0 and total_missing > 0:
+                    message = f"Security issues: {total_privileged} privileged containers, {total_missing} missing contexts, {total_pss_issues} PSS violations"
+                elif total_privileged > 0:
+                    message = f"Security issues: {total_privileged} privileged containers, {total_pss_issues} PSS violations"
+                elif total_missing > 0:
+                    message = f"Security issues: {total_missing} missing security contexts, {total_pss_issues} PSS violations"
+                else:
+                    message = f"Security issues: {total_pss_issues} Pod Security Standards violations"
+            else:
+                status = "secure"
+                message = f"RBAC and security contexts properly configured"
+
+            recommendations = []
+            if len(admin_bindings) > 3:
+                recommendations.append("Review cluster-admin bindings")
+            if total_privileged > 0:
+                recommendations.extend([
+                    f"Fix {total_privileged} privileged containers",
+                    "Set runAsNonRoot: true and remove privileged access"
+                ])
+            if total_missing > 0:
+                recommendations.extend([
+                    f"Add security contexts to {total_missing} containers/pods",
+                    "Implement comprehensive security context policy"
+                ])
+            if total_pss_issues > 0:
+                recommendations.extend([
+                    f"Configure Pod Security Standards for {total_pss_issues} namespaces",
+                    "Use 'restricted' profile for production workloads"
+                ])
 
             return SecurityStatus(
                 check_type="rbac_security",
@@ -432,9 +471,16 @@ class NetworkSecurityValidator:
                     "total_cluster_bindings": total_bindings,
                     "total_service_accounts": total_sa,
                     "cluster_admin_bindings": len(admin_bindings),
-                    "admin_binding_names": admin_bindings[:5]  # Limit for brevity
+                    "admin_binding_names": admin_bindings[:5],
+                    "privileged_containers_shown": privileged_containers,
+                    "missing_contexts_shown": missing_contexts,
+                    "total_privileged_containers": total_privileged,
+                    "total_missing_contexts": total_missing,
+                    "pss_issues_shown": pss_issues[:5],
+                    "total_pss_issues": total_pss_issues,
+                    "total_security_issues": total_security_issues
                 },
-                recommendations=["Review cluster-admin bindings"] if len(admin_bindings) > 3 else []
+                recommendations=recommendations
             )
 
         except Exception as e:
@@ -444,6 +490,80 @@ class NetworkSecurityValidator:
                 status="unknown",
                 message=f"RBAC check failed: {str(e)}"
             )
+
+    def _validate_pod_security_contexts(self, apps_v1) -> Tuple[List[str], List[str], int, int]:
+        """Validate pod security contexts for rootless deployment.
+        
+        Returns:
+            Tuple of (privileged_containers, missing_contexts, total_privileged, total_missing)
+        """
+        privileged_containers = []
+        missing_contexts = []
+        
+        try:
+            # Check deployments
+            deployments = apps_v1.list_deployment_for_all_namespaces()
+            
+            for deployment in deployments.items:
+                deployment_name = f"{deployment.metadata.namespace}/{deployment.metadata.name}"
+                spec = deployment.spec.template.spec
+                
+                # Skip system components that may need root
+                if deployment.metadata.namespace in ['kube-system', 'metallb-system']:
+                    continue
+                
+                # Check pod security context
+                if not spec.security_context or spec.security_context.run_as_non_root is not True:
+                    missing_contexts.append(f"{deployment_name} (pod level)")
+                
+                # Check container security contexts
+                for container in spec.containers or []:
+                    container_ref = f"{deployment_name}:{container.name}"
+                    
+                    if container.security_context:
+                        if (container.security_context.run_as_user == 0 or 
+                            container.security_context.privileged is True or
+                            container.security_context.allow_privilege_escalation is True):
+                            privileged_containers.append(container_ref)
+                    else:
+                        missing_contexts.append(container_ref)
+        
+        except Exception as e:
+            self.logger.warning(f"Error validating security contexts: {e}")
+            
+        total_privileged = len(privileged_containers)
+        total_missing = len(missing_contexts)
+        
+        # Return limited lists for display but keep totals
+        return (privileged_containers[:5], missing_contexts[:5], total_privileged, total_missing)
+
+    def _validate_pod_security_standards(self, v1) -> Tuple[List[str], int]:
+        """Validate Pod Security Standards configuration.
+        
+        Returns:
+            Tuple of (issues_shown, total_issues)
+        """
+        issues = []
+        
+        try:
+            namespaces = v1.list_namespace()
+            
+            for namespace in namespaces.items:
+                # Skip system namespaces
+                if namespace.metadata.name.startswith('kube-'):
+                    continue
+                    
+                labels = namespace.metadata.labels or {}
+                has_pss = any(label.startswith("pod-security.kubernetes.io/") for label in labels)
+                
+                if not has_pss:
+                    issues.append(f"Namespace {namespace.metadata.name} missing Pod Security Standards")
+        
+        except Exception as e:
+            self.logger.warning(f"Error validating Pod Security Standards: {e}")
+        
+        total_issues = len(issues)
+        return issues[:5], total_issues  # Show first 5, return total count
 
     def run_comprehensive_security_scan(self) -> List[SecurityStatus]:
         """Run all security and network validation checks."""

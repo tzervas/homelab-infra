@@ -1,13 +1,14 @@
 # Security Best Practices
 
-This guide covers the key security practices implemented in the homelab infrastructure to ensure robust protection of your environment.
+This guide covers the key security practices implemented in the homelab infrastructure to ensure
+robust protection of your environment.
 
 ## Topics
 
-* [Bastion Host Pattern](#bastion-host-pattern)
-* [Network Security](#network-security)
-* [Authentication & Authorization](#authentication--authorization)
-* [Monitoring & Auditing](#monitoring--auditing)
+- [Bastion Host Pattern](#bastion-host-pattern)
+- [Network Security](#network-security)
+- [Authentication & Authorization](#authentication--authorization)
+- [Monitoring & Auditing](#monitoring--auditing)
 
 ## Bastion Host Pattern
 
@@ -61,31 +62,31 @@ The inventory is configured with bastion host settings:
 cluster:
   hosts:
     test-vm:
-      ansible_host: "192.168.122.100"  # VM IP on libvirt network
-      ansible_user: kang
-      ansible_ssh_common_args: '-o ProxyJump=kang@192.168.16.26 -o StrictHostKeyChecking=no'
+      ansible_host: "192.168.100.10"  # VM IP on private network
+      ansible_user: homelab-user
+      ansible_ssh_common_args: '-o ProxyJump=homelab-user@192.168.1.10 -o StrictHostKeyChecking=no'
 ```
 
 #### SSH ProxyJump
 
 All SSH connections use the ProxyJump feature:
 
-* **Direct**: `ssh kang@192.168.16.26` (to bastion)
-* **Via Bastion**: `ssh -o ProxyJump=kang@192.168.16.26 kang@192.168.122.100` (to cluster node)
+- **Direct**: `ssh homelab-user@192.168.1.10` (to bastion)
+- **Via Bastion**: `ssh -o ProxyJump=homelab-user@192.168.1.10 homelab-user@192.168.100.10` (to cluster node)
 
 ### Network Scenarios
 
 #### VM Test Environment
 
-* **Homelab Server**: 192.168.16.26 (your main network)
-* **Test VM**: 192.168.122.x (libvirt default network)
-* **Access**: Your machine → Homelab server → Test VM
+- **Homelab Server**: 192.168.1.10 (your main network)
+- **Test VM**: 192.168.100.x (private network)
+- **Access**: Your machine → Homelab server → Test VM
 
 #### Bare Metal Environment
 
-* **Homelab Server**: 192.168.16.26 (bastion)
-* **Cluster Nodes**: 192.168.16.x or private subnet
-* **Access**: Your machine → Homelab server → Cluster nodes
+- **Homelab Server**: 192.168.1.10 (bastion)
+- **Cluster Nodes**: 192.168.1.x or private subnet
+- **Access**: Your machine → Homelab server → Cluster nodes
 
 #### Future Cloud/Hybrid
 
@@ -99,17 +100,17 @@ All SSH connections use the ProxyJump feature:
 
 ```bash
 # Connect to bastion host
-ssh kang@192.168.16.26
+ssh homelab-user@192.168.1.10
 
 # Run commands on bastion
-ssh kang@192.168.16.26 'docker ps'
+ssh homelab-user@192.168.1.10 'docker ps'
 ```
 
 #### Cluster Node Access via Bastion
 
 ```bash
 # Connect to cluster node through bastion
-ssh -o ProxyJump=kang@192.168.16.26 kang@192.168.122.100
+ssh -o ProxyJump=homelab-user@192.168.1.10 homelab-user@192.168.100.10
 
 # Run Ansible on cluster through bastion
 ansible-playbook -i inventory/hosts.yml playbooks/deploy-k3s.yml
@@ -150,12 +151,48 @@ kubectl --kubeconfig ~/.kube/homelab-config port-forward svc/grafana 3000:3000
 
 ## Network Security
 
-*This section to be expanded with network security practices*
+### Network Policies
+
+- Use restrictive network policies by default
+- Implement network segmentation between environments
+- Control ingress/egress traffic with explicit rules
+- Monitor and log network activity
+
+### Firewall Configuration
+
+- Implement stateful firewalls at network boundaries
+- Allow only required ports and protocols
+- Regular review and audit of firewall rules
+- Log and monitor firewall events
 
 ## Authentication & Authorization
 
-*This section to be expanded with authentication and authorization practices*
+### Access Control
+
+- Use role-based access control (RBAC)
+- Implement least privilege principle
+- Regular access review and cleanup
+- Centralized identity management
+
+### Multi-Factor Authentication
+
+- Enable MFA for all administrative access
+- Use hardware security keys where possible
+- Regular audit of authentication methods
+- Secure credential storage
 
 ## Monitoring & Auditing
 
-*This section to be expanded with monitoring and auditing practices*
+### Security Monitoring
+
+- Implement comprehensive logging
+- Use security information and event management (SIEM)
+- Set up alerts for suspicious activities
+- Regular security assessments
+
+### Compliance Auditing
+
+- Maintain audit trails for all changes
+- Regular compliance checks
+- Automated security scanning
+- Incident response procedures

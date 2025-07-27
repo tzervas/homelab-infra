@@ -44,26 +44,14 @@
             "Configuration templates",
             "Resource definitions"
           ],
-          "tasks": [
-            "terraform-modules",
-            "kubernetes-manifests",
-            "helm-charts"
-          ],
+          "tasks": ["terraform-modules", "kubernetes-manifests", "helm-charts"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
         "validation": {
           "model": "claude-3-haiku-20240307",
-          "strengths": [
-            "Config validation",
-            "Syntax checking",
-            "Basic security rules"
-          ],
-          "tasks": [
-            "manifest-validation",
-            "syntax-check",
-            "basic-security-rules"
-          ],
+          "strengths": ["Config validation", "Syntax checking", "Basic security rules"],
+          "tasks": ["manifest-validation", "syntax-check", "basic-security-rules"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -71,46 +59,22 @@
       "development": {
         "complexLogic": {
           "model": "claude-4-opus-20250514",
-          "strengths": [
-            "Complex algorithms",
-            "System integration",
-            "Performance optimization"
-          ],
-          "tasks": [
-            "algorithm-design",
-            "system-integration",
-            "performance-critical-code"
-          ],
+          "strengths": ["Complex algorithms", "System integration", "Performance optimization"],
+          "tasks": ["algorithm-design", "system-integration", "performance-critical-code"],
           "tokenUsage": "high",
           "costTier": "premium"
         },
         "standardImplementation": {
           "model": "claude-3.5-opus-20240321",
-          "strengths": [
-            "Standard patterns",
-            "CRUD operations",
-            "API implementations"
-          ],
-          "tasks": [
-            "api-endpoints",
-            "database-operations",
-            "service-layers"
-          ],
+          "strengths": ["Standard patterns", "CRUD operations", "API implementations"],
+          "tasks": ["api-endpoints", "database-operations", "service-layers"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
         "basicTasks": {
           "model": "claude-2.1",
-          "strengths": [
-            "Simple functions",
-            "Basic utilities",
-            "Straightforward logic"
-          ],
-          "tasks": [
-            "utility-functions",
-            "data-structures",
-            "simple-operations"
-          ],
+          "strengths": ["Simple functions", "Basic utilities", "Straightforward logic"],
+          "tasks": ["utility-functions", "data-structures", "simple-operations"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -118,31 +82,15 @@
       "security": {
         "analysis": {
           "model": "claude-4-opus-20250514",
-          "strengths": [
-            "Threat modeling",
-            "Security architecture",
-            "Zero-trust design"
-          ],
-          "tasks": [
-            "threat-analysis",
-            "security-architecture",
-            "compliance-verification"
-          ],
+          "strengths": ["Threat modeling", "Security architecture", "Zero-trust design"],
+          "tasks": ["threat-analysis", "security-architecture", "compliance-verification"],
           "tokenUsage": "high",
           "costTier": "premium"
         },
         "implementation": {
           "model": "claude-3.7-opus-20250101",
-          "strengths": [
-            "Security controls",
-            "Authentication flows",
-            "Authorization systems"
-          ],
-          "tasks": [
-            "auth-implementation",
-            "security-controls",
-            "access-management"
-          ],
+          "strengths": ["Security controls", "Authentication flows", "Authorization systems"],
+          "tasks": ["auth-implementation", "security-controls", "access-management"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
@@ -153,11 +101,7 @@
             "Basic vulnerability scanning",
             "Config validation"
           ],
-          "tasks": [
-            "security-validation",
-            "config-checks",
-            "basic-scanning"
-          ],
+          "tasks": ["security-validation", "config-checks", "basic-scanning"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -165,46 +109,22 @@
       "documentation": {
         "architecture": {
           "model": "claude-3.7-opus-20250101",
-          "strengths": [
-            "System architecture docs",
-            "Technical specifications",
-            "Design rationale"
-          ],
-          "tasks": [
-            "architecture-docs",
-            "technical-specs",
-            "design-decisions"
-          ],
+          "strengths": ["System architecture docs", "Technical specifications", "Design rationale"],
+          "tasks": ["architecture-docs", "technical-specs", "design-decisions"],
           "tokenUsage": "medium-high",
           "costTier": "standard"
         },
         "technical": {
           "model": "claude-3-sonnet-20240229",
-          "strengths": [
-            "API documentation",
-            "Implementation guides",
-            "Code examples"
-          ],
-          "tasks": [
-            "api-docs",
-            "implementation-guides",
-            "code-examples"
-          ],
+          "strengths": ["API documentation", "Implementation guides", "Code examples"],
+          "tasks": ["api-docs", "implementation-guides", "code-examples"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
         "user": {
           "model": "claude-3-haiku-20240307",
-          "strengths": [
-            "User guides",
-            "README files",
-            "Basic instructions"
-          ],
-          "tasks": [
-            "user-guides",
-            "readmes",
-            "how-tos"
-          ],
+          "strengths": ["User guides", "README files", "Basic instructions"],
+          "tasks": ["user-guides", "readmes", "how-tos"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -212,46 +132,22 @@
       "testing": {
         "systemTesting": {
           "model": "claude-4-opus-20250514",
-          "strengths": [
-            "System test design",
-            "Integration scenarios",
-            "Complex edge cases"
-          ],
-          "tasks": [
-            "system-test-design",
-            "integration-scenarios",
-            "edge-case-identification"
-          ],
+          "strengths": ["System test design", "Integration scenarios", "Complex edge cases"],
+          "tasks": ["system-test-design", "integration-scenarios", "edge-case-identification"],
           "tokenUsage": "high",
           "costTier": "premium"
         },
         "unitTesting": {
           "model": "claude-3-sonnet-20240229",
-          "strengths": [
-            "Unit test generation",
-            "Test case design",
-            "Mocking strategies"
-          ],
-          "tasks": [
-            "unit-tests",
-            "test-cases",
-            "mock-objects"
-          ],
+          "strengths": ["Unit test generation", "Test case design", "Mocking strategies"],
+          "tasks": ["unit-tests", "test-cases", "mock-objects"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
         "basicValidation": {
           "model": "claude-2.1",
-          "strengths": [
-            "Simple assertions",
-            "Basic validations",
-            "Input testing"
-          ],
-          "tasks": [
-            "input-validation",
-            "output-checking",
-            "simple-assertions"
-          ],
+          "strengths": ["Simple assertions", "Basic validations", "Input testing"],
+          "tasks": ["input-validation", "output-checking", "simple-assertions"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -264,41 +160,21 @@
             "Performance analysis",
             "Resource optimization"
           ],
-          "tasks": [
-            "system-optimization",
-            "performance-analysis",
-            "resource-planning"
-          ],
+          "tasks": ["system-optimization", "performance-analysis", "resource-planning"],
           "tokenUsage": "high",
           "costTier": "premium"
         },
         "componentLevel": {
           "model": "claude-3.5-opus-20240321",
-          "strengths": [
-            "Component optimization",
-            "Code efficiency",
-            "Memory usage"
-          ],
-          "tasks": [
-            "code-optimization",
-            "memory-efficiency",
-            "component-tuning"
-          ],
+          "strengths": ["Component optimization", "Code efficiency", "Memory usage"],
+          "tasks": ["code-optimization", "memory-efficiency", "component-tuning"],
           "tokenUsage": "medium",
           "costTier": "standard"
         },
         "basicOptimization": {
           "model": "claude-3-haiku-20240307",
-          "strengths": [
-            "Simple optimizations",
-            "Basic improvements",
-            "Quick fixes"
-          ],
-          "tasks": [
-            "code-cleanup",
-            "simple-optimization",
-            "quick-improvements"
-          ],
+          "strengths": ["Simple optimizations", "Basic improvements", "Quick fixes"],
+          "tasks": ["code-cleanup", "simple-optimization", "quick-improvements"],
           "tokenUsage": "low",
           "costTier": "efficient"
         }
@@ -342,25 +218,14 @@
   "verbose": true,
   "directories": {
     "project": "/home/vector_weight/Documents/projects/homelab/homelab-infra",
-    "allowed": [
-      "/home/vector_weight/Documents/projects/homelab/homelab-infra"
-    ],
-    "restricted": [
-      "**/.git/*",
-      "**/node_modules/*",
-      "**/.env",
-      "**/secrets/*"
-    ]
+    "allowed": ["/home/vector_weight/Documents/projects/homelab/homelab-infra"],
+    "restricted": ["**/.git/*", "**/node_modules/*", "**/.env", "**/secrets/*"]
   },
   "remote": {
     "host": "kang@REMOTE_IP",
     "sshKeyPath": "~/.ssh/id_ed25519",
     "kubeconfig": "/etc/rancher/k3s/k3s.yaml",
-    "sshOptions": [
-      "StrictHostKeyChecking=yes",
-      "BatchMode=yes",
-      "ConnectTimeout=10"
-    ]
+    "sshOptions": ["StrictHostKeyChecking=yes", "BatchMode=yes", "ConnectTimeout=10"]
   },
   "security": {
     "requireGPGSign": true,
@@ -376,17 +241,7 @@
     "defaultBranch": "develop",
     "branchPrefix": "feature/",
     "commitMessageFormat": "type(scope): description",
-    "allowedTypes": [
-      "feat",
-      "fix",
-      "docs",
-      "style",
-      "refactor",
-      "test",
-      "chore",
-      "ci",
-      "perf"
-    ],
+    "allowedTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "ci", "perf"],
     "requireIssueReference": true,
     "conventionalCommits": true
   },

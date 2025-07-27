@@ -1,7 +1,7 @@
 global:
   domain: "staging.homelab.local"
   environment: "staging"
-  
+
   # Security contexts for staging environment (restricted profile)
   securityContext:
     runAsNonRoot: true
@@ -13,7 +13,7 @@ global:
     capabilities:
       drop:
         - ALL
-  
+
   # Pod security standards - restricted for staging
   podSecurityStandards:
     enforce: "restricted"

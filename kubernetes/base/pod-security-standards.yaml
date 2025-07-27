@@ -111,7 +111,7 @@ data:
           - ALL
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
-      
+
   baseline-security-context.yaml: |
     # Baseline security context for development/staging
     securityContext:
@@ -125,7 +125,7 @@ data:
         drop:
           - ALL
       allowPrivilegeEscalation: false
-      
+
   monitoring-security-context.yaml: |
     # Security context for monitoring tools
     securityContext:

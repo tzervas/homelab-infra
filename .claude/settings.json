@@ -15,15 +15,8 @@
       "FileSystem",
       "Glob"
     ],
-    "deny": [
-      "Bash(sudo:*)",
-      "Bash(rm -rf:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)"
-    ],
-    "additionalDirectories": [
-      "/home/vector_weight/Documents/projects/homelab/homelab-infra"
-    ]
+    "deny": ["Bash(sudo:*)", "Bash(rm -rf:*)", "Bash(curl:*)", "Bash(wget:*)"],
+    "additionalDirectories": ["/home/vector_weight/Documents/projects/homelab/homelab-infra"]
   },
   "hooks": {
     "PreToolUse": {

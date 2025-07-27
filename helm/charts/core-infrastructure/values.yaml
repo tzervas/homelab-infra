@@ -2,7 +2,7 @@ global:
   domain: "homelab.local"
   storageClass: "longhorn"
   timezone: "UTC"
-  
+
   # Security contexts for rootless deployment
   securityContext:
     runAsNonRoot: true

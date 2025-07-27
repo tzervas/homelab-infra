@@ -9,7 +9,7 @@ gitlab:
   # Global GitLab Configuration
   global:
     edition: ee
-    
+
     # Security contexts for rootless deployment
     securityContext:
       runAsNonRoot: true
@@ -47,18 +47,18 @@ gitlab:
         enabled: true
         autoSignInWithProvider: null
         syncProfileFromProvider: []
-        syncProfileAttributes: ['email']
-        allowSingleSignOn: ['openid_connect']
+        syncProfileAttributes: ["email"]
+        allowSingleSignOn: ["openid_connect"]
         blockAutoCreatedUsers: false
         autoLinkSamlUser: false
         autoLinkLdapUser: false
         providers:
-          - secret: gitlab-oidc-secret
+          - secret: gitlab-oidc-secret # pragma: allowlist secret
             key: provider
 
     # SMTP Configuration
     smtp:
-      enabled: false  # Set to true and configure in secrets
+      enabled: false # Set to true and configure in secrets
 
     # Time Zone
     timeZone: "${TIMEZONE:-America/New_York}"
@@ -66,7 +66,7 @@ gitlab:
   # Component Configuration
   postgresql:
     install: true
-    postgresqlPassword: ""  # Set in secrets
+    postgresqlPassword: "" # Set in secrets
 
   redis:
     install: true
@@ -118,7 +118,7 @@ gitlab:
 
   # Monitoring
   prometheus:
-    install: false  # We use external Prometheus
+    install: false # We use external Prometheus
 
   # Resource Configuration
   webservice:

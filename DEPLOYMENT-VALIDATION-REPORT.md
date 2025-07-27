@@ -20,6 +20,7 @@
 ### 📋 Deployment Capabilities Validated
 
 #### **VM Testing Phase** (`vm-test`)
+
 - ✅ KVM/libvirt VM creation with cloud-init
 - ✅ Ubuntu 22.04 cloud image deployment
 - ✅ Automated SSH key setup
@@ -28,6 +29,7 @@
 - ✅ Namespace creation (homelab, monitoring, backup)
 
 #### **Infrastructure Components Ready**
+
 - ✅ MetalLB load balancer configuration
 - ✅ cert-manager for TLS certificates
 - ✅ nginx-ingress controller setup
@@ -35,6 +37,7 @@
 - ✅ Backup solutions framework
 
 #### **Application Deployment Ready**
+
 - ✅ Keycloak SSO deployment
 - ✅ GitLab with container registry
 - ✅ SSO integration configuration
@@ -43,6 +46,7 @@
 ## 🔧 Technical Architecture
 
 ### **VM Configuration**
+
 ```yaml
 Memory: 8GB RAM
 CPUs: 4 vCPUs
@@ -52,6 +56,7 @@ Network: NAT with DHCP
 ```
 
 ### **K3s Cluster Setup**
+
 ```bash
 Version: v1.28.5+k3s1
 Features:
@@ -62,6 +67,7 @@ Features:
 ```
 
 ### **Network Layout**
+
 ```
 Host Network (DHCP)
 ├── VM Network (NAT)
@@ -76,6 +82,7 @@ Host Network (DHCP)
 ## 🚀 Deployment Workflow
 
 ### **Phase 1: VM Testing**
+
 ```bash
 # Start VM test deployment
 ./scripts/deploy-homelab.sh vm-test
@@ -85,6 +92,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 ```
 
 **What happens:**
+
 1. 🖥️  Create Ubuntu 22.04 KVM VM with cloud-init
 2. ⚙️  Install and configure K3s cluster
 3. 🔧 Deploy infrastructure components (MetalLB, cert-manager, ingress)
@@ -94,12 +102,14 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 7. 💾 Configure backup solutions
 
 ### **Phase 2: Bare Metal** (after VM testing)
+
 ```bash
 # Deploy to bare metal
 ./scripts/deploy-homelab.sh bare-metal
 ```
 
 ### **Phase 3: Cleanup** (if needed)
+
 ```bash
 # Clean up test VM
 ./scripts/deploy-homelab.sh cleanup-vm
@@ -111,6 +121,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 ## 📊 Validation Test Results
 
 ### **Local Validation** ✅
+
 - Ansible playbook syntax: **VALID**
 - Individual components: **VALID**
 - Deployment scripts: **FUNCTIONAL**
@@ -118,6 +129,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 - Documentation: **COMPREHENSIVE**
 
 ### **Prerequisites Check** ⚠️
+
 - Ansible installed: ✅
 - SSH client: ✅
 - SSH keys: ✅
@@ -128,6 +140,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 ### **Before Running VM Test:**
 
 1. **Configure Server Access**
+
    ```bash
    # Update ansible/inventory/hosts.yml with actual server IP
    ansible_host: "YOUR_SERVER_IP"
@@ -137,11 +150,13 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
    ```
 
 2. **Run Readiness Check**
+
    ```bash
    ./scripts/test-deployment-readiness.sh
    ```
 
 3. **Start VM Testing**
+
    ```bash
    # Basic deployment
    ./scripts/deploy-homelab.sh vm-test
@@ -151,6 +166,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
    ```
 
 ### **Expected VM Test Timeline:**
+
 - VM Creation: ~5-10 minutes
 - K3s Installation: ~3-5 minutes
 - Infrastructure Components: ~10-15 minutes
@@ -158,6 +174,7 @@ VERBOSE=true ./scripts/deploy-homelab.sh vm-test
 - **Total**: ~35-50 minutes
 
 ### **Post-Deployment Validation:**
+
 ```bash
 # Test SSO integration
 ./scripts/test-sso-flow.sh
@@ -187,6 +204,7 @@ https://registry.dev.homelab.local
 ## 🏆 Achievement Summary
 
 ### **What We've Built:**
+
 ✅ Complete CI/CD-ready homelab infrastructure
 ✅ Automated VM testing capability
 ✅ Production-ready Kubernetes cluster setup
@@ -197,6 +215,7 @@ https://registry.dev.homelab.local
 ✅ Professional documentation and procedures
 
 ### **Ready for Production:**
+
 - VM testing validates entire deployment chain
 - Bare metal deployment mirrors production setup
 - All components tested and integrated

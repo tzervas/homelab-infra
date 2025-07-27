@@ -84,7 +84,7 @@ extend-exclude = [
     ".eggs",
     ".git",
     ".mypy_cache",
-    ".tox", 
+    ".tox",
     ".venv",
     "build",
     "dist",

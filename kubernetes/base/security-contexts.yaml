@@ -15,7 +15,7 @@ data:
       fsGroup: 1000
       seccompProfile:
         type: RuntimeDefault
-    
+
   # Default container security context
   default-container-security-context.yaml: |
     securityContext:

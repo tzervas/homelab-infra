@@ -80,12 +80,14 @@ This project uses a multi-repository approach for security:
 #### Setting up Private Configuration
 
 1. Create a private repository for your sensitive configurations:
+
    ```bash
    # Example: Create a private repo on GitHub/GitLab
    git clone git@github.com:username/homelab-infra-private.git
    ```
 
 2. Configure the private repository in your `.env` file:
+
    ```bash
    PRIVATE_CONFIG_REPO=git@github.com:username/homelab-infra-private.git
    PRIVATE_CONFIG_BRANCH=main
@@ -93,6 +95,7 @@ This project uses a multi-repository approach for security:
    ```
 
 3. Initialize the private configuration:
+
    ```bash
    ./scripts/sync-private-config.sh sync
    ```
@@ -141,10 +144,12 @@ This repository includes public documentation in the `docs/` directory. Detailed
 ## Network Configuration
 
 ### Server Details (customize in your private config)
+
 - **k3s Master**: Your homelab server IP
 - **Network Range**: Your internal network range
 
 ### MetalLB IP Allocation (customize in your private config)
+
 - **Development**: A small IP range for testing
 - **Staging**: Medium IP range for staging
 - **Production**: Larger IP range for production
@@ -152,18 +157,21 @@ This repository includes public documentation in the `docs/` directory. Detailed
 ## Environments
 
 ### Development
+
 - Reduced resource allocation
 - Single replica deployment
 - Basic monitoring
 - Self-signed certificates
 
 ### Staging
+
 - Production-like configuration
 - Full monitoring stack
 - Let's Encrypt staging certificates
 - 2 replica deployment
 
 ### Production
+
 - Full resource allocation
 - High availability where possible
 - Let's Encrypt production certificates
@@ -172,16 +180,19 @@ This repository includes public documentation in the `docs/` directory. Detailed
 ## Key Components
 
 ### Core Infrastructure
+
 - **MetalLB**: Load balancer for bare metal
 - **cert-manager**: Automatic TLS certificates
 - **ingress-nginx**: HTTP/HTTPS ingress
 - **sealed-secrets**: Encrypted secret management
 
 ### Storage
+
 - **Longhorn**: Distributed block storage with snapshots and backups
 - **Local-path**: Fast local storage for non-critical data
 
 ### Monitoring
+
 - **Prometheus**: Metrics collection and alerting
 - **Grafana**: Visualization and dashboards
 - **Loki**: Log aggregation
@@ -289,28 +300,33 @@ helmfile --environment production apply --selector name=prometheus
 After deployment, services will be available at:
 
 ### Development
-- Grafana: https://grafana.dev.homelab.local
-- Longhorn: https://longhorn.dev.homelab.local
-- Prometheus: https://prometheus.dev.homelab.local
+
+- Grafana: <https://grafana.dev.homelab.local>
+- Longhorn: <https://longhorn.dev.homelab.local>
+- Prometheus: <https://prometheus.dev.homelab.local>
 
 ### Production
-- Grafana: https://grafana.homelab.local
-- Longhorn: https://longhorn.homelab.local
-- Prometheus: https://prometheus.homelab.local
+
+- Grafana: <https://grafana.homelab.local>
+- Longhorn: <https://longhorn.homelab.local>
+- Prometheus: <https://prometheus.homelab.local>
 
 ## Security
 
 ### Authentication
+
 - Basic authentication for Longhorn UI
 - Grafana admin credentials in values files
 - Sealed secrets for production credentials
 
 ### Network Policies
+
 - Default deny-all policies
 - Selective ingress/egress rules
 - Namespace isolation
 
 ### Pod Security
+
 - Pod Security Standards enforced
 - Privileged access only where required
 - Resource limits on all workloads
@@ -318,16 +334,19 @@ After deployment, services will be available at:
 ## Monitoring
 
 ### Metrics
+
 - Node and pod metrics via node-exporter
 - Application metrics via ServiceMonitor CRDs
 - Custom dashboards in Grafana
 
 ### Logging
+
 - Centralized logging with Loki
 - Log retention policies
 - Grafana integration for log exploration
 
 ### Alerting
+
 - Prometheus AlertManager
 - Critical system alerts
 - Slack/email notification support (configure in values)
@@ -335,11 +354,13 @@ After deployment, services will be available at:
 ## Backup Strategy
 
 ### Longhorn Backups
+
 - Configure S3/NFS backup targets in production values
 - Automated snapshot schedules
 - Cross-cluster disaster recovery
 
 ### Configuration Backups
+
 - Git-based infrastructure as code
 - Sealed secrets for sensitive data
 - Regular cluster state exports
@@ -349,24 +370,28 @@ After deployment, services will be available at:
 ### Common Issues
 
 1. **MetalLB not assigning IPs**
+
    ```bash
    kubectl logs -n metallb-system -l app=metallb
    kubectl get ipaddresspool -n metallb-system
    ```
 
 2. **Cert-manager certificate issues**
+
    ```bash
    kubectl describe certificate -A
    kubectl logs -n cert-manager -l app=cert-manager
    ```
 
 3. **Longhorn storage issues**
+
    ```bash
    kubectl get volumes -n longhorn-system
    kubectl logs -n longhorn-system -l app=longhorn-manager
    ```
 
 ### Log Collection
+
 ```bash
 # Collect all infrastructure logs
 kubectl logs -n metallb-system -l app=metallb > metallb.log

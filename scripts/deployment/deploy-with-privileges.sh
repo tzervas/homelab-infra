@@ -24,13 +24,13 @@ log() {
     shift
     local message="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     # Create log directory if it doesn't exist
     mkdir -p "$LOG_DIR"
-    
+
     # Log to file
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-    
+
     # Log to console with colors
     case "$level" in
         ERROR)
@@ -53,38 +53,38 @@ log() {
 # Function to check if running as correct user
 check_user() {
     local current_user=$(whoami)
-    
+
     if [[ "$current_user" == "root" ]]; then
         log "ERROR" "This script should not be run as root for security reasons"
         log "INFO" "Please run as the deployment user: $DEPLOYMENT_USER"
         exit 1
     fi
-    
+
     if [[ "$current_user" != "$DEPLOYMENT_USER" ]]; then
         log "WARN" "Running as '$current_user' instead of recommended '$DEPLOYMENT_USER'"
         log "INFO" "Consider switching to the deployment user for better security"
     fi
-    
+
     log "INFO" "Running as user: $current_user"
 }
 
 # Function to check sudo permissions
 check_sudo_permissions() {
     log "INFO" "Checking sudo permissions for deployment operations..."
-    
+
     # Test sudo access without prompting for password
     if ! sudo -n true 2>/dev/null; then
         log "ERROR" "Passwordless sudo is not configured or user is not in sudoers"
         log "INFO" "Please ensure the deployment user is properly configured with sudo access"
         return 1
     fi
-    
+
     # Test specific commands that we need
     local test_commands=(
         "systemctl status"
         "mkdir -p /tmp/homelab-test"
     )
-    
+
     for cmd in "${test_commands[@]}"; do
         if sudo -n $cmd >/dev/null 2>&1; then
             log "DEBUG" "Sudo access verified for: $cmd"
@@ -92,32 +92,32 @@ check_sudo_permissions() {
             log "WARN" "Limited sudo access for: $cmd"
         fi
     done
-    
+
     # Cleanup test directory
     sudo rm -rf /tmp/homelab-test 2>/dev/null || true
-    
+
     log "INFO" "Sudo permissions check completed"
 }
 
 # Function to set up environment
 setup_environment() {
     log "INFO" "Setting up deployment environment..."
-    
+
     # Source environment configuration if it exists
     local env_file="${HOME}/.environment"
     if [[ -f "$env_file" ]]; then
         log "DEBUG" "Sourcing environment from: $env_file"
         source "$env_file"
     fi
-    
+
     # Set up required environment variables
     export KUBECONFIG="${KUBECONFIG:-${HOME}/.kube/config}"
     export HOMELAB_DEPLOYMENT_MODE="rootless"
     export HOMELAB_USER="$DEPLOYMENT_USER"
-    
+
     # Verify required tools are available
     local required_tools=("kubectl" "helm" "ansible-playbook")
-    
+
     for tool in "${required_tools[@]}"; do
         if command -v "$tool" >/dev/null 2>&1; then
             log "DEBUG" "Found required tool: $tool"
@@ -125,7 +125,7 @@ setup_environment() {
             log "WARN" "Required tool not found: $tool"
         fi
     done
-    
+
     log "INFO" "Environment setup completed"
 }
 
@@ -134,31 +134,31 @@ run_ansible_playbook() {
     local playbook="$1"
     shift
     local extra_args=("$@")
-    
+
     log "INFO" "Running Ansible playbook: $playbook"
-    
+
     # Change to project root
     cd "$PROJECT_ROOT"
-    
+
     # Prepare Ansible command
     local ansible_cmd=(
         "ansible-playbook"
         "-i" "ansible/inventory/hosts.yml"
         "$playbook"
     )
-    
+
     # Add extra arguments
     if [[ ${#extra_args[@]} -gt 0 ]]; then
         ansible_cmd+=("${extra_args[@]}")
     fi
-    
+
     # Add verbosity if in debug mode
     if [[ "${DEBUG:-false}" == "true" ]]; then
         ansible_cmd+=("-vvv")
     fi
-    
+
     log "INFO" "Executing: ${ansible_cmd[*]}"
-    
+
     # Execute Ansible playbook
     if "${ansible_cmd[@]}"; then
         log "INFO" "Playbook execution completed successfully"
@@ -172,9 +172,9 @@ run_ansible_playbook() {
 # Function to deploy specific components
 deploy_component() {
     local component="$1"
-    
+
     log "INFO" "Deploying component: $component"
-    
+
     case "$component" in
         "user-setup")
             # This requires initial root access to create the deployment user
@@ -264,15 +264,15 @@ EOF
 # Function to check deployment prerequisites
 check_prerequisites() {
     log "INFO" "Checking deployment prerequisites..."
-    
+
     local errors=0
-    
+
     # Check if we're running as the right user
     check_user || ((errors++))
-    
+
     # Check sudo permissions
     check_sudo_permissions || ((errors++))
-    
+
     # Check if required directories exist
     local required_dirs=("$PROJECT_ROOT/ansible" "$PROJECT_ROOT/helm")
     for dir in "${required_dirs[@]}"; do
@@ -283,7 +283,7 @@ check_prerequisites() {
             ((errors++))
         fi
     done
-    
+
     # Check if kubeconfig exists (for non-initial deployments)
     if [[ -f "$KUBECONFIG" ]]; then
         log "INFO" "Kubeconfig found at: $KUBECONFIG"
@@ -296,7 +296,7 @@ check_prerequisites() {
     else
         log "INFO" "Kubeconfig not found (expected for initial deployment)"
     fi
-    
+
     if [[ $errors -eq 0 ]]; then
         log "INFO" "All prerequisites check passed"
         return 0
@@ -309,18 +309,18 @@ check_prerequisites() {
 # Function to show deployment status
 show_status() {
     log "INFO" "Checking deployment status..."
-    
+
     # Check if kubectl is available and cluster is accessible
     if command -v kubectl >/dev/null 2>&1 && kubectl cluster-info >/dev/null 2>&1; then
         log "INFO" "Kubernetes cluster status:"
         kubectl get nodes -o wide 2>/dev/null || log "WARN" "Could not get node status"
-        
+
         log "INFO" "Deployed applications:"
         kubectl get deployments,statefulsets -A 2>/dev/null || log "WARN" "Could not get application status"
     else
         log "WARN" "Kubernetes cluster not accessible"
     fi
-    
+
     # Show systemd services status
     if command -v systemctl >/dev/null 2>&1; then
         log "INFO" "System services status:"
@@ -338,7 +338,7 @@ show_status() {
 main() {
     local command=""
     local component=""
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -372,17 +372,17 @@ main() {
                 ;;
         esac
     done
-    
+
     # Validate command
     if [[ -z "$command" ]]; then
         log "ERROR" "No command specified"
         usage
         exit 1
     fi
-    
+
     # Set up environment
     setup_environment
-    
+
     # Execute command
     case "$command" in
         check)

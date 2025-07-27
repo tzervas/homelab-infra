@@ -28,13 +28,13 @@ deployment_sudo_commands:
   - "/bin/systemctl disable k3s*"
   - "/bin/systemctl status k3s*"
   - "/bin/systemctl daemon-reload"
-  
+
   # Package management (for specific packages only)
   - "/usr/bin/apt update"
   - "/usr/bin/apt install curl wget git"
   - "/usr/bin/snap install kubectl helm"
   - "/usr/bin/snap refresh kubectl helm"
-  
+
   # File operations in system directories
   - "/bin/mkdir -p /etc/rancher/k3s"
   - "/bin/mkdir -p /var/lib/rancher/k3s"
@@ -42,12 +42,12 @@ deployment_sudo_commands:
   - "/bin/chown {{ deployment_user }}\\:{{ deployment_group }} /var/lib/rancher/k3s*"
   - "/bin/chmod 755 /etc/rancher/k3s*"
   - "/bin/chmod 755 /var/lib/rancher/k3s*"
-  
+
   # K3s specific commands
   - "/usr/local/bin/k3s*"
   - "/opt/bin/k3s*"
   - "/usr/bin/k3s*"
-  
+
   # Docker operations
   - "/usr/bin/docker system prune -f"
   - "/usr/bin/docker volume prune -f"

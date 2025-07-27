@@ -1,7 +1,7 @@
 global:
   domain: "homelab.local"
   environment: "production"
-  
+
   # Production security contexts - strict enforcement
   securityContext:
     runAsNonRoot: true
@@ -13,7 +13,7 @@ global:
     capabilities:
       drop:
         - ALL
-  
+
   # Pod security standards
   podSecurityStandards:
     enforce: "restricted"

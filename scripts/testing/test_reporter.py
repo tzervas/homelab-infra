@@ -1,50 +1,68 @@
 #!/usr/bin/env python3
-"""
-Test Reporter & Aggregator for Homelab Infrastructure Testing Framework
+"""Test Reporter & Aggregator for Homelab Infrastructure Testing Framework.
 
 This module orchestrates all testing modules, aggregates results, and provides
 comprehensive reporting in multiple formats with trend analysis and metrics.
 """
 
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 import json
 import logging
 import os
+from pathlib import Path
 import sys
 import time
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 # Import all testing modules
 try:
     from .config_validator import ConfigValidator, ValidationResult
-    from .infrastructure_health import InfrastructureHealthMonitor, ClusterHealth
-    from .service_checker import ServiceDeploymentChecker, ServiceStatus
-    from .network_security import NetworkSecurityValidator, SecurityStatus
+    from .infrastructure_health import ClusterHealth, InfrastructureHealthMonitor
     from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
-    from .issue_tracker import IssueTracker, IssueSeverity, IssueCategory, create_missing_items_issues, create_security_context_issues
+    from .issue_tracker import (
+        IssueCategory,
+        IssueSeverity,
+        IssueTracker,
+        create_missing_items_issues,
+        create_security_context_issues,
+    )
+    from .network_security import NetworkSecurityValidator, SecurityStatus
+    from .service_checker import ServiceDeploymentChecker, ServiceStatus
 except ImportError:
     try:
         from config_validator import ConfigValidator, ValidationResult
-        from infrastructure_health import InfrastructureHealthMonitor, ClusterHealth
-        from service_checker import ServiceDeploymentChecker, ServiceStatus
-        from network_security import NetworkSecurityValidator, SecurityStatus
+        from infrastructure_health import ClusterHealth, InfrastructureHealthMonitor
         from integration_tester import IntegrationConnectivityTester, IntegrationTestResult
-        from issue_tracker import IssueTracker, IssueSeverity, IssueCategory, create_missing_items_issues, create_security_context_issues
+        from issue_tracker import (
+            IssueCategory,
+            IssueSeverity,
+            IssueTracker,
+            create_missing_items_issues,
+            create_security_context_issues,
+        )
+        from network_security import NetworkSecurityValidator, SecurityStatus
+        from service_checker import ServiceDeploymentChecker, ServiceStatus
     except ImportError as e:
         print(f"Warning: Could not import some testing modules: {e}")
         print("Some functionality may be limited.")
+
         # Create mock classes if issue tracker is not available
         class IssueTracker:
-            def __init__(self, *args, **kwargs): pass
-            def add_issue(self, *args, **kwargs): pass
-            def format_summary_report(self): return "Issue tracking not available"
+            def __init__(self, *args, **kwargs) -> None:
+                pass
+
+            def add_issue(self, *args, **kwargs):
+                pass
+
+            def format_summary_report(self):
+                return "Issue tracking not available"
 
 
 @dataclass
 class TestSuiteResult:
     """Comprehensive test suite results."""
+
     timestamp: str
     duration: float
     overall_status: str  # "pass", "fail", "warning"
@@ -61,7 +79,7 @@ class TestSuiteResult:
 class HomelabTestReporter:
     """Comprehensive test reporter and aggregator."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO"):
+    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
         """Initialize the test reporter."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
@@ -74,23 +92,23 @@ class HomelabTestReporter:
         self.service_checker = None
         self.security_validator = None
         self.integration_tester = None
-        
+
         # Initialize issue tracker
         self.issue_tracker = IssueTracker(max_issues_per_component=10, max_total_display=50)
 
         try:
-            if 'ConfigValidator' in globals():
+            if "ConfigValidator" in globals():
                 self.config_validator = ConfigValidator(log_level)
-            if 'InfrastructureHealthMonitor' in globals():
+            if "InfrastructureHealthMonitor" in globals():
                 self.infra_monitor = InfrastructureHealthMonitor(kubeconfig_path, log_level)
-            if 'ServiceDeploymentChecker' in globals():
+            if "ServiceDeploymentChecker" in globals():
                 self.service_checker = ServiceDeploymentChecker(kubeconfig_path, log_level)
-            if 'NetworkSecurityValidator' in globals():
+            if "NetworkSecurityValidator" in globals():
                 self.security_validator = NetworkSecurityValidator(kubeconfig_path, log_level)
-            if 'IntegrationConnectivityTester' in globals():
+            if "IntegrationConnectivityTester" in globals():
                 self.integration_tester = IntegrationConnectivityTester(kubeconfig_path, log_level)
         except Exception as e:
-            self.logger.error(f"Failed to initialize testing modules: {e}")
+            self.logger.exception(f"Failed to initialize testing modules: {e}")
 
     def _setup_logging(self, level: str) -> logging.Logger:
         """Configure structured logging."""
@@ -99,15 +117,15 @@ class HomelabTestReporter:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         return logger
 
-    def run_config_validation(self, config_paths: List[str] = None) -> Optional[List[ValidationResult]]:
+    def run_config_validation(
+        self, config_paths: Optional[List[str]] = None
+    ) -> Optional[List[ValidationResult]]:
         """Run configuration validation tests."""
         if not self.config_validator:
             self.logger.warning("Config validator not available")
@@ -128,7 +146,7 @@ class HomelabTestReporter:
                 default_paths = [
                     "ansible/inventory",
                     "helm/environments",
-                    "examples/private-config-template"
+                    "examples/private-config-template",
                 ]
                 results = []
                 for path in default_paths:
@@ -138,7 +156,7 @@ class HomelabTestReporter:
             return results
 
         except Exception as e:
-            self.logger.error(f"Configuration validation failed: {e}")
+            self.logger.exception(f"Configuration validation failed: {e}")
             return None
 
     def run_infrastructure_health_check(self) -> Optional[ClusterHealth]:
@@ -151,7 +169,7 @@ class HomelabTestReporter:
             self.logger.info("Running infrastructure health check...")
             return self.infra_monitor.get_cluster_health()
         except Exception as e:
-            self.logger.error(f"Infrastructure health check failed: {e}")
+            self.logger.exception(f"Infrastructure health check failed: {e}")
             return None
 
     def run_service_deployment_check(self) -> Optional[Dict[str, ServiceStatus]]:
@@ -164,7 +182,7 @@ class HomelabTestReporter:
             self.logger.info("Running service deployment check...")
             return self.service_checker.check_all_services()
         except Exception as e:
-            self.logger.error(f"Service deployment check failed: {e}")
+            self.logger.exception(f"Service deployment check failed: {e}")
             return None
 
     def run_network_security_validation(self) -> Optional[List[SecurityStatus]]:
@@ -177,10 +195,12 @@ class HomelabTestReporter:
             self.logger.info("Running network and security validation...")
             return self.security_validator.run_comprehensive_security_scan()
         except Exception as e:
-            self.logger.error(f"Network security validation failed: {e}")
+            self.logger.exception(f"Network security validation failed: {e}")
             return None
 
-    def run_integration_tests(self, include_workstation: bool = False) -> Optional[List[IntegrationTestResult]]:
+    def run_integration_tests(
+        self, include_workstation: bool = False
+    ) -> Optional[List[IntegrationTestResult]]:
         """Run integration and connectivity tests."""
         if not self.integration_tester:
             self.logger.warning("Integration tester not available")
@@ -190,15 +210,12 @@ class HomelabTestReporter:
             self.logger.info("Running integration tests...")
             return self.integration_tester.run_comprehensive_integration_tests(include_workstation)
         except Exception as e:
-            self.logger.error(f"Integration tests failed: {e}")
+            self.logger.exception(f"Integration tests failed: {e}")
             return None
 
     def calculate_metrics(self, result: TestSuiteResult) -> Dict[str, Any]:
         """Calculate test metrics and statistics."""
-        metrics = {
-            "total_test_duration": result.duration,
-            "timestamp": result.timestamp
-        }
+        metrics = {"total_test_duration": result.duration, "timestamp": result.timestamp}
 
         # Config validation metrics
         if result.config_validation:
@@ -207,7 +224,9 @@ class HomelabTestReporter:
             metrics["config_validation"] = {
                 "total_files": total_configs,
                 "valid_files": valid_configs,
-                "validation_rate": (valid_configs / total_configs * 100) if total_configs > 0 else 0
+                "validation_rate": (valid_configs / total_configs * 100)
+                if total_configs > 0
+                else 0,
             }
 
         # Infrastructure health metrics
@@ -215,7 +234,7 @@ class HomelabTestReporter:
             metrics["infrastructure_health"] = {
                 "health_percentage": result.infrastructure_health.health_percentage,
                 "total_checks": result.infrastructure_health.total_checks,
-                "healthy_checks": result.infrastructure_health.healthy_checks
+                "healthy_checks": result.infrastructure_health.healthy_checks,
             }
 
         # Service deployment metrics
@@ -225,7 +244,9 @@ class HomelabTestReporter:
             metrics["service_deployment"] = {
                 "total_services": total_services,
                 "ready_services": ready_services,
-                "readiness_rate": (ready_services / total_services * 100) if total_services > 0 else 0
+                "readiness_rate": (ready_services / total_services * 100)
+                if total_services > 0
+                else 0,
             }
 
         # Security metrics
@@ -235,19 +256,25 @@ class HomelabTestReporter:
             metrics["network_security"] = {
                 "total_checks": total_security_checks,
                 "secure_checks": secure_checks,
-                "security_score": (secure_checks / total_security_checks * 100) if total_security_checks > 0 else 0
+                "security_score": (secure_checks / total_security_checks * 100)
+                if total_security_checks > 0
+                else 0,
             }
 
         # Integration test metrics
         if result.integration_tests:
             passed_tests = sum(1 for t in result.integration_tests if t.passed)
             total_tests = len(result.integration_tests)
-            avg_duration = sum(t.duration for t in result.integration_tests) / total_tests if total_tests > 0 else 0
+            avg_duration = (
+                sum(t.duration for t in result.integration_tests) / total_tests
+                if total_tests > 0
+                else 0
+            )
             metrics["integration_tests"] = {
                 "total_tests": total_tests,
                 "passed_tests": passed_tests,
                 "success_rate": (passed_tests / total_tests * 100) if total_tests > 0 else 0,
-                "average_test_duration": avg_duration
+                "average_test_duration": avg_duration,
             }
 
         return metrics
@@ -263,18 +290,27 @@ class HomelabTestReporter:
                 recommendations.append(f"Fix {len(invalid_configs)} invalid configuration files")
 
         # Infrastructure health recommendations
-        if result.infrastructure_health and result.infrastructure_health.cluster_status != "healthy":
+        if (
+            result.infrastructure_health
+            and result.infrastructure_health.cluster_status != "healthy"
+        ):
             recommendations.append("Address infrastructure health issues before proceeding")
 
         # Service deployment recommendations
         if result.service_deployment:
-            unready_services = [name for name, status in result.service_deployment.items() if not status.is_ready]
+            unready_services = [
+                name for name, status in result.service_deployment.items() if not status.is_ready
+            ]
             if unready_services:
-                recommendations.append(f"Investigate unready services: {', '.join(unready_services)}")
+                recommendations.append(
+                    f"Investigate unready services: {', '.join(unready_services)}"
+                )
 
         # Security recommendations
         if result.network_security:
-            security_issues = [s for s in result.network_security if s.status in ["warning", "vulnerable"]]
+            security_issues = [
+                s for s in result.network_security if s.status in ["warning", "vulnerable"]
+            ]
             if security_issues:
                 recommendations.append("Review and address security warnings")
                 for issue in security_issues:
@@ -284,12 +320,15 @@ class HomelabTestReporter:
         if result.integration_tests:
             failed_tests = [t for t in result.integration_tests if t.status == "fail"]
             if failed_tests:
-                recommendations.append("Fix failing integration tests for complete system validation")
+                recommendations.append(
+                    "Fix failing integration tests for complete system validation"
+                )
 
         return recommendations
 
-    def run_comprehensive_test_suite(self, config_paths: List[str] = None,
-                                   include_workstation_tests: bool = False) -> TestSuiteResult:
+    def run_comprehensive_test_suite(
+        self, config_paths: Optional[List[str]] = None, include_workstation_tests: bool = False
+    ) -> TestSuiteResult:
         """Run the complete test suite and aggregate results."""
         start_time = time.time()
         timestamp = datetime.now().isoformat()
@@ -298,20 +337,20 @@ class HomelabTestReporter:
 
         # Clear previous issues
         self.issue_tracker.clear()
-        
+
         # Run all test modules and collect issues
         config_results = self.run_config_validation(config_paths)
         self._process_config_issues(config_results)
-        
+
         infra_health = self.run_infrastructure_health_check()
         self._process_infrastructure_issues(infra_health)
-        
+
         service_status = self.run_service_deployment_check()
         self._process_service_issues(service_status)
-        
+
         security_results = self.run_network_security_validation()
         self._process_security_issues(security_results)
-        
+
         integration_results = self.run_integration_tests(include_workstation_tests)
         self._process_integration_issues(integration_results)
 
@@ -342,7 +381,7 @@ class HomelabTestReporter:
             infrastructure_health=infra_health,
             service_deployment=service_status,
             network_security=security_results,
-            integration_tests=integration_results
+            integration_tests=integration_results,
         )
 
         # Calculate metrics and recommendations
@@ -353,11 +392,23 @@ class HomelabTestReporter:
         result.summary = {
             "overall_status": overall_status,
             "test_duration": duration,
-            "modules_run": sum(1 for r in [config_results, infra_health, service_status, security_results, integration_results] if r is not None),
-            "total_recommendations": len(result.recommendations)
+            "modules_run": sum(
+                1
+                for r in [
+                    config_results,
+                    infra_health,
+                    service_status,
+                    security_results,
+                    integration_results,
+                ]
+                if r is not None
+            ),
+            "total_recommendations": len(result.recommendations),
         }
 
-        self.logger.info(f"✅ Test suite completed in {duration:.2f}s with status: {overall_status.upper()}")
+        self.logger.info(
+            f"✅ Test suite completed in {duration:.2f}s with status: {overall_status.upper()}"
+        )
 
         return result
 
@@ -365,24 +416,28 @@ class HomelabTestReporter:
         """Process configuration validation results and add to issue tracker."""
         if not config_results:
             return
-        
+
         for result in config_results:
             if not result.is_valid:
-                severity = IssueSeverity.HIGH if "critical" in result.message.lower() else IssueSeverity.MEDIUM
+                severity = (
+                    IssueSeverity.HIGH
+                    if "critical" in result.message.lower()
+                    else IssueSeverity.MEDIUM
+                )
                 self.issue_tracker.add_issue(
                     component=f"config_{result.file_type}",
                     message=result.message,
                     severity=severity,
                     category=IssueCategory.CONFIGURATION,
                     details={"file_path": result.file_path, "errors": result.errors},
-                    affects_deployment=severity == IssueSeverity.HIGH
+                    affects_deployment=severity == IssueSeverity.HIGH,
                 )
 
     def _process_infrastructure_issues(self, infra_health: Optional[ClusterHealth]) -> None:
         """Process infrastructure health results and add to issue tracker."""
         if not infra_health:
             return
-        
+
         # Process cluster status
         if infra_health.cluster_status == "critical":
             self.issue_tracker.add_issue(
@@ -390,20 +445,22 @@ class HomelabTestReporter:
                 message="Cluster is in critical state",
                 severity=IssueSeverity.CRITICAL,
                 category=IssueCategory.DEPLOYMENT,
-                affects_deployment=True
+                affects_deployment=True,
             )
         elif infra_health.cluster_status == "warning":
             self.issue_tracker.add_issue(
-                component="kubernetes_cluster", 
+                component="kubernetes_cluster",
                 message="Cluster has warning conditions",
                 severity=IssueSeverity.HIGH,
                 category=IssueCategory.DEPLOYMENT,
-                affects_deployment=True
+                affects_deployment=True,
             )
-        
+
         # Process node issues
-        if hasattr(infra_health, 'node_statuses') and infra_health.node_statuses:
-            unhealthy_nodes = [node for node, status in infra_health.node_statuses.items() if status != "ready"]
+        if hasattr(infra_health, "node_statuses") and infra_health.node_statuses:
+            unhealthy_nodes = [
+                node for node, status in infra_health.node_statuses.items() if status != "ready"
+            ]
             if unhealthy_nodes:
                 create_missing_items_issues(
                     tracker=self.issue_tracker,
@@ -411,17 +468,19 @@ class HomelabTestReporter:
                     missing_items=unhealthy_nodes,
                     item_type="unhealthy node",
                     severity=IssueSeverity.HIGH,
-                    category=IssueCategory.DEPLOYMENT
+                    category=IssueCategory.DEPLOYMENT,
                 )
 
     def _process_service_issues(self, service_status: Optional[Dict[str, ServiceStatus]]) -> None:
         """Process service deployment results and add to issue tracker."""
         if not service_status:
             return
-        
+
         for service_name, status in service_status.items():
             if not status.is_ready:
-                severity = IssueSeverity.CRITICAL if status.status == "failed" else IssueSeverity.HIGH
+                severity = (
+                    IssueSeverity.CRITICAL if status.status == "failed" else IssueSeverity.HIGH
+                )
                 self.issue_tracker.add_issue(
                     component=f"service_{service_name}",
                     message=f"Service not ready: {status.message}",
@@ -430,16 +489,16 @@ class HomelabTestReporter:
                     details={
                         "pod_count": status.pod_count,
                         "ready_pods": status.ready_pods,
-                        "namespace": status.namespace
+                        "namespace": status.namespace,
                     },
-                    affects_deployment=True
+                    affects_deployment=True,
                 )
 
     def _process_security_issues(self, security_results: Optional[List[SecurityStatus]]) -> None:
         """Process security validation results and add to issue tracker."""
         if not security_results:
             return
-        
+
         for security_status in security_results:
             if not security_status.is_secure:
                 # Map security status to issue severity
@@ -449,25 +508,25 @@ class HomelabTestReporter:
                     severity = IssueSeverity.HIGH
                 else:
                     severity = IssueSeverity.MEDIUM
-                
+
                 # Extract detailed counts from security status
                 details = security_status.details
                 message = security_status.message
-                
+
                 # Handle specific security issues with counts
                 if "privileged_containers_shown" in details:
                     total_privileged = details.get("total_privileged_containers", 0)
                     total_missing = details.get("total_missing_contexts", 0)
-                    
+
                     if total_privileged > 0:
                         privileged_containers = details.get("privileged_containers_shown", [])
                         create_security_context_issues(
                             tracker=self.issue_tracker,
                             component="kubernetes_security_contexts",
                             privileged_containers=privileged_containers,
-                            missing_contexts=[]
+                            missing_contexts=[],
                         )
-                        
+
                         # Add summary issue with total count
                         if total_privileged > len(privileged_containers):
                             self.issue_tracker.add_issue(
@@ -476,18 +535,18 @@ class HomelabTestReporter:
                                 severity=IssueSeverity.CRITICAL,
                                 category=IssueCategory.SECURITY,
                                 details={"total_count": total_privileged},
-                                affects_deployment=True
+                                affects_deployment=True,
                             )
-                    
+
                     if total_missing > 0:
                         missing_contexts = details.get("missing_contexts_shown", [])
                         create_security_context_issues(
                             tracker=self.issue_tracker,
                             component="kubernetes_security_contexts",
                             privileged_containers=[],
-                            missing_contexts=missing_contexts
+                            missing_contexts=missing_contexts,
                         )
-                        
+
                         # Add summary issue with total count
                         if total_missing > len(missing_contexts):
                             self.issue_tracker.add_issue(
@@ -496,7 +555,7 @@ class HomelabTestReporter:
                                 severity=IssueSeverity.HIGH,
                                 category=IssueCategory.SECURITY,
                                 details={"total_count": total_missing},
-                                affects_deployment=True
+                                affects_deployment=True,
                             )
                 else:
                     # Generic security issue
@@ -507,14 +566,16 @@ class HomelabTestReporter:
                         category=IssueCategory.SECURITY,
                         details=details,
                         recommendations=security_status.recommendations,
-                        affects_deployment=severity in [IssueSeverity.CRITICAL, IssueSeverity.HIGH]
+                        affects_deployment=severity in [IssueSeverity.CRITICAL, IssueSeverity.HIGH],
                     )
 
-    def _process_integration_issues(self, integration_results: Optional[List[IntegrationTestResult]]) -> None:
+    def _process_integration_issues(
+        self, integration_results: Optional[List[IntegrationTestResult]]
+    ) -> None:
         """Process integration test results and add to issue tracker."""
         if not integration_results:
             return
-        
+
         for test_result in integration_results:
             if test_result.status == "fail":
                 self.issue_tracker.add_issue(
@@ -523,7 +584,7 @@ class HomelabTestReporter:
                     severity=IssueSeverity.HIGH,
                     category=IssueCategory.CONNECTIVITY,
                     details=test_result.details,
-                    affects_deployment=True
+                    affects_deployment=True,
                 )
             elif test_result.status == "warning":
                 self.issue_tracker.add_issue(
@@ -531,7 +592,7 @@ class HomelabTestReporter:
                     message=f"Integration test warning: {test_result.message}",
                     severity=IssueSeverity.MEDIUM,
                     category=IssueCategory.CONNECTIVITY,
-                    details=test_result.details
+                    details=test_result.details,
                 )
 
     def export_json_report(self, result: TestSuiteResult, filename: Optional[str] = None) -> str:
@@ -545,13 +606,15 @@ class HomelabTestReporter:
         # Convert dataclasses to dict for JSON serialization
         json_data = asdict(result)
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(json_data, f, indent=2, default=str)
 
         self.logger.info(f"JSON report exported to: {filepath}")
         return str(filepath)
 
-    def export_markdown_report(self, result: TestSuiteResult, filename: Optional[str] = None) -> str:
+    def export_markdown_report(
+        self, result: TestSuiteResult, filename: Optional[str] = None
+    ) -> str:
         """Export results to Markdown format."""
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -559,8 +622,8 @@ class HomelabTestReporter:
 
         filepath = self.results_dir / filename
 
-        with open(filepath, 'w') as f:
-            f.write(f"# Homelab Infrastructure Test Report\n\n")
+        with open(filepath, "w") as f:
+            f.write("# Homelab Infrastructure Test Report\n\n")
             f.write(f"**Generated:** {result.timestamp}\n")
             f.write(f"**Duration:** {result.duration:.2f} seconds\n")
             f.write(f"**Overall Status:** {result.overall_status.upper()}\n\n")
@@ -577,7 +640,7 @@ class HomelabTestReporter:
                 f.write("## Issue Summary\n\n")
                 f.write(f"**Total Issues**: {issue_summary.total_issues}\n")
                 f.write(f"**Deployment Blocking**: {issue_summary.deployment_blocking}\n\n")
-                
+
                 # Critical issues (always show all)
                 critical_issues = self.issue_tracker.get_critical_issues()
                 if critical_issues:
@@ -585,31 +648,48 @@ class HomelabTestReporter:
                     for issue in critical_issues:
                         f.write(f"- **{issue.component}**: {issue.message}\n")
                     f.write("\n")
-                
+
                 # Issue breakdown by severity
                 f.write("### Issues by Severity\n\n")
                 for severity in IssueSeverity:
                     count = issue_summary.by_severity[severity]
                     if count > 0:
-                        icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[severity.value]
+                        icon = {
+                            "critical": "🚨",
+                            "high": "⚠️",
+                            "medium": "⚡",
+                            "low": "ℹ️",
+                            "info": "📝",
+                        }[severity.value]
                         f.write(f"- {icon} **{severity.value.title()}**: {count}\n")
                 f.write("\n")
-                
+
                 # Top issues by component
                 f.write("### Top Issues by Component\n\n")
                 from collections import Counter
+
                 component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
                 for component, count in component_counts.most_common(10):
-                    component_issues = [i for i in issue_summary.top_issues if i.component == component]
+                    component_issues = [
+                        i for i in issue_summary.top_issues if i.component == component
+                    ]
                     if component_issues:
-                        highest_severity = min(component_issues, key=lambda x: list(IssueSeverity).index(x.severity))
-                        severity_icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[highest_severity.severity.value]
+                        highest_severity = min(
+                            component_issues, key=lambda x: list(IssueSeverity).index(x.severity)
+                        )
+                        severity_icon = {
+                            "critical": "🚨",
+                            "high": "⚠️",
+                            "medium": "⚡",
+                            "low": "ℹ️",
+                            "info": "📝",
+                        }[highest_severity.severity.value]
                         f.write(f"**{severity_icon} {component}** ({count} issues)\n")
-                        
+
                         # Show sample issues for this component
                         for issue in component_issues[:2]:
                             f.write(f"  - {issue.message}\n")
-                        
+
                         if count > 2:
                             f.write(f"  - ... and {count - 2} more issues\n")
                         f.write("\n")
@@ -640,8 +720,12 @@ class HomelabTestReporter:
 
             if result.infrastructure_health:
                 f.write("## Infrastructure Health\n\n")
-                f.write(f"**Overall Status:** {result.infrastructure_health.cluster_status.upper()}\n")
-                f.write(f"**Health Score:** {result.infrastructure_health.health_percentage:.1f}%\n\n")
+                f.write(
+                    f"**Overall Status:** {result.infrastructure_health.cluster_status.upper()}\n"
+                )
+                f.write(
+                    f"**Health Score:** {result.infrastructure_health.health_percentage:.1f}%\n\n"
+                )
 
             if result.service_deployment:
                 f.write("## Service Deployment\n\n")
@@ -653,15 +737,25 @@ class HomelabTestReporter:
             if result.network_security:
                 f.write("## Network & Security\n\n")
                 for security in result.network_security:
-                    icon = "🔒" if security.is_secure else "⚠️" if security.status == "warning" else "🚨"
-                    f.write(f"- {icon} **{security.check_type.replace('_', ' ').title()}:** {security.message}\n")
+                    icon = (
+                        "🔒"
+                        if security.is_secure
+                        else "⚠️"
+                        if security.status == "warning"
+                        else "🚨"
+                    )
+                    f.write(
+                        f"- {icon} **{security.check_type.replace('_', ' ').title()}:** {security.message}\n"
+                    )
                 f.write("\n")
 
             if result.integration_tests:
                 f.write("## Integration Tests\n\n")
                 for test in result.integration_tests:
                     icon = "✅" if test.passed else "❌" if test.status == "fail" else "⚠️"
-                    f.write(f"- {icon} **{test.test_name.replace('_', ' ').title()}:** {test.message}\n")
+                    f.write(
+                        f"- {icon} **{test.test_name.replace('_', ' ').title()}:** {test.message}\n"
+                    )
 
         self.logger.info(f"Markdown report exported to: {filepath}")
         return str(filepath)
@@ -674,7 +768,7 @@ class HomelabTestReporter:
 
         filepath = self.results_dir / filename
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             # Generate comprehensive issue report
             issue_report = self.issue_tracker.format_summary_report()
             f.write(issue_report)
@@ -684,7 +778,7 @@ class HomelabTestReporter:
 
     def print_console_summary(self, result: TestSuiteResult) -> None:
         """Print a comprehensive console summary."""
-        print(f"\n🏠 HOMELAB INFRASTRUCTURE TEST REPORT")
+        print("\n🏠 HOMELAB INFRASTRUCTURE TEST REPORT")
         print(f"{'='*60}")
         print(f"Timestamp: {result.timestamp}")
         print(f"Duration: {result.duration:.2f}s")
@@ -697,7 +791,7 @@ class HomelabTestReporter:
             print("🚨 ISSUE SUMMARY:")
             print(f"  Total Issues: {issue_summary.total_issues}")
             print(f"  Deployment Blocking: {issue_summary.deployment_blocking}")
-            
+
             # Critical issues (always show)
             critical_issues = self.issue_tracker.get_critical_issues()
             if critical_issues:
@@ -706,20 +800,27 @@ class HomelabTestReporter:
                     print(f"  - {issue.component}: {issue.message}")
                 if len(critical_issues) > 5:
                     print(f"  ... and {len(critical_issues) - 5} more critical issues")
-            
+
             # Issue breakdown by severity
-            print(f"\n📊 Issues by Severity:")
+            print("\n📊 Issues by Severity:")
             for severity in IssueSeverity:
                 count = issue_summary.by_severity[severity]
                 if count > 0:
-                    icon = {"critical": "🚨", "high": "⚠️", "medium": "⚡", "low": "ℹ️", "info": "📝"}[severity.value]
+                    icon = {
+                        "critical": "🚨",
+                        "high": "⚠️",
+                        "medium": "⚡",
+                        "low": "ℹ️",
+                        "info": "📝",
+                    }[severity.value]
                     print(f"  {icon} {severity.value.title()}: {count}")
-            
+
             # Top problematic components
             from collections import Counter
+
             component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
             if component_counts:
-                print(f"\n🔧 Most Problematic Components:")
+                print("\n🔧 Most Problematic Components:")
                 for component, count in component_counts.most_common(5):
                     print(f"  - {component}: {count} issues")
         else:
@@ -739,20 +840,24 @@ class HomelabTestReporter:
 
         # Recommendations (enhanced with issue tracker recommendations)
         all_recommendations = result.recommendations or []
-        
+
         # Add top recommendations from issue tracker
         if issue_summary.total_issues > 0:
             critical_recommendations = []
             for issue in self.issue_tracker.get_critical_issues():
-                critical_recommendations.extend(issue.recommendations[:2])  # Top 2 per critical issue
-            
+                critical_recommendations.extend(
+                    issue.recommendations[:2]
+                )  # Top 2 per critical issue
+
             # Remove duplicates and add to recommendations
             unique_critical_recs = []
             for rec in critical_recommendations:
                 if rec not in all_recommendations and rec not in unique_critical_recs:
                     unique_critical_recs.append(rec)
-            
-            all_recommendations.extend(unique_critical_recs[:5])  # Add top 5 unique critical recommendations
+
+            all_recommendations.extend(
+                unique_critical_recs[:5]
+            )  # Add top 5 unique critical recommendations
 
         if all_recommendations:
             print(f"\n💡 RECOMMENDATIONS ({len(all_recommendations)}):")
@@ -768,27 +873,33 @@ def main():
 
     parser = argparse.ArgumentParser(description="Run comprehensive homelab test suite")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
-    parser.add_argument("--config-paths", nargs="+", help="Specific configuration paths to validate")
-    parser.add_argument("--include-workstation", action="store_true",
-                       help="Include workstation perspective tests")
-    parser.add_argument("--output-format", choices=["console", "json", "markdown", "issues", "all"],
-                       default="console", help="Output format for results")
+    parser.add_argument(
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+    )
+    parser.add_argument(
+        "--config-paths", nargs="+", help="Specific configuration paths to validate"
+    )
+    parser.add_argument(
+        "--include-workstation", action="store_true", help="Include workstation perspective tests"
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["console", "json", "markdown", "issues", "all"],
+        default="console",
+        help="Output format for results",
+    )
     parser.add_argument("--output-file", help="Custom output filename (without extension)")
-    parser.add_argument("--export-issues", action="store_true",
-                       help="Export a detailed issue report")
+    parser.add_argument(
+        "--export-issues", action="store_true", help="Export a detailed issue report"
+    )
 
     args = parser.parse_args()
 
-    reporter = HomelabTestReporter(
-        kubeconfig_path=args.kubeconfig,
-        log_level=args.log_level
-    )
+    reporter = HomelabTestReporter(kubeconfig_path=args.kubeconfig, log_level=args.log_level)
 
     # Run comprehensive test suite
     result = reporter.run_comprehensive_test_suite(
-        config_paths=args.config_paths,
-        include_workstation_tests=args.include_workstation
+        config_paths=args.config_paths, include_workstation_tests=args.include_workstation
     )
 
     # Output results

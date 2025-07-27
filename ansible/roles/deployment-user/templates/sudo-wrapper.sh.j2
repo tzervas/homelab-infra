@@ -16,10 +16,10 @@ mkdir -p "$(dirname "$LOG_FILE")"
 log_sudo_attempt() {
     local command="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     # Log to user log file
     echo "[$timestamp] SUDO: $command" >> "$LOG_FILE"
-    
+
     # Log to system audit log (if accessible)
     if [[ -w "$(dirname "$AUDIT_LOG")" ]] 2>/dev/null; then
         echo "[$timestamp] USER=$DEPLOYMENT_USER SUDO: $command" | sudo tee -a "$AUDIT_LOG" >/dev/null
@@ -37,7 +37,7 @@ preserve_environment() {
         "HOMELAB_HOME"
         "HOMELAB_DEPLOYMENT_MODE"
     )
-    
+
     for var in "${preserve_vars[@]}"; do
         if [[ -n "${!var:-}" ]]; then
             echo "--preserve-env=$var"
@@ -48,20 +48,20 @@ preserve_environment() {
 # Function to check if command is allowed
 is_command_allowed() {
     local command="$1"
-    
+
     # List of allowed command patterns
     local allowed_patterns=(
 {% for command in deployment_sudo_commands %}
         "{{ command | regex_replace('\\\\', '') }}"
 {% endfor %}
     )
-    
+
     for pattern in "${allowed_patterns[@]}"; do
         if [[ "$command" =~ $pattern ]]; then
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -77,25 +77,25 @@ main() {
 {% endfor %}
         exit 1
     fi
-    
+
     local full_command="$*"
-    
+
     # Check if command is allowed
     if ! is_command_allowed "$full_command"; then
         echo "ERROR: Command not allowed: $full_command" >&2
         echo "Use '$0' without arguments to see allowed commands." >&2
         exit 1
     fi
-    
+
     # Log the attempt
     log_sudo_attempt "$full_command"
-    
+
     # Prepare environment preservation
     local env_args=()
     while IFS= read -r arg; do
         env_args+=("$arg")
     done < <(preserve_environment)
-    
+
     # Execute with sudo
     echo "Executing with privilege escalation: $full_command"
     exec sudo "${env_args[@]}" "$@"

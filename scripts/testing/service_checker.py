@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
-"""
-Service Deployment Checker for Homelab Infrastructure
+"""Service Deployment Checker for Homelab Infrastructure.
 
 This module validates deployed services (GitLab, Keycloak, monitoring stack)
 and performs comprehensive health checks with intelligent retry logic.
 """
 
+from dataclasses import dataclass, field
 import logging
-import requests
 import sys
 import time
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urljoin
+
+import requests
 
 try:
     from kubernetes import client, config
     from kubernetes.client.rest import ApiException
+
     KUBERNETES_AVAILABLE = True
 except ImportError:
     KUBERNETES_AVAILABLE = False
 
 # Import our previous modules
 try:
-    from .infrastructure_health import InfrastructureHealthMonitor, HealthStatus
     from .config_validator import ConfigValidator
+    from .infrastructure_health import HealthStatus, InfrastructureHealthMonitor
 except ImportError:
     try:
-        from infrastructure_health import InfrastructureHealthMonitor, HealthStatus
         from config_validator import ConfigValidator
+        from infrastructure_health import HealthStatus, InfrastructureHealthMonitor
     except ImportError:
         # Fallback definitions if modules aren't available
         @dataclass
@@ -42,6 +42,7 @@ except ImportError:
 @dataclass
 class ServiceStatus:
     """Extended service status with deployment-specific information."""
+
     service_name: str
     namespace: str
     status: str  # "ready", "pending", "failed", "unknown"
@@ -62,7 +63,7 @@ class ServiceStatus:
 class ServiceDeploymentChecker:
     """Main checker for homelab service deployments."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO"):
+    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
         """Initialize the service checker."""
         self.logger = self._setup_logging(log_level)
         self.k8s_client = None
@@ -71,13 +72,25 @@ class ServiceDeploymentChecker:
 
         # Service definitions for homelab
         self.services = {
-            "gitlab": {"namespace": "gitlab-system", "ports": [80, 443], "health_path": "/-/health"},
-            "keycloak": {"namespace": "keycloak", "ports": [8080], "health_path": "/auth/health/ready"},
+            "gitlab": {
+                "namespace": "gitlab-system",
+                "ports": [80, 443],
+                "health_path": "/-/health",
+            },
+            "keycloak": {
+                "namespace": "keycloak",
+                "ports": [8080],
+                "health_path": "/auth/health/ready",
+            },
             "prometheus": {"namespace": "monitoring", "ports": [9090], "health_path": "/-/healthy"},
             "grafana": {"namespace": "monitoring", "ports": [3000], "health_path": "/api/health"},
-            "nginx-ingress": {"namespace": "ingress-nginx", "ports": [80, 443], "health_path": "/healthz"},
+            "nginx-ingress": {
+                "namespace": "ingress-nginx",
+                "ports": [80, 443],
+                "health_path": "/healthz",
+            },
             "cert-manager": {"namespace": "cert-manager", "ports": [], "health_path": None},
-            "metallb": {"namespace": "metallb-system", "ports": [], "health_path": None}
+            "metallb": {"namespace": "metallb-system", "ports": [], "health_path": None},
         }
 
         if KUBERNETES_AVAILABLE:
@@ -95,9 +108,7 @@ class ServiceDeploymentChecker:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
@@ -118,10 +129,15 @@ class ServiceDeploymentChecker:
             self.logger.info("Kubernetes client initialized for service checking")
 
         except Exception as e:
-            self.logger.error(f"Failed to initialize Kubernetes client: {e}")
+            self.logger.exception(f"Failed to initialize Kubernetes client: {e}")
 
-    def check_pod_status_with_retry(self, namespace: str, label_selector: str = None,
-                                  max_retries: int = 3, retry_delay: int = 5) -> Tuple[int, int, List[Dict]]:
+    def check_pod_status_with_retry(
+        self,
+        namespace: str,
+        label_selector: Optional[str] = None,
+        max_retries: int = 3,
+        retry_delay: int = 5,
+    ) -> Tuple[int, int, List[Dict]]:
         """Check pod status with intelligent retry logic."""
         if not self.k8s_client:
             self.logger.warning("Kubernetes client not initialized - cannot check pod status")
@@ -137,9 +153,10 @@ class ServiceDeploymentChecker:
                 pod_details = []
 
                 for pod in pods.items:
-                    pod_ready = (pod.status.phase == "Running" and
-                                (not pod.status.container_statuses or
-                                 all(cs.ready for cs in pod.status.container_statuses)))
+                    pod_ready = pod.status.phase == "Running" and (
+                        not pod.status.container_statuses
+                        or all(cs.ready for cs in pod.status.container_statuses)
+                    )
 
                     if pod_ready:
                         ready_pods += 1
@@ -151,23 +168,29 @@ class ServiceDeploymentChecker:
                             if container.resources:
                                 resource_usage[container.name] = {
                                     "requests": container.resources.requests or {},
-                                    "limits": container.resources.limits or {}
+                                    "limits": container.resources.limits or {},
                                 }
 
-                    pod_details.append({
-                        "name": pod.metadata.name,
-                        "ready": pod_ready,
-                        "phase": pod.status.phase,
-                        "restarts": sum(cs.restart_count for cs in (pod.status.container_statuses or [])),
-                        "resource_usage": resource_usage
-                    })
+                    pod_details.append(
+                        {
+                            "name": pod.metadata.name,
+                            "ready": pod_ready,
+                            "phase": pod.status.phase,
+                            "restarts": sum(
+                                cs.restart_count for cs in (pod.status.container_statuses or [])
+                            ),
+                            "resource_usage": resource_usage,
+                        }
+                    )
 
                 return total_pods, ready_pods, pod_details
 
             except Exception as e:
                 self.logger.warning(f"Pod status check attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    time.sleep(retry_delay)  # Wait before retry to avoid overwhelming the API server
+                    time.sleep(
+                        retry_delay
+                    )  # Wait before retry to avoid overwhelming the API server
                 else:
                     return 0, 0, []
 
@@ -187,8 +210,7 @@ class ServiceDeploymentChecker:
                     # Check if service has endpoints
                     try:
                         endpoints = v1.read_namespaced_endpoints(
-                            name=svc.metadata.name,
-                            namespace=namespace
+                            name=svc.metadata.name, namespace=namespace
                         )
 
                         if endpoints.subsets:
@@ -203,11 +225,12 @@ class ServiceDeploymentChecker:
             return False
 
         except Exception as e:
-            self.logger.error(f"Failed to check endpoints for {service_name}: {e}")
+            self.logger.exception(f"Failed to check endpoints for {service_name}: {e}")
             return False
 
-    def perform_health_check(self, service_name: str, namespace: str,
-                           health_path: Optional[str] = None) -> Dict[str, bool]:
+    def perform_health_check(
+        self, service_name: str, namespace: str, health_path: Optional[str] = None
+    ) -> Dict[str, bool]:
         """Perform application-specific health checks."""
         health_results = {}
 
@@ -222,7 +245,7 @@ class ServiceDeploymentChecker:
             for svc in services.items:
                 if service_name.lower() in svc.metadata.name.lower():
                     if svc.spec.cluster_ip and svc.spec.cluster_ip != "None":
-                        for port in (svc.spec.ports or []):
+                        for port in svc.spec.ports or []:
                             port_num = port.port
 
                             # Attempt HTTP health check
@@ -230,10 +253,12 @@ class ServiceDeploymentChecker:
                                 try:
                                     url = f"{protocol}://{svc.spec.cluster_ip}:{port_num}{health_path}"
                                     # Add instance variable for internal SSL verification
-                                    verify_internal = getattr(self, 'verify_internal_ssl', False)
+                                    verify_internal = getattr(self, "verify_internal_ssl", False)
 
                                     response = requests.get(url, timeout=10, verify=verify_internal)
-                                    health_results[f"{protocol}_{port_num}"] = response.status_code < 400
+                                    health_results[f"{protocol}_{port_num}"] = (
+                                        response.status_code < 400
+                                    )
                                     break  # If successful, don't try other protocol
                                 except:
                                     health_results[f"{protocol}_{port_num}"] = False
@@ -250,7 +275,7 @@ class ServiceDeploymentChecker:
                 service_name=service_name,
                 namespace="unknown",
                 status="unknown",
-                message="Service not defined in checker"
+                message="Service not defined in checker",
             )
 
         service_config = self.services[service_name]
@@ -275,7 +300,7 @@ class ServiceDeploymentChecker:
             total_cpu_requests = 0
             total_memory_requests = 0
             for pod in pod_details:
-                for container, resources in pod.get("resource_usage", {}).items():
+                for resources in pod.get("resource_usage", {}).values():
                     requests = resources.get("requests", {})
                     if "cpu" in requests:
                         total_cpu_requests += self._parse_cpu(requests["cpu"])
@@ -285,7 +310,7 @@ class ServiceDeploymentChecker:
             resource_usage = {
                 "total_cpu_requests": f"{total_cpu_requests}m",
                 "total_memory_requests": f"{total_memory_requests}Mi",
-                "pod_details": pod_details
+                "pod_details": pod_details,
             }
 
         # Determine overall status
@@ -311,7 +336,7 @@ class ServiceDeploymentChecker:
             ready_pods=ready_pods,
             endpoints_healthy=endpoints_healthy,
             resource_usage=resource_usage,
-            health_checks=health_checks
+            health_checks=health_checks,
         )
 
     def _parse_cpu(self, cpu_str: str) -> int:
@@ -326,6 +351,7 @@ class ServiceDeploymentChecker:
         """
         try:
             from kubernetes.utils.quantity import parse_quantity
+
             # parse_quantity returns the value in base units
             # For CPU, base unit is "core" so we convert to millicores
             cores = parse_quantity(cpu_str)
@@ -335,24 +361,23 @@ class ServiceDeploymentChecker:
             cpu_str = cpu_str.strip()
             try:
                 # Handle scientific notation
-                if 'e' in cpu_str.lower():
-                    if cpu_str.endswith('m'):
+                if "e" in cpu_str.lower():
+                    if cpu_str.endswith("m"):
                         return int(float(cpu_str[:-1]))
-                    else:
-                        return int(float(cpu_str) * 1000)
+                    return int(float(cpu_str) * 1000)
 
                 # Handle units
-                if cpu_str.endswith('m'):
+                if cpu_str.endswith("m"):
                     return int(float(cpu_str[:-1]))
-                elif cpu_str.endswith('u'):  # microcores
+                if cpu_str.endswith("u"):  # microcores
                     return int(float(cpu_str[:-1]) / 1000)
-                elif cpu_str.endswith('n'):  # nanocores
+                if cpu_str.endswith("n"):  # nanocores
                     return int(float(cpu_str[:-1]) / 1_000_000)
-                else:
-                    # Assume cores (can be float)
-                    return int(float(cpu_str) * 1000)
+                # Assume cores (can be float)
+                return int(float(cpu_str) * 1000)
             except (ValueError, TypeError) as e:
-                raise ValueError(f"Invalid CPU string format: '{cpu_str}'") from e
+                msg = f"Invalid CPU string format: '{cpu_str}'"
+                raise ValueError(msg) from e
 
     def _parse_memory(self, memory_str: str) -> int:
         """Parse memory string to Mi (Mebibytes).
@@ -364,6 +389,7 @@ class ServiceDeploymentChecker:
         """
         try:
             from kubernetes.utils.quantity import parse_quantity
+
             # parse_quantity returns bytes
             bytes_value = parse_quantity(memory_str)
             return int(bytes_value / (1024 * 1024))  # Convert to MiB
@@ -372,33 +398,33 @@ class ServiceDeploymentChecker:
             memory_str = memory_str.strip()
 
             # Binary units
-            if memory_str.endswith('Mi'):
+            if memory_str.endswith("Mi"):
                 return int(memory_str[:-2])
-            elif memory_str.endswith('Gi'):
+            if memory_str.endswith("Gi"):
                 return int(memory_str[:-2]) * 1024
-            elif memory_str.endswith('Ki'):
+            if memory_str.endswith("Ki"):
                 return int(memory_str[:-2]) // 1024
-            elif memory_str.endswith('Ti'):
+            if memory_str.endswith("Ti"):
                 return int(memory_str[:-2]) * 1024 * 1024
-            elif memory_str.endswith('Pi'):
+            if memory_str.endswith("Pi"):
                 return int(memory_str[:-2]) * 1024 * 1024 * 1024
-            elif memory_str.endswith('Ei'):
+            if memory_str.endswith("Ei"):
                 return int(memory_str[:-2]) * 1024 * 1024 * 1024 * 1024
 
             # Decimal units
-            elif memory_str.endswith('M'):
+            if memory_str.endswith("M"):
                 return int(float(memory_str[:-1]) * 1000**2 / (1024**2))  # MB to MiB
-            elif memory_str.endswith('G'):
+            if memory_str.endswith("G"):
                 return int(float(memory_str[:-1]) * 1000**3 / (1024**2))  # GB to MiB
-            elif memory_str.endswith('T'):
+            if memory_str.endswith("T"):
                 return int(float(memory_str[:-1]) * 1000**4 / (1024**2))  # TB to MiB
-            elif memory_str.endswith('P'):
+            if memory_str.endswith("P"):
                 return int(float(memory_str[:-1]) * 1000**5 / (1024**2))  # PB to MiB
-            elif memory_str.endswith('E'):
+            if memory_str.endswith("E"):
                 return int(float(memory_str[:-1]) * 1000**6 / (1024**2))  # EB to MiB
-            elif memory_str.endswith('K'):
+            if memory_str.endswith("K"):
                 return int(float(memory_str[:-1]) * 1000 / (1024**2))  # KB to MiB
-            elif memory_str.endswith('k'):
+            if memory_str.endswith("k"):
                 return int(float(memory_str[:-1]) * 1000 / (1024**2))  # kB to MiB
 
             # Assume bytes if no unit
@@ -413,46 +439,55 @@ class ServiceDeploymentChecker:
             self.logger.info("Running infrastructure health check first...")
             cluster_health = self.infra_monitor.get_cluster_health()
             if cluster_health.cluster_status == "critical":
-                self.logger.warning("Infrastructure health is critical, service checks may be unreliable")
+                self.logger.warning(
+                    "Infrastructure health is critical, service checks may be unreliable"
+                )
 
         for service_name in self.services:
             try:
                 result = self.check_service(service_name)
                 results[service_name] = result
 
-                status_icon = "✅" if result.is_ready else "⚠️" if result.status == "pending" else "❌"
+                status_icon = (
+                    "✅" if result.is_ready else "⚠️" if result.status == "pending" else "❌"
+                )
                 self.logger.info(f"{status_icon} {service_name}: {result.message}")
 
             except Exception as e:
-                self.logger.error(f"Failed to check {service_name}: {e}")
+                self.logger.exception(f"Failed to check {service_name}: {e}")
                 results[service_name] = ServiceStatus(
                     service_name=service_name,
                     namespace=self.services[service_name]["namespace"],
                     status="failed",
-                    message=f"Check failed: {str(e)}"
+                    message=f"Check failed: {e!s}",
                 )
 
         return results
 
 
-def main():
+def main() -> int:
     """Main function for standalone testing."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Check homelab service deployments")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
-    parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
-    parser.add_argument("--service", choices=list(ServiceDeploymentChecker({}).services.keys()),
-                       help="Check specific service only")
-    parser.add_argument("--include-details", action="store_true",
-                       help="Include detailed resource usage and health check results")
+    parser.add_argument(
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+    )
+    parser.add_argument(
+        "--service",
+        choices=list(ServiceDeploymentChecker({}).services.keys()),
+        help="Check specific service only",
+    )
+    parser.add_argument(
+        "--include-details",
+        action="store_true",
+        help="Include detailed resource usage and health check results",
+    )
 
     args = parser.parse_args()
 
-    checker = ServiceDeploymentChecker(
-        kubeconfig_path=args.kubeconfig,
-        log_level=args.log_level
-    )
+    checker = ServiceDeploymentChecker(kubeconfig_path=args.kubeconfig, log_level=args.log_level)
 
     if args.service:
         # Check specific service
@@ -463,7 +498,7 @@ def main():
         results = checker.check_all_services()
 
     # Display results
-    print(f"\n🚀 Service Deployment Status:")
+    print("\n🚀 Service Deployment Status:")
 
     ready_services = sum(1 for r in results.values() if r.is_ready)
     total_services = len(results)
@@ -479,8 +514,10 @@ def main():
         print(f"  Endpoints: {'✅' if result.endpoints_healthy else '❌'}")
 
         if args.include_details and result.resource_usage:
-            print(f"  Resources: CPU={result.resource_usage.get('total_cpu_requests', 'N/A')}, "
-                  f"Memory={result.resource_usage.get('total_memory_requests', 'N/A')}")
+            print(
+                f"  Resources: CPU={result.resource_usage.get('total_cpu_requests', 'N/A')}, "
+                f"Memory={result.resource_usage.get('total_memory_requests', 'N/A')}"
+            )
 
         if result.health_checks:
             healthy_checks = sum(1 for v in result.health_checks.values() if v)

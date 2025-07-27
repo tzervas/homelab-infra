@@ -128,7 +128,7 @@ keycloak:
     runAsUser: 1001
     runAsGroup: 1001
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: false  # Keycloak needs write access
+    readOnlyRootFilesystem: false # Keycloak needs write access
     seccompProfile:
       type: RuntimeDefault
     capabilities:

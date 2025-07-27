@@ -1,7 +1,7 @@
 global:
   domain: "homelab.local"
   storageClass: "longhorn"
-  
+
   # Security contexts for rootless deployment
   securityContext:
     runAsNonRoot: true
@@ -183,7 +183,7 @@ promtail:
 
 grafana:
   enabled: true
-  
+
   securityContext:
     runAsNonRoot: true
     runAsUser: 472

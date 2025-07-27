@@ -24,9 +24,9 @@ log() {
     shift
     local message="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
+
     echo "[$timestamp] [$level] $message" | sudo tee -a "$LOG_FILE" >/dev/null
-    
+
     case "$level" in
         ERROR) echo -e "${RED}[$level]${NC} $message" >&2 ;;
         WARN)  echo -e "${YELLOW}[$level]${NC} $message" ;;
@@ -38,17 +38,17 @@ log() {
 # Function to check if running with appropriate privileges
 check_initial_privileges() {
     log "INFO" "Checking initial setup privileges..."
-    
+
     if [[ $EUID -eq 0 ]]; then
         log "INFO" "Running as root - this is required for initial setup"
         return 0
     fi
-    
+
     if sudo -n true 2>/dev/null; then
         log "INFO" "Have sudo access - proceeding with setup"
         return 0
     fi
-    
+
     log "ERROR" "This script requires sudo access for initial system setup"
     log "INFO" "Please run: sudo $0"
     exit 1
@@ -57,13 +57,13 @@ check_initial_privileges() {
 # Function to validate system requirements
 validate_system_requirements() {
     log "INFO" "Validating system requirements..."
-    
+
     # Check OS compatibility
     if [[ ! -f /etc/os-release ]]; then
         log "ERROR" "Cannot determine OS version"
         return 1
     fi
-    
+
     source /etc/os-release
     case "$ID" in
         ubuntu|debian)
@@ -73,29 +73,29 @@ validate_system_requirements() {
             log "WARN" "Untested OS: $PRETTY_NAME - proceeding with caution"
             ;;
     esac
-    
+
     # Check required packages
     local required_packages=("sudo" "openssh-server" "curl" "wget" "git" "acl")
     local missing_packages=()
-    
+
     for package in "${required_packages[@]}"; do
         if ! dpkg -l "$package" >/dev/null 2>&1; then
             missing_packages+=("$package")
         fi
     done
-    
+
     if [[ ${#missing_packages[@]} -gt 0 ]]; then
         log "INFO" "Installing missing packages: ${missing_packages[*]}"
         apt update && apt install -y "${missing_packages[@]}"
     fi
-    
+
     log "INFO" "System requirements validation completed"
 }
 
 # Function to create deployment user with secure configuration
 create_deployment_user() {
     log "INFO" "Creating deployment user: $DEPLOYMENT_USER"
-    
+
     # Check if user already exists
     if id "$DEPLOYMENT_USER" >/dev/null 2>&1; then
         log "WARN" "User $DEPLOYMENT_USER already exists - updating configuration"
@@ -107,13 +107,13 @@ create_deployment_user() {
             --uid 1001 \
             --comment "Homelab Deployment User" \
             "$DEPLOYMENT_USER"
-        
+
         log "INFO" "Created user: $DEPLOYMENT_USER"
     fi
-    
+
     # Set up groups
     usermod -aG docker "$DEPLOYMENT_USER" 2>/dev/null || log "WARN" "Docker group not found - will create later"
-    
+
     # Create required directories
     local user_home="/home/$DEPLOYMENT_USER"
     local required_dirs=(
@@ -125,27 +125,27 @@ create_deployment_user() {
         "$user_home/.config/helm"
         "$user_home/.local/share/helm"
     )
-    
+
     for dir in "${required_dirs[@]}"; do
         mkdir -p "$dir"
         chown "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$dir"
         chmod 755 "$dir"
     done
-    
+
     # Set restrictive permissions on .ssh
     chmod 700 "$user_home/.ssh"
-    
+
     log "INFO" "Deployment user configuration completed"
 }
 
 # Function to configure SSH access
 configure_ssh_access() {
     log "INFO" "Configuring SSH access for deployment user..."
-    
+
     local user_home="/home/$DEPLOYMENT_USER"
     local ssh_dir="$user_home/.ssh"
     local authorized_keys="$ssh_dir/authorized_keys"
-    
+
     # Generate SSH key for deployment user if it doesn't exist
     if [[ ! -f "$ssh_dir/id_ed25519" ]]; then
         sudo -u "$DEPLOYMENT_USER" ssh-keygen \
@@ -153,14 +153,14 @@ configure_ssh_access() {
             -f "$ssh_dir/id_ed25519" \
             -N "" \
             -C "${DEPLOYMENT_USER}@$(hostname)"
-        
+
         log "INFO" "Generated SSH key for $DEPLOYMENT_USER"
     fi
-    
+
     # Copy authorized keys from admin user if they exist
     local admin_home
     admin_home=$(getent passwd "$ADMIN_USER" | cut -d: -f6)
-    
+
     if [[ -f "$admin_home/.ssh/authorized_keys" ]]; then
         cp "$admin_home/.ssh/authorized_keys" "$authorized_keys"
         chown "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$authorized_keys"
@@ -169,14 +169,14 @@ configure_ssh_access() {
     else
         log "WARN" "No SSH keys found for $ADMIN_USER - manual SSH key setup required"
     fi
-    
+
     # Configure SSH daemon for security
     local sshd_config="/etc/ssh/sshd_config"
     local sshd_backup="/etc/ssh/sshd_config.backup.$(date +%Y%m%d_%H%M%S)"
-    
+
     # Backup original config
     cp "$sshd_config" "$sshd_backup"
-    
+
     # Apply security hardening
     cat >> "$sshd_config" << EOF
 
@@ -191,7 +191,7 @@ Match User $DEPLOYMENT_USER
     AllowAgentForwarding no
     ForceCommand none
 EOF
-    
+
     # Validate SSH configuration
     if sshd -t; then
         log "INFO" "SSH configuration validated successfully"
@@ -201,17 +201,17 @@ EOF
         cp "$sshd_backup" "$sshd_config"
         return 1
     fi
-    
+
     log "INFO" "SSH access configuration completed"
 }
 
 # Function to configure secure sudo access
 configure_sudo_access() {
     log "INFO" "Configuring secure sudo access for deployment user..."
-    
+
     local sudoers_file="/etc/sudoers.d/$DEPLOYMENT_USER"
     local sudoers_temp="/tmp/sudoers.$DEPLOYMENT_USER.$$"
-    
+
     # Create sudoers configuration
     cat > "$sudoers_temp" << EOF
 # Sudoers configuration for $DEPLOYMENT_USER
@@ -263,7 +263,7 @@ Defaults:$DEPLOYMENT_USER passwd_tries=3
 Defaults:$DEPLOYMENT_USER log_input, log_output
 Defaults:$DEPLOYMENT_USER iolog_dir=/var/log/sudo-io/$DEPLOYMENT_USER
 EOF
-    
+
     # Validate sudoers syntax
     if visudo -cf "$sudoers_temp"; then
         mv "$sudoers_temp" "$sudoers_file"
@@ -274,64 +274,64 @@ EOF
         rm -f "$sudoers_temp"
         return 1
     fi
-    
+
     # Create sudo log directory
     mkdir -p "/var/log/sudo-io/$DEPLOYMENT_USER"
     chown root:root "/var/log/sudo-io/$DEPLOYMENT_USER"
     chmod 750 "/var/log/sudo-io/$DEPLOYMENT_USER"
-    
+
     # Test sudo configuration
     if sudo -u "$DEPLOYMENT_USER" sudo -n -l >/dev/null 2>&1; then
         log "INFO" "Sudo configuration test passed"
     else
         log "WARN" "Sudo configuration test failed - manual verification required"
     fi
-    
+
     log "INFO" "Secure sudo access configuration completed"
 }
 
 # Function to configure Docker for rootless operation
 configure_docker_rootless() {
     log "INFO" "Configuring Docker for rootless operation..."
-    
+
     # Install Docker if not present
     if ! command -v docker >/dev/null 2>&1; then
         log "INFO" "Installing Docker..."
         curl -fsSL https://get.docker.com | sh
     fi
-    
+
     # Create docker group if it doesn't exist
     groupadd -f docker
-    
+
     # Add deployment user to docker group
     usermod -aG docker "$DEPLOYMENT_USER"
-    
+
     # Enable Docker service
     systemctl enable docker
     systemctl start docker
-    
+
     # Test Docker access for deployment user
     if sudo -u "$DEPLOYMENT_USER" docker ps >/dev/null 2>&1; then
         log "INFO" "Docker access verified for $DEPLOYMENT_USER"
     else
         log "WARN" "Docker access test failed - user may need to log out and back in"
     fi
-    
+
     log "INFO" "Docker rootless configuration completed"
 }
 
 # Function to set up credential management
 setup_credential_management() {
     log "INFO" "Setting up credential management..."
-    
+
     local user_home="/home/$DEPLOYMENT_USER"
     local credentials_dir="$user_home/.credentials"
-    
+
     # Create secure credentials directory
     mkdir -p "$credentials_dir"
     chown "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$credentials_dir"
     chmod 700 "$credentials_dir"
-    
+
     # Create environment file template
     cat > "$user_home/.environment" << EOF
 # Environment configuration for $DEPLOYMENT_USER
@@ -362,16 +362,16 @@ export ANSIBLE_STDERR_CALLBACK=yaml
 # Path configuration
 export PATH="\$HOME/.local/bin:/usr/local/bin:\$PATH"
 EOF
-    
+
     chown "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$user_home/.environment"
     chmod 600 "$user_home/.environment"
-    
+
     # Update .bashrc to source environment
     if ! grep -q "source.*\.environment" "$user_home/.bashrc"; then
         echo "source \$HOME/.environment" >> "$user_home/.bashrc"
         chown "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$user_home/.bashrc"
     fi
-    
+
     # Create credential template files
     cat > "$credentials_dir/README.md" << EOF
 # Credentials Directory
@@ -397,7 +397,7 @@ This directory contains credential templates and configuration files for the hom
 2. Fill in actual values
 3. Ensure proper file permissions: \`chmod 600 <file>\`
 EOF
-    
+
     # Create environment template
     cat > "$credentials_dir/.env.template" << EOF
 # Environment variables for homelab deployment
@@ -427,19 +427,19 @@ KEYCLOAK_ADMIN_PASSWORD=
 # TLS configuration
 TLS_EMAIL=tz-dev@vectorweight.com
 EOF
-    
+
     chown -R "$DEPLOYMENT_USER:$DEPLOYMENT_USER" "$credentials_dir"
     chmod -R 600 "$credentials_dir"/*
-    
+
     log "INFO" "Credential management setup completed"
 }
 
 # Function to verify security configuration
 verify_security_configuration() {
     log "INFO" "Verifying security configuration..."
-    
+
     local errors=0
-    
+
     # Check user configuration
     if id "$DEPLOYMENT_USER" >/dev/null 2>&1; then
         log "INFO" "✓ Deployment user exists"
@@ -447,7 +447,7 @@ verify_security_configuration() {
         log "ERROR" "✗ Deployment user does not exist"
         ((errors++))
     fi
-    
+
     # Check sudo configuration
     if [[ -f "/etc/sudoers.d/$DEPLOYMENT_USER" ]]; then
         log "INFO" "✓ Sudoers configuration exists"
@@ -461,7 +461,7 @@ verify_security_configuration() {
         log "ERROR" "✗ Sudoers configuration missing"
         ((errors++))
     fi
-    
+
     # Check SSH configuration
     local user_home="/home/$DEPLOYMENT_USER"
     if [[ -f "$user_home/.ssh/authorized_keys" ]]; then
@@ -469,18 +469,18 @@ verify_security_configuration() {
     else
         log "WARN" "⚠ SSH authorized_keys not configured"
     fi
-    
+
     # Check file permissions
     local permission_checks=(
         "$user_home/.ssh:700"
         "$user_home/.credentials:700"
         "$user_home/.environment:600"
     )
-    
+
     for check in "${permission_checks[@]}"; do
         local path="${check%:*}"
         local expected_perm="${check#*:}"
-        
+
         if [[ -e "$path" ]]; then
             local actual_perm=$(stat -c "%a" "$path")
             if [[ "$actual_perm" == "$expected_perm" ]]; then
@@ -490,14 +490,14 @@ verify_security_configuration() {
             fi
         fi
     done
-    
+
     # Check Docker access
     if sudo -u "$DEPLOYMENT_USER" docker ps >/dev/null 2>&1; then
         log "INFO" "✓ Docker access verified"
     else
         log "WARN" "⚠ Docker access not verified"
     fi
-    
+
     if [[ $errors -eq 0 ]]; then
         log "INFO" "Security configuration verification completed successfully"
         return 0
@@ -537,7 +537,7 @@ main() {
     local skip_docker=false
     local skip_ssh=false
     local verify_only=false
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -572,36 +572,36 @@ main() {
                 ;;
         esac
     done
-    
+
     log "INFO" "Starting secure deployment setup for user: $DEPLOYMENT_USER"
-    
+
     # Check initial privileges
     check_initial_privileges
-    
+
     if [[ "$verify_only" == "true" ]]; then
         verify_security_configuration
         exit $?
     fi
-    
+
     # Run setup steps
     validate_system_requirements
     create_deployment_user
-    
+
     if [[ "$skip_ssh" != "true" ]]; then
         configure_ssh_access
     fi
-    
+
     configure_sudo_access
-    
+
     if [[ "$skip_docker" != "true" ]]; then
         configure_docker_rootless
     fi
-    
+
     setup_credential_management
-    
+
     # Final verification
     verify_security_configuration
-    
+
     log "INFO" "Secure deployment setup completed successfully"
     log "INFO" "Next steps:"
     log "INFO" "1. Log out and log back in as $DEPLOYMENT_USER"

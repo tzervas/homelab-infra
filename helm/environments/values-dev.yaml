@@ -1,7 +1,7 @@
 global:
   domain: "dev.homelab.local"
   environment: "development"
-  
+
   # Development security contexts - baseline enforcement
   securityContext:
     runAsNonRoot: true
@@ -13,7 +13,7 @@ global:
     capabilities:
       drop:
         - ALL
-  
+
   # Pod security standards - relaxed for development
   podSecurityStandards:
     enforce: "baseline"

@@ -10,28 +10,28 @@ homelab_deployment_group: homelab-deploy
 privilege_escalation:
   # Use rootless deployment by default
   default_become: false
-  
+
   # Commands that require privilege escalation
   requires_root:
     # Package management
     - package_installation
     - system_package_updates
-    
+
     # System service management
     - systemd_service_management
     - daemon_reload
-    
+
     # System directory creation/modification
     - system_directory_setup
     - kubernetes_system_setup
-    
+
     # User and group management
     - user_creation
     - group_management
-    
+
     # File permission changes in system directories
     - system_file_permissions
-  
+
   # Tasks that can run as deployment user
   rootless_tasks:
     - application_deployment
@@ -49,17 +49,17 @@ deployment_phases:
     # Initial system setup requires root for user creation
     become: true
     become_user: root
-    
+
   user_setup:
     # Setting up deployment user requires root
     become: true
     become_user: root
-    
+
   application_deployment:
     # Application deployment should use deployment user
     become: false
     remote_user: "{{ homelab_deployment_user }}"
-    
+
   service_management:
     # Service operations may need conditional escalation
     become: false
@@ -83,19 +83,19 @@ allowed_sudo_commands:
     - "systemctl disable k3s*"
     - "systemctl status k3s*"
     - "systemctl daemon-reload"
-  
+
   package_management:
     - "apt update"
     - "apt install curl wget git"
     - "snap install kubectl helm"
     - "snap refresh kubectl helm"
-  
+
   file_operations:
     - "mkdir -p /etc/rancher/k3s"
     - "mkdir -p /var/lib/rancher/k3s"
     - "chown {{ homelab_deployment_user }}:{{ homelab_deployment_group }} /etc/rancher/k3s*"
     - "chown {{ homelab_deployment_user }}:{{ homelab_deployment_group }} /var/lib/rancher/k3s*"
-  
+
   kubernetes:
     - "/usr/local/bin/k3s*"
     - "/opt/bin/k3s*"

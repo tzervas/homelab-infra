@@ -1,0 +1,14 @@
+---
+# deployment-user role handlers
+
+- name: restart_services
+  systemd:
+    daemon_reload: yes
+  become: yes
+  listen: restart_services
+
+- name: validate_sudoers
+  command: /usr/sbin/visudo -c
+  become: yes
+  changed_when: false
+  listen: restart_services

@@ -1,0 +1,78 @@
+---
+# deployment-user role defaults
+
+# User configuration
+deployment_user: homelab-deploy
+deployment_group: homelab-deploy
+deployment_uid: 1001
+deployment_gid: 1001
+deployment_home: /home/{{ deployment_user }}
+deployment_shell: /bin/bash
+
+# Groups to add the user to
+deployment_groups:
+  - docker
+  - sudo
+
+# SSH configuration
+deployment_ssh_key_type: ed25519
+deployment_ssh_dir: "{{ deployment_home }}/.ssh"
+
+# Sudo configuration
+deployment_sudo_commands:
+  # Systemd service management
+  - "/bin/systemctl start k3s*"
+  - "/bin/systemctl stop k3s*"
+  - "/bin/systemctl restart k3s*"
+  - "/bin/systemctl enable k3s*"
+  - "/bin/systemctl disable k3s*"
+  - "/bin/systemctl status k3s*"
+  - "/bin/systemctl daemon-reload"
+  
+  # Package management (for specific packages only)
+  - "/usr/bin/apt update"
+  - "/usr/bin/apt install curl wget git"
+  - "/usr/bin/snap install kubectl helm"
+  - "/usr/bin/snap refresh kubectl helm"
+  
+  # File operations in system directories
+  - "/bin/mkdir -p /etc/rancher/k3s"
+  - "/bin/mkdir -p /var/lib/rancher/k3s"
+  - "/bin/chown {{ deployment_user }}\\:{{ deployment_group }} /etc/rancher/k3s*"
+  - "/bin/chown {{ deployment_user }}\\:{{ deployment_group }} /var/lib/rancher/k3s*"
+  - "/bin/chmod 755 /etc/rancher/k3s*"
+  - "/bin/chmod 755 /var/lib/rancher/k3s*"
+  
+  # K3s specific commands
+  - "/usr/local/bin/k3s*"
+  - "/opt/bin/k3s*"
+  - "/usr/bin/k3s*"
+  
+  # Docker operations
+  - "/usr/bin/docker system prune -f"
+  - "/usr/bin/docker volume prune -f"
+
+# Directories that need to be created with proper ownership
+deployment_directories:
+  - path: "{{ deployment_home }}/.kube"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: "0755"
+  - path: "{{ deployment_home }}/.local/bin"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: "0755"
+  - path: "{{ deployment_home }}/homelab-infra"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: "0755"
+  - path: "/opt/homelab"
+    owner: "{{ deployment_user }}"
+    group: "{{ deployment_group }}"
+    mode: "0755"
+
+# Environment variables
+deployment_environment:
+  PATH: "{{ deployment_home }}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+  KUBECONFIG: "{{ deployment_home }}/.kube/config"
+  HOME: "{{ deployment_home }}"

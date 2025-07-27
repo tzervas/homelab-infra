@@ -138,7 +138,10 @@ class IssueTracker:
         # Add individual issues up to display limit
         for issue_msg in issues_list[:display_count]:
             self.add_issue(
-                component=component, message=issue_msg, severity=severity, category=category,
+                component=component,
+                message=issue_msg,
+                severity=severity,
+                category=category,
             )
 
         # Add summary issue if there are hidden items
@@ -153,7 +156,8 @@ class IssueTracker:
             )
 
     def categorize_security_issue(
-        self, issue_description: str,
+        self,
+        issue_description: str,
     ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize security-related issues."""
         description_lower = issue_description.lower()
@@ -196,7 +200,8 @@ class IssueTracker:
         return IssueSeverity.LOW, IssueCategory.SECURITY
 
     def categorize_deployment_issue(
-        self, issue_description: str,
+        self,
+        issue_description: str,
     ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize deployment-related issues."""
         description_lower = issue_description.lower()
@@ -226,7 +231,9 @@ class IssueTracker:
         return IssueSeverity.MEDIUM, IssueCategory.DEPLOYMENT
 
     def auto_categorize_issue(
-        self, component: str, message: str,
+        self,
+        component: str,
+        message: str,
     ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize an issue based on component and message."""
         message_lower = message.lower()
@@ -420,7 +427,8 @@ class IssueTracker:
             component_issues = [i for i in summary.top_issues if i.component == component]
             if component_issues:
                 highest_severity = min(
-                    component_issues, key=lambda x: list(IssueSeverity).index(x.severity),
+                    component_issues,
+                    key=lambda x: list(IssueSeverity).index(x.severity),
                 )
                 severity_icon = {
                     "critical": "🚨",

@@ -203,7 +203,11 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
+                test=test,
+                success=success,
+                output=stdout,
+                error=stderr,
+                exit_code=exit_code,
             )
             results.append(result)
 
@@ -276,7 +280,11 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
+                test=test,
+                success=success,
+                output=stdout,
+                error=stderr,
+                exit_code=exit_code,
             )
             results.append(result)
 
@@ -350,7 +358,11 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
+                test=test,
+                success=success,
+                output=stdout,
+                error=stderr,
+                exit_code=exit_code,
             )
             results.append(result)
 
@@ -596,7 +608,9 @@ def main() -> None:
         description="Verify deployment user permissions and security contexts",
     )
     parser.add_argument(
-        "--deployment-user", default="homelab-deploy", help="Deployment user to test",
+        "--deployment-user",
+        default="homelab-deploy",
+        help="Deployment user to test",
     )
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARN", "ERROR"])

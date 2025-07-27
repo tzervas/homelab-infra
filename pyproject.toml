@@ -157,6 +157,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "scripts/testing/__init__.py" = ["F401"]  # Unused imports in __init__
 "scripts/testing/test_*.py" = ["S101"]    # Allow assert in tests
+"scripts/testing/*.py" = ["ANN101", "ANN102", "D100", "D101", "D102", "D103", "D104", "D105", "D107"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

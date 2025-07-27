@@ -185,7 +185,9 @@ class ConfigValidator:
     def validate_environment_config(self, file_path: str) -> ValidationResult:
         """Validate environment-specific configuration files."""
         result = ValidationResult(
-            file_path=file_path, is_valid=True, file_type="environment_config",
+            file_path=file_path,
+            is_valid=True,
+            file_type="environment_config",
         )
 
         data = self._load_file(file_path)
@@ -248,7 +250,10 @@ class ConfigValidator:
         return bool(re.fullmatch("[0-9]+(\\.[0-9]+)?", value_str))
 
     def _check_sensitive_data(
-        self, data: dict[str, Any], patterns: list[str], result: ValidationResult,
+        self,
+        data: dict[str, Any],
+        patterns: list[str],
+        result: ValidationResult,
     ) -> None:
         """Recursively check for potential sensitive data exposure."""
 
@@ -296,7 +301,9 @@ class ConfigValidator:
         return result
 
     def validate_directory(
-        self, directory: str, patterns: list[str] | None = None,
+        self,
+        directory: str,
+        patterns: list[str] | None = None,
     ) -> list[ValidationResult]:
         """Validate all configuration files in a directory."""
         if patterns is None:
@@ -325,7 +332,7 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Validate homelab configuration files")
-    parser.add_argument("path", help="File or directory path to validate")
+    parser.add_argument("paths", nargs="+", help="File or directory paths to validate")
     parser.add_argument(
         "--type",
         choices=["ansible_inventory", "helm_values", "environment_config"],
@@ -341,13 +348,15 @@ def main() -> int:
     args = parser.parse_args()
 
     validator = ConfigValidator(log_level=args.log_level)
-    path = Path(args.path)
+    results = []
 
-    if path.is_file():
-        result = validator.validate_file(str(path), args.type)
-        results = [result]
-    else:
-        results = validator.validate_directory(str(path))
+    for path_str in args.paths:
+        path = Path(path_str)
+        if path.is_file():
+            result = validator.validate_file(str(path), args.type)
+            results.append(result)
+        else:
+            results.extend(validator.validate_directory(str(path)))
 
     # Summary
     total_files = len(results)

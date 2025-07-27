@@ -124,7 +124,8 @@ class HomelabTestReporter:
         return logger
 
     def run_config_validation(
-        self, config_paths: list[str] | None = None,
+        self,
+        config_paths: list[str] | None = None,
     ) -> list[ValidationResult] | None:
         """Run configuration validation tests."""
         if not self.config_validator:
@@ -199,7 +200,8 @@ class HomelabTestReporter:
             return None
 
     def run_integration_tests(
-        self, include_workstation: bool = False,
+        self,
+        include_workstation: bool = False,
     ) -> list[IntegrationTestResult] | None:
         """Run integration and connectivity tests."""
         if not self.integration_tester:
@@ -327,7 +329,9 @@ class HomelabTestReporter:
         return recommendations
 
     def run_comprehensive_test_suite(
-        self, config_paths: list[str] | None = None, include_workstation_tests: bool = False,
+        self,
+        config_paths: list[str] | None = None,
+        include_workstation_tests: bool = False,
     ) -> TestSuiteResult:
         """Run the complete test suite and aggregate results."""
         start_time = time.time()
@@ -569,7 +573,8 @@ class HomelabTestReporter:
                     )
 
     def _process_integration_issues(
-        self, integration_results: list[IntegrationTestResult] | None,
+        self,
+        integration_results: list[IntegrationTestResult] | None,
     ) -> None:
         """Process integration test results and add to issue tracker."""
         if not integration_results:
@@ -612,7 +617,9 @@ class HomelabTestReporter:
         return str(filepath)
 
     def export_markdown_report(
-        self, result: TestSuiteResult, filename: str | None = None,
+        self,
+        result: TestSuiteResult,
+        filename: str | None = None,
     ) -> str:
         """Export results to Markdown format."""
         if not filename:
@@ -674,7 +681,8 @@ class HomelabTestReporter:
                     ]
                     if component_issues:
                         highest_severity = min(
-                            component_issues, key=lambda x: list(IssueSeverity).index(x.severity),
+                            component_issues,
+                            key=lambda x: list(IssueSeverity).index(x.severity),
                         )
                         severity_icon = {
                             "critical": "🚨",
@@ -873,13 +881,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run comprehensive homelab test suite")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
-        "--config-paths", nargs="+", help="Specific configuration paths to validate",
+        "--config-paths",
+        nargs="+",
+        help="Specific configuration paths to validate",
     )
     parser.add_argument(
-        "--include-workstation", action="store_true", help="Include workstation perspective tests",
+        "--include-workstation",
+        action="store_true",
+        help="Include workstation perspective tests",
     )
     parser.add_argument(
         "--output-format",
@@ -889,7 +903,9 @@ def main() -> int:
     )
     parser.add_argument("--output-file", help="Custom output filename (without extension)")
     parser.add_argument(
-        "--export-issues", action="store_true", help="Export a detailed issue report",
+        "--export-issues",
+        action="store_true",
+        help="Export a detailed issue report",
     )
 
     args = parser.parse_args()
@@ -898,7 +914,8 @@ def main() -> int:
 
     # Run comprehensive test suite
     result = reporter.run_comprehensive_test_suite(
-        config_paths=args.config_paths, include_workstation_tests=args.include_workstation,
+        config_paths=args.config_paths,
+        include_workstation_tests=args.include_workstation,
     )
 
     # Output results

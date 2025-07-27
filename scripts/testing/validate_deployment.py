@@ -63,7 +63,8 @@ class DeploymentValidator:
 
         try:
             checker = RootlessCompatibilityChecker(
-                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level,
+                kubeconfig_path=self.kubeconfig_path,
+                log_level=self.log_level,
             )
 
             # Log detected architecture
@@ -149,7 +150,8 @@ class DeploymentValidator:
 
         try:
             reporter = HomelabTestReporter(
-                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level,
+                kubeconfig_path=self.kubeconfig_path,
+                log_level=self.log_level,
             )
 
             result = reporter.run_comprehensive_test_suite()
@@ -378,13 +380,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Comprehensive deployment validation")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--deployment-user", help="Deployment user to validate", default="homelab-deploy",
+        "--deployment-user",
+        help="Deployment user to validate",
+        default="homelab-deploy",
     )
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARN", "ERROR"])
     parser.add_argument("--output", help="Output file for results")
     parser.add_argument("--quiet", action="store_true", help="Suppress console output")
     parser.add_argument(
-        "--export-only", action="store_true", help="Only export results, don't print to console",
+        "--export-only",
+        action="store_true",
+        help="Only export results, don't print to console",
     )
 
     args = parser.parse_args()

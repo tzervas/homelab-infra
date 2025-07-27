@@ -78,7 +78,8 @@ class RootlessCompatibilityChecker:
         self.bastion_host = os.getenv("HOMELAB_SERVER_IP", "192.168.16.26")
         self.bastion_user = os.getenv("HOMELAB_SSH_USER", "kang")
         self.deployment_mode = os.getenv(
-            "HOMELAB_DEPLOYMENT_MODE", "vm-based",
+            "HOMELAB_DEPLOYMENT_MODE",
+            "vm-based",
         )  # vm-based or bare-metal
 
         # Auto-detect deployment architecture
@@ -113,7 +114,10 @@ class RootlessCompatibilityChecker:
             if subprocess.run(["which", "virsh"], capture_output=True, check=False).returncode == 0:
                 # Check if VMs exist for cluster
                 result = subprocess.run(
-                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False,
+                    ["virsh", "list", "--all"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
                 if result.returncode == 0 and "test-vm" in result.stdout:
                     self.deployment_mode = "vm-based"
@@ -177,7 +181,10 @@ class RootlessCompatibilityChecker:
         try:
             # Check if deployment user exists
             result = subprocess.run(
-                ["id", self.deployment_user], capture_output=True, text=True, check=False,
+                ["id", self.deployment_user],
+                capture_output=True,
+                text=True,
+                check=False,
             )
 
             if result.returncode != 0:
@@ -596,7 +603,10 @@ class RootlessCompatibilityChecker:
 
                 # Check default network
                 net_list_result = subprocess.run(
-                    ["virsh", "net-list", "--all"], capture_output=True, text=True, check=False,
+                    ["virsh", "net-list", "--all"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
                 if net_list_result.returncode == 0:
                     if "default" not in net_list_result.stdout:
@@ -610,7 +620,10 @@ class RootlessCompatibilityChecker:
 
                 # Check existing VMs
                 vm_list_result = subprocess.run(
-                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False,
+                    ["virsh", "list", "--all"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
                 if vm_list_result.returncode == 0:
                     vm_count = len(
@@ -630,7 +643,10 @@ class RootlessCompatibilityChecker:
             # Check user permissions for libvirt
             try:
                 groups_result = subprocess.run(
-                    ["groups"], capture_output=True, text=True, check=False,
+                    ["groups"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
                 if "libvirt" not in groups_result.stdout:
                     issues.append("Current user not in libvirt group")
@@ -642,7 +658,10 @@ class RootlessCompatibilityChecker:
 
             # Check bridge networking
             ip_result = subprocess.run(
-                ["ip", "addr", "show", "virbr0"], capture_output=True, text=True, check=False,
+                ["ip", "addr", "show", "virbr0"],
+                capture_output=True,
+                text=True,
+                check=False,
             )
             if ip_result.returncode != 0:
                 issues.append("virbr0 bridge interface not found")

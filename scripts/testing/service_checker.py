@@ -210,7 +210,8 @@ class ServiceDeploymentChecker:
                     # Check if service has endpoints
                     try:
                         endpoints = v1.read_namespaced_endpoints(
-                            name=svc.metadata.name, namespace=namespace,
+                            name=svc.metadata.name,
+                            namespace=namespace,
                         )
 
                         if endpoints.subsets:
@@ -229,7 +230,10 @@ class ServiceDeploymentChecker:
             return False
 
     def perform_health_check(
-        self, service_name: str, namespace: str, health_path: str | None = None,
+        self,
+        service_name: str,
+        namespace: str,
+        health_path: str | None = None,
     ) -> dict[str, bool]:
         """Perform application-specific health checks."""
         health_results = {}
@@ -291,7 +295,9 @@ class ServiceDeploymentChecker:
 
         # Perform health checks
         health_checks = self.perform_health_check(
-            service_name, namespace, service_config.get("health_path"),
+            service_name,
+            namespace,
+            service_config.get("health_path"),
         )
 
         # Calculate resource usage summary
@@ -472,7 +478,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Check homelab service deployments")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--service",

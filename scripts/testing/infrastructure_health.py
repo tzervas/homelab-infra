@@ -149,7 +149,9 @@ class InfrastructureHealthMonitor:
         """Check node status and resource availability."""
         if not self.k8s_client:
             return HealthStatus(
-                component="node_status", status="unknown", message="Kubernetes client unavailable",
+                component="node_status",
+                status="unknown",
+                message="Kubernetes client unavailable",
             )
 
         try:
@@ -209,7 +211,9 @@ class InfrastructureHealthMonitor:
 
         except Exception as e:
             return HealthStatus(
-                component="node_status", status="critical", message=f"Failed to check nodes: {e!s}",
+                component="node_status",
+                status="critical",
+                message=f"Failed to check nodes: {e!s}",
             )
 
     def check_core_components(self) -> HealthStatus:
@@ -410,7 +414,9 @@ class InfrastructureHealthMonitor:
                 self.logger.exception(f"Health check failed: {e}")
                 results.append(
                     HealthStatus(
-                        component="unknown", status="critical", message=f"Check failed: {e!s}",
+                        component="unknown",
+                        status="critical",
+                        message=f"Check failed: {e!s}",
                     ),
                 )
 
@@ -444,7 +450,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Monitor homelab infrastructure health")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--component",

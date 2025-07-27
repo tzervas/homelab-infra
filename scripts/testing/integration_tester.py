@@ -229,7 +229,9 @@ class IntegrationConnectivityTester:
             )
 
     def test_api_endpoints(
-        self, endpoint: ServiceEndpoint, perspective: str = "server",
+        self,
+        endpoint: ServiceEndpoint,
+        perspective: str = "server",
     ) -> IntegrationTestResult:
         """Test API endpoint accessibility."""
         start_time = time.time()
@@ -322,7 +324,10 @@ class IntegrationConnectivityTester:
 
             session = requests.Session()
             response = session.get(
-                protected_url, timeout=self.long_timeout, verify=False, allow_redirects=False,
+                protected_url,
+                timeout=self.long_timeout,
+                verify=False,
+                allow_redirects=False,
             )
 
             # Refined SSO detection logic to reduce false positives
@@ -549,7 +554,8 @@ class IntegrationConnectivityTester:
         return ["gitlab", "keycloak", "prometheus", "grafana"]
 
     def run_comprehensive_integration_tests(
-        self, include_workstation_tests: bool = False,
+        self,
+        include_workstation_tests: bool = False,
     ) -> list[IntegrationTestResult]:
         """Run all integration tests."""
         self.logger.info("Starting comprehensive integration testing...")
@@ -605,10 +611,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run comprehensive integration tests")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
-        "--include-workstation", action="store_true", help="Include workstation perspective tests",
+        "--include-workstation",
+        action="store_true",
+        help="Include workstation perspective tests",
     )
     parser.add_argument(
         "--service",
@@ -619,7 +629,8 @@ def main() -> int:
     args = parser.parse_args()
 
     tester = IntegrationConnectivityTester(
-        kubeconfig_path=args.kubeconfig, log_level=args.log_level,
+        kubeconfig_path=args.kubeconfig,
+        log_level=args.log_level,
     )
 
     if args.service:

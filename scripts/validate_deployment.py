@@ -131,7 +131,9 @@ def main() -> int:
     )
     parser.add_argument("--output", help="Output file for validation report")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
 
     args = parser.parse_args()

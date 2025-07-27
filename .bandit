@@ -1,0 +1,44 @@
+# Bandit configuration file
+# Alternative to pyproject.toml configuration
+# This file provides the same configuration in INI format
+
+[bandit]
+# Paths to exclude from security scanning
+exclude = /tests/,/untracked_backup/,/.venv/,/venv/,/.git/,/.mypy_cache/,/.pytest_cache/,/.ruff_cache/,/__pycache__/,/build/,/dist/,/*.egg-info/,/examples/,/.trunk/,/docs/
+
+# Test IDs to skip
+skips = B101,B601,B104,B108,B404,B603,B607
+
+# Include only files with these extensions
+# include = *.py
+
+# Aggregate output by vulnerability type
+# aggregate = vuln
+
+# Only show output in the case of an error
+# quiet = false
+
+# Format string for output messages
+# msg-template = {line}: {test_id}[bandit]: {severity}: {msg}
+
+# Output format (csv, custom, html, json, screen, txt, xml, yaml)
+# format = screen
+
+# Minimum confidence level (HIGH, MEDIUM, LOW)
+confidence = LOW
+
+# Minimum severity level (HIGH, MEDIUM, LOW)
+severity = LOW
+
+# Maximum number of lines to show for each issue
+# context_lines = 3
+
+# Profile to use (leave empty for defaults)
+# profile =
+
+# Test plugins to run
+# plugins =
+
+# Additional command line arguments
+# Additional paths to Python modules/packages
+# python_paths =

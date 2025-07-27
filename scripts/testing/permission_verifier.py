@@ -14,9 +14,9 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any
 
+
 try:
     from kubernetes import client, config
-    from kubernetes.client.rest import ApiException
 
     KUBERNETES_AVAILABLE = True
 except ImportError:

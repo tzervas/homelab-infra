@@ -7,6 +7,7 @@ Ansible inventory files, Helm values files, and environment-specific configurati
 
 import json
 import logging
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -219,15 +220,11 @@ class ConfigValidator:
 
     def _validate_ip_range(self, ip_range: str) -> bool:
         """Validate IP range format (e.g., 192.168.1.100-192.168.1.200)."""
-        import re
-
         pattern = r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
         return bool(re.fullmatch(pattern, ip_range))
 
     def _validate_resource_value(self, value: str) -> bool:
         """Validate Kubernetes resource value format."""
-        import re
-
         # CPU: number (int or float) with optional 'm' suffix, or with units u/n
         # Also support scientific notation like 1e3m or 1.5e-3
         cpu_pattern = r"([0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)(m|u|n)?"

@@ -5,11 +5,22 @@ timeouts, service definitions, and other configurable parameters.
 """
 
 import os
+import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
 # Import environment variables early to make them available throughout the module
 from dotenv import load_dotenv
+
+
+# Try to import yaml at module level
+try:
+    import yaml
+
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+
 
 load_dotenv()
 
@@ -231,8 +242,6 @@ def get_config(overrides: dict[str, Any] | None = None) -> TestingConfig:
     if not overrides:
         return DEFAULT_CONFIG
 
-    import os
-
     # Create a copy of the default config
     config = TestingConfig()
 
@@ -259,15 +268,15 @@ def load_config_from_file(file_path: str) -> TestingConfig:
         TestingConfig instance loaded from file
 
     """
-    try:
-        import yaml
+    if not YAML_AVAILABLE:
+        warnings.warn("YAML library not available", ImportWarning)
+        return DEFAULT_CONFIG
 
+    try:
         with open(file_path) as f:
             config_data = yaml.safe_load(f)
         return get_config(config_data)
     except Exception as e:
-        import warnings
-
         warnings.warn(f"Failed to load config from {file_path}: {e}", RuntimeWarning)
         return DEFAULT_CONFIG
 
@@ -299,8 +308,6 @@ def update_service_endpoints_from_env() -> dict[str, ServiceEndpoint]:
         Updated service endpoints dictionary
 
     """
-    import os
-
     endpoints = DEFAULT_CONFIG.service_endpoints.copy()
 
     # Update URLs from environment variables

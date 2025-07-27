@@ -11,19 +11,20 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
 # Import all testing modules
 try:
-    from .issue_tracker import IssueSeverity, IssueTracker
+    from .issue_tracker import IssueTracker
     from .permission_verifier import PermissionVerifier
     from .rootless_compatibility import RootlessCompatibilityChecker
     from .test_reporter import HomelabTestReporter
 except ImportError:
     try:
-        from issue_tracker import IssueSeverity, IssueTracker
+        from issue_tracker import IssueTracker
         from permission_verifier import PermissionVerifier
         from rootless_compatibility import RootlessCompatibilityChecker
         from test_reporter import HomelabTestReporter
@@ -178,7 +179,7 @@ class DeploymentValidator:
 
         # Run all validation phases
         validation_results = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "deployment_user": self.deployment_user,
             "compatibility_check": self.run_compatibility_check(),
             "permission_verification": self.run_permission_verification(),
@@ -359,7 +360,7 @@ class DeploymentValidator:
     def export_results(self, results: dict[str, Any], output_file: str | None = None) -> str:
         """Export validation results to file."""
         if not output_file:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_file = f"deployment_validation_{timestamp}.json"
 
         # Ensure results directory exists

@@ -7,13 +7,14 @@ comprehensive reporting in multiple formats with trend analysis and metrics.
 
 import json
 import logging
-import os
 import sys
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
 
 # Import all testing modules
 try:
@@ -138,7 +139,7 @@ class HomelabTestReporter:
             if config_paths:
                 results = []
                 for path in config_paths:
-                    if os.path.isdir(path):
+                    if Path(path).is_dir():
                         results.extend(self.config_validator.validate_directory(path))
                     else:
                         results.append(self.config_validator.validate_file(path))
@@ -151,7 +152,7 @@ class HomelabTestReporter:
                 ]
                 results = []
                 for path in default_paths:
-                    if os.path.exists(path):
+                    if Path(path).exists():
                         results.extend(self.config_validator.validate_directory(path))
 
             return results
@@ -335,7 +336,7 @@ class HomelabTestReporter:
     ) -> TestSuiteResult:
         """Run the complete test suite and aggregate results."""
         start_time = time.time()
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         self.logger.info("🚀 Starting comprehensive homelab testing suite...")
 
@@ -602,7 +603,7 @@ class HomelabTestReporter:
     def export_json_report(self, result: TestSuiteResult, filename: str | None = None) -> str:
         """Export results to JSON format."""
         if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"homelab_test_report_{timestamp}.json"
 
         filepath = self.results_dir / filename
@@ -623,7 +624,7 @@ class HomelabTestReporter:
     ) -> str:
         """Export results to Markdown format."""
         if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"homelab_test_report_{timestamp}.md"
 
         filepath = self.results_dir / filename
@@ -636,8 +637,10 @@ class HomelabTestReporter:
 
             # Summary section
             f.write("## Summary\n\n")
-            for key, value in result.summary.items():
-                f.write(f"- **{key.replace('_', ' ').title()}:** {value}\n")
+            f.writelines(
+                f"- **{key.replace('_', ' ').title()}:** {value}\n"
+                for key, value in result.summary.items()
+            )
             f.write("\n")
 
             # Issue Summary section (prioritized issues with counts)
@@ -651,8 +654,9 @@ class HomelabTestReporter:
                 critical_issues = self.issue_tracker.get_critical_issues()
                 if critical_issues:
                     f.write("### 🚨 Critical Issues (Must Fix)\n\n")
-                    for issue in critical_issues:
-                        f.write(f"- **{issue.component}**: {issue.message}\n")
+                    f.writelines(
+                        f"- **{issue.component}**: {issue.message}\n" for issue in critical_issues
+                    )
                     f.write("\n")
 
                 # Issue breakdown by severity
@@ -672,8 +676,6 @@ class HomelabTestReporter:
 
                 # Top issues by component
                 f.write("### Top Issues by Component\n\n")
-                from collections import Counter
-
                 component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
                 for component, count in component_counts.most_common(10):
                     component_issues = [
@@ -694,8 +696,7 @@ class HomelabTestReporter:
                         f.write(f"**{severity_icon} {component}** ({count} issues)\n")
 
                         # Show sample issues for this component
-                        for issue in component_issues[:2]:
-                            f.write(f"  - {issue.message}\n")
+                        f.writelines(f"  - {issue.message}\n" for issue in component_issues[:2])
 
                         if count > 2:
                             f.write(f"  - ... and {count - 2} more issues\n")
@@ -707,15 +708,16 @@ class HomelabTestReporter:
                 for category, metrics in result.metrics.items():
                     if isinstance(metrics, dict):
                         f.write(f"### {category.replace('_', ' ').title()}\n\n")
-                        for key, value in metrics.items():
-                            f.write(f"- **{key.replace('_', ' ').title()}:** {value}\n")
+                        f.writelines(
+                            f"- **{key.replace('_', ' ').title()}:** {value}\n"
+                            for key, value in metrics.items()
+                        )
                         f.write("\n")
 
             # Recommendations section
             if result.recommendations:
                 f.write("## Recommendations\n\n")
-                for i, rec in enumerate(result.recommendations, 1):
-                    f.write(f"{i}. {rec}\n")
+                f.writelines(f"{i}. {rec}\n" for i, rec in enumerate(result.recommendations, 1))
                 f.write("\n")
 
             # Detailed results sections
@@ -770,7 +772,7 @@ class HomelabTestReporter:
     def export_issue_report(self, filename: str | None = None) -> str:
         """Export a dedicated issue report with comprehensive counting and prioritization."""
         if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"homelab_issues_report_{timestamp}.md"
 
         filepath = self.results_dir / filename
@@ -823,8 +825,6 @@ class HomelabTestReporter:
                     print(f"  {icon} {severity.value.title()}: {count}")
 
             # Top problematic components
-            from collections import Counter
-
             component_counts = Counter(issue.component for issue in self.issue_tracker.issues)
             if component_counts:
                 print("\n🔧 Most Problematic Components:")

@@ -7,11 +7,11 @@ and that security contexts are correctly applied across the infrastructure.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import logging
 import os
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from typing import Any
 
 try:
@@ -203,7 +203,7 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code
+                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
             )
             results.append(result)
 
@@ -276,7 +276,7 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code
+                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
             )
             results.append(result)
 
@@ -350,7 +350,7 @@ class PermissionVerifier:
             success, stdout, stderr, exit_code = self._run_command(test.command)
 
             result = PermissionResult(
-                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code
+                test=test, success=success, output=stdout, error=stderr, exit_code=exit_code,
             )
             results.append(result)
 
@@ -521,7 +521,7 @@ class PermissionVerifier:
         passed_tests = self._count_total_passed_tests(results)
 
         self.logger.info(
-            f"Permission verification completed: {passed_tests}/{total_tests} tests passed"
+            f"Permission verification completed: {passed_tests}/{total_tests} tests passed",
         )
 
         return results
@@ -562,7 +562,7 @@ class PermissionVerifier:
 
                 if not result.passed:
                     report.append(
-                        f"**Expected**: {'Success' if result.test.expected_success else 'Failure'}"
+                        f"**Expected**: {'Success' if result.test.expected_success else 'Failure'}",
                     )
                     report.append(f"**Actual**: {'Success' if result.success else 'Failure'}")
 
@@ -593,10 +593,10 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Verify deployment user permissions and security contexts"
+        description="Verify deployment user permissions and security contexts",
     )
     parser.add_argument(
-        "--deployment-user", default="homelab-deploy", help="Deployment user to test"
+        "--deployment-user", default="homelab-deploy", help="Deployment user to test",
     )
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARN", "ERROR"])

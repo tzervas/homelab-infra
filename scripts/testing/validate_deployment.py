@@ -6,14 +6,14 @@ a comprehensive deployment readiness assessment.
 """
 
 import argparse
-from datetime import datetime
 import json
 import logging
 import os
-from pathlib import Path
 import sys
 import time
-from typing import Any, Dict, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 # Import all testing modules
 try:
@@ -37,8 +37,8 @@ class DeploymentValidator:
 
     def __init__(
         self,
-        kubeconfig_path: Optional[str] = None,
-        deployment_user: Optional[str] = None,
+        kubeconfig_path: str | None = None,
+        deployment_user: str | None = None,
         log_level: str = "INFO",
     ) -> None:
         """Initialize the deployment validator."""
@@ -57,13 +57,13 @@ class DeploymentValidator:
         self.issue_tracker = IssueTracker()
         self.results = {}
 
-    def run_compatibility_check(self) -> Dict[str, Any]:
+    def run_compatibility_check(self) -> dict[str, Any]:
         """Run rootless compatibility validation with architecture detection."""
         self.logger.info("🔍 Running architecture-aware rootless compatibility check...")
 
         try:
             checker = RootlessCompatibilityChecker(
-                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level
+                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level,
             )
 
             # Log detected architecture
@@ -99,7 +99,7 @@ class DeploymentValidator:
                 "total_components": 0,
             }
 
-    def run_permission_verification(self) -> Dict[str, Any]:
+    def run_permission_verification(self) -> dict[str, Any]:
         """Run permission verification tests."""
         self.logger.info("🔐 Running permission verification...")
 
@@ -143,13 +143,13 @@ class DeploymentValidator:
             self.logger.exception(f"Permission verification failed: {e}")
             return {"status": "error", "error": str(e), "passed_tests": 0, "total_tests": 0}
 
-    def run_comprehensive_tests(self) -> Dict[str, Any]:
+    def run_comprehensive_tests(self) -> dict[str, Any]:
         """Run comprehensive infrastructure tests."""
         self.logger.info("🧪 Running comprehensive infrastructure tests...")
 
         try:
             reporter = HomelabTestReporter(
-                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level
+                kubeconfig_path=self.kubeconfig_path, log_level=self.log_level,
             )
 
             result = reporter.run_comprehensive_test_suite()
@@ -165,7 +165,7 @@ class DeploymentValidator:
             self.logger.exception(f"Comprehensive tests failed: {e}")
             return {"status": "error", "error": str(e), "duration": 0, "modules_tested": 0}
 
-    def run_all_validations(self) -> Dict[str, Any]:
+    def run_all_validations(self) -> dict[str, Any]:
         """Run all validation tests in sequence."""
         start_time = time.time()
 
@@ -204,12 +204,12 @@ class DeploymentValidator:
         validation_results["summary"] = self._generate_summary(validation_results)
 
         self.logger.info(
-            f"✅ Validation completed in {validation_results['duration']:.2f}s with status: {overall_status.upper()}"
+            f"✅ Validation completed in {validation_results['duration']:.2f}s with status: {overall_status.upper()}",
         )
 
         return validation_results
 
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """Generate validation summary."""
         compatibility = results["compatibility_check"]
         permissions = results["permission_verification"]
@@ -234,7 +234,7 @@ class DeploymentValidator:
                     if not result["compatible"]:
                         summary["issues_found"].extend(result["issues"][:3])  # Top 3 issues
                         summary["recommendations"].extend(
-                            result["recommendations"][:2]
+                            result["recommendations"][:2],
                         )  # Top 2 recommendations
 
         # Permission issues
@@ -256,17 +256,17 @@ class DeploymentValidator:
         if results["overall_status"] != "pass":
             if compatibility["status"] != "pass":
                 summary["next_steps"].append(
-                    "1. Fix compatibility issues (run setup-secure-deployment.sh if needed)"
+                    "1. Fix compatibility issues (run setup-secure-deployment.sh if needed)",
                 )
 
             if permissions["status"] != "pass":
                 summary["next_steps"].append(
-                    "2. Resolve permission issues (check sudo configuration)"
+                    "2. Resolve permission issues (check sudo configuration)",
                 )
 
             if infrastructure["status"] != "pass":
                 summary["next_steps"].append(
-                    "3. Address infrastructure issues (check service deployments)"
+                    "3. Address infrastructure issues (check service deployments)",
                 )
 
             summary["next_steps"].append("4. Re-run validation after fixes")
@@ -275,7 +275,7 @@ class DeploymentValidator:
 
         return summary
 
-    def print_console_summary(self, results: Dict[str, Any]) -> None:
+    def print_console_summary(self, results: dict[str, Any]) -> None:
         """Print validation summary to console."""
         print("\n🏠 HOMELAB DEPLOYMENT VALIDATION REPORT")
         print(f"{'='*60}")
@@ -283,7 +283,7 @@ class DeploymentValidator:
         print(f"Duration: {results['duration']:.2f}s")
         print(f"Overall Status: {results['overall_status'].upper()}")
         print(
-            f"Deployment Ready: {'✅ YES' if results['summary']['deployment_ready'] else '❌ NO'}"
+            f"Deployment Ready: {'✅ YES' if results['summary']['deployment_ready'] else '❌ NO'}",
         )
 
         # Display architecture information if available
@@ -354,7 +354,7 @@ class DeploymentValidator:
 
         print(f"\n{'='*60}")
 
-    def export_results(self, results: Dict[str, Any], output_file: Optional[str] = None) -> str:
+    def export_results(self, results: dict[str, Any], output_file: str | None = None) -> str:
         """Export validation results to file."""
         if not output_file:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -378,13 +378,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Comprehensive deployment validation")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--deployment-user", help="Deployment user to validate", default="homelab-deploy"
+        "--deployment-user", help="Deployment user to validate", default="homelab-deploy",
     )
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARN", "ERROR"])
     parser.add_argument("--output", help="Output file for results")
     parser.add_argument("--quiet", action="store_true", help="Suppress console output")
     parser.add_argument(
-        "--export-only", action="store_true", help="Only export results, don't print to console"
+        "--export-only", action="store_true", help="Only export results, don't print to console",
     )
 
     args = parser.parse_args()

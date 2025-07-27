@@ -5,12 +5,12 @@ This module tests network connectivity, TLS certificates, network policies,
 MetalLB functionality, DNS resolution, and RBAC security policies.
 """
 
-from dataclasses import dataclass, field
 import logging
 import ssl
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any
 
 try:
     from kubernetes import client, config
@@ -35,7 +35,7 @@ except ImportError:
             component: str
             status: str
             message: str
-            details: Dict[str, Any] = field(default_factory=dict)
+            details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,8 +46,8 @@ class SecurityStatus:
     component: str
     status: str  # "secure", "warning", "vulnerable", "unknown"
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
 
     @property
     def is_secure(self) -> bool:
@@ -58,7 +58,7 @@ class SecurityStatus:
 class NetworkSecurityValidator:
     """Network and security validation for homelab infrastructure."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the network security validator."""
         self.logger = self._setup_logging(log_level)
         self.k8s_client = None
@@ -89,7 +89,7 @@ class NetworkSecurityValidator:
 
         return logger
 
-    def _init_kubernetes_client(self, kubeconfig_path: Optional[str]) -> None:
+    def _init_kubernetes_client(self, kubeconfig_path: str | None) -> None:
         """Initialize Kubernetes API client."""
         try:
             if kubeconfig_path:
@@ -463,21 +463,21 @@ class NetworkSecurityValidator:
                     [
                         f"Fix {total_privileged} privileged containers",
                         "Set runAsNonRoot: true and remove privileged access",
-                    ]
+                    ],
                 )
             if total_missing > 0:
                 recommendations.extend(
                     [
                         f"Add security contexts to {total_missing} containers/pods",
                         "Implement comprehensive security context policy",
-                    ]
+                    ],
                 )
             if total_pss_issues > 0:
                 recommendations.extend(
                     [
                         f"Configure Pod Security Standards for {total_pss_issues} namespaces",
                         "Use 'restricted' profile for production workloads",
-                    ]
+                    ],
                 )
 
             return SecurityStatus(
@@ -510,7 +510,7 @@ class NetworkSecurityValidator:
                 message=f"RBAC check failed: {e!s}",
             )
 
-    def _validate_pod_security_contexts(self, apps_v1) -> Tuple[List[str], List[str], int, int]:
+    def _validate_pod_security_contexts(self, apps_v1) -> tuple[list[str], list[str], int, int]:
         """Validate pod security contexts for rootless deployment.
 
         Returns:
@@ -559,7 +559,7 @@ class NetworkSecurityValidator:
         # Return limited lists for display but keep totals
         return (privileged_containers[:5], missing_contexts[:5], total_privileged, total_missing)
 
-    def _validate_pod_security_standards(self, v1) -> Tuple[List[str], int]:
+    def _validate_pod_security_standards(self, v1) -> tuple[list[str], int]:
         """Validate Pod Security Standards configuration.
 
         Returns:
@@ -581,7 +581,7 @@ class NetworkSecurityValidator:
 
                 if not has_pss:
                     issues.append(
-                        f"Namespace {namespace.metadata.name} missing Pod Security Standards"
+                        f"Namespace {namespace.metadata.name} missing Pod Security Standards",
                     )
 
         except Exception as e:
@@ -590,7 +590,7 @@ class NetworkSecurityValidator:
         total_issues = len(issues)
         return issues[:5], total_issues  # Show first 5, return total count
 
-    def run_comprehensive_security_scan(self) -> List[SecurityStatus]:
+    def run_comprehensive_security_scan(self) -> list[SecurityStatus]:
         """Run all security and network validation checks."""
         self.logger.info("Starting comprehensive network and security validation...")
 
@@ -622,7 +622,7 @@ class NetworkSecurityValidator:
                         component="unknown",
                         status="unknown",
                         message=f"Check failed: {e!s}",
-                    )
+                    ),
                 )
 
         return results
@@ -635,7 +635,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate homelab network and security")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--check",

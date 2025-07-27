@@ -4,9 +4,9 @@ This module centralizes all configuration settings including service endpoints,
 timeouts, service definitions, and other configurable parameters.
 """
 
-from dataclasses import dataclass, field
 import os
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any
 
 # Import environment variables early to make them available throughout the module
 from dotenv import load_dotenv
@@ -22,7 +22,7 @@ class ServiceEndpoint:
     internal_url: str
     external_url: str
     health_path: str
-    api_paths: List[str] = field(default_factory=list)
+    api_paths: list[str] = field(default_factory=list)
     requires_auth: bool = False
     sso_enabled: bool = False
 
@@ -32,8 +32,8 @@ class ServiceDefinition:
     """Service definition for deployment checking."""
 
     namespace: str
-    ports: List[int] = field(default_factory=list)
-    health_path: Optional[str] = None
+    ports: list[int] = field(default_factory=list)
+    health_path: str | None = None
 
 
 @dataclass
@@ -57,23 +57,23 @@ class TestingConfig:
     dev_domain: str = os.getenv("HOMELAB_DEV_DOMAIN")
 
     # Critical namespaces for health checking [from environment variables]
-    critical_namespaces: List[str] = field(
+    critical_namespaces: list[str] = field(
         default_factory=lambda: [
             namespace.strip()
             for namespace in os.getenv(
                 "CRITICAL_NAMESPACES",
                 "kube-system,metallb-system,cert-manager,ingress-nginx,longhorn-system,monitoring",
             ).split(",")
-        ]
+        ],
     )
 
     # Network policies to validate
-    network_policies: List[str] = field(
-        default_factory=lambda: ["default-deny-all", "allow-dns", "monitoring-ingress"]
+    network_policies: list[str] = field(
+        default_factory=lambda: ["default-deny-all", "allow-dns", "monitoring-ingress"],
     )
 
     # Service endpoints for integration testing
-    service_endpoints: Dict[str, ServiceEndpoint] = field(
+    service_endpoints: dict[str, ServiceEndpoint] = field(
         default_factory=lambda: {
             "gitlab": ServiceEndpoint(
                 name="GitLab",
@@ -111,11 +111,11 @@ class TestingConfig:
                 requires_auth=True,
                 sso_enabled=True,
             ),
-        }
+        },
     )
 
     # Service definitions for deployment checking
-    service_definitions: Dict[str, ServiceDefinition] = field(
+    service_definitions: dict[str, ServiceDefinition] = field(
         default_factory=lambda: {
             "gitlab": ServiceDefinition(
                 namespace=os.getenv("GITLAB_NAMESPACE", "gitlab-system"),
@@ -152,11 +152,11 @@ class TestingConfig:
                 ports=[],
                 health_path=None,
             ),
-        }
+        },
     )
 
     # Configuration validation schemas
-    validation_schemas: Dict[str, Dict[str, Any]] = field(
+    validation_schemas: dict[str, dict[str, Any]] = field(
         default_factory=lambda: {
             "ansible_inventory": {
                 "type": "object",
@@ -169,7 +169,7 @@ class TestingConfig:
                             "vars": {"type": "object"},
                             "hosts": {"type": "object"},
                         },
-                    }
+                    },
                 },
             },
             "helm_values": {
@@ -185,25 +185,25 @@ class TestingConfig:
                 "required": ["environment"],
                 "properties": {"environment": {"type": "string"}, "global": {"type": "object"}},
             },
-        }
+        },
     )
 
     # Default configuration paths for validation
-    default_config_paths: List[str] = field(
+    default_config_paths: list[str] = field(
         default_factory=lambda: [
             "ansible/inventory",
             "helm/environments",
             "examples/private-config-template",
-        ]
+        ],
     )
 
     # Service communication test patterns
-    service_communication_tests: List[tuple] = field(
+    service_communication_tests: list[tuple] = field(
         default_factory=lambda: [
             ("prometheus", "grafana", "Prometheus -> Grafana data source"),
             ("keycloak", "gitlab", "Keycloak -> GitLab SSO"),
             ("keycloak", "grafana", "Keycloak -\x1b[0;000m -> Grafana SSO"),
-        ]
+        ],
     )
 
 
@@ -218,7 +218,7 @@ def __post_init__(self) -> None:
 DEFAULT_CONFIG = TestingConfig()
 
 
-def get_config(overrides: Optional[Dict[str, Any]] = None) -> TestingConfig:
+def get_config(overrides: dict[str, Any] | None = None) -> TestingConfig:
     """Get configuration with optional overrides.
 
     Args:
@@ -272,7 +272,7 @@ def load_config_from_file(file_path: str) -> TestingConfig:
         return DEFAULT_CONFIG
 
 
-def get_service_endpoint_names() -> List[str]:
+def get_service_endpoint_names() -> list[str]:
     """Get list of available service endpoint names.
 
     Returns:
@@ -282,7 +282,7 @@ def get_service_endpoint_names() -> List[str]:
     return list(DEFAULT_CONFIG.service_endpoints.keys())
 
 
-def get_service_definition_names() -> List[str]:
+def get_service_definition_names() -> list[str]:
     """Get list of available service definition names.
 
     Returns:
@@ -292,7 +292,7 @@ def get_service_definition_names() -> List[str]:
     return list(DEFAULT_CONFIG.service_definitions.keys())
 
 
-def update_service_endpoints_from_env() -> Dict[str, ServiceEndpoint]:
+def update_service_endpoints_from_env() -> dict[str, ServiceEndpoint]:
     """Update service endpoints from environment variables.
 
     Returns:

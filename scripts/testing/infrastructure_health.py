@@ -5,12 +5,12 @@ This module provides comprehensive health monitoring for K3s clusters including
 connectivity checks, node status, core components, and network validation.
 """
 
-from dataclasses import dataclass, field
 import logging
 import subprocess
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any
 
 try:
     from kubernetes import client, config
@@ -28,7 +28,7 @@ class HealthStatus:
     component: str
     status: str  # "healthy", "warning", "critical", "unknown"
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
     @property
@@ -46,7 +46,7 @@ class ClusterHealth:
     healthy_checks: int
     warning_checks: int
     critical_checks: int
-    component_statuses: List[HealthStatus] = field(default_factory=list)
+    component_statuses: list[HealthStatus] = field(default_factory=list)
 
     @property
     def health_percentage(self) -> float:
@@ -59,7 +59,7 @@ class ClusterHealth:
 class InfrastructureHealthMonitor:
     """Main health monitoring class for homelab infrastructure."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the health monitor."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
@@ -77,7 +77,7 @@ class InfrastructureHealthMonitor:
             self._init_kubernetes_client()
         else:
             self.logger.warning(
-                "Kubernetes client not available. Install with: pip install kubernetes"
+                "Kubernetes client not available. Install with: pip install kubernetes",
             )
 
     def _setup_logging(self, level: str) -> logging.Logger:
@@ -149,7 +149,7 @@ class InfrastructureHealthMonitor:
         """Check node status and resource availability."""
         if not self.k8s_client:
             return HealthStatus(
-                component="node_status", status="unknown", message="Kubernetes client unavailable"
+                component="node_status", status="unknown", message="Kubernetes client unavailable",
             )
 
         try:
@@ -209,7 +209,7 @@ class InfrastructureHealthMonitor:
 
         except Exception as e:
             return HealthStatus(
-                component="node_status", status="critical", message=f"Failed to check nodes: {e!s}"
+                component="node_status", status="critical", message=f"Failed to check nodes: {e!s}",
             )
 
     def check_core_components(self) -> HealthStatus:
@@ -410,8 +410,8 @@ class InfrastructureHealthMonitor:
                 self.logger.exception(f"Health check failed: {e}")
                 results.append(
                     HealthStatus(
-                        component="unknown", status="critical", message=f"Check failed: {e!s}"
-                    )
+                        component="unknown", status="critical", message=f"Check failed: {e!s}",
+                    ),
                 )
 
         # Calculate overall health
@@ -444,7 +444,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Monitor homelab infrastructure health")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--component",

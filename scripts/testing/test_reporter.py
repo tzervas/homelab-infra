@@ -5,15 +5,15 @@ This module orchestrates all testing modules, aggregates results, and provides
 comprehensive reporting in multiple formats with trend analysis and metrics.
 """
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
 import json
 import logging
 import os
-from pathlib import Path
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 # Import all testing modules
 try:
@@ -52,10 +52,10 @@ except ImportError:
             def __init__(self, *args, **kwargs) -> None:
                 pass
 
-            def add_issue(self, *args, **kwargs):
+            def add_issue(self, *args, **kwargs) -> None:
                 pass
 
-            def format_summary_report(self):
+            def format_summary_report(self) -> str:
                 return "Issue tracking not available"
 
 
@@ -66,20 +66,20 @@ class TestSuiteResult:
     timestamp: str
     duration: float
     overall_status: str  # "pass", "fail", "warning"
-    summary: Dict[str, Any] = field(default_factory=dict)
-    config_validation: Optional[List[ValidationResult]] = None
-    infrastructure_health: Optional[ClusterHealth] = None
-    service_deployment: Optional[Dict[str, ServiceStatus]] = None
-    network_security: Optional[List[SecurityStatus]] = None
-    integration_tests: Optional[List[IntegrationTestResult]] = None
-    recommendations: List[str] = field(default_factory=list)
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    summary: dict[str, Any] = field(default_factory=dict)
+    config_validation: list[ValidationResult] | None = None
+    infrastructure_health: ClusterHealth | None = None
+    service_deployment: dict[str, ServiceStatus] | None = None
+    network_security: list[SecurityStatus] | None = None
+    integration_tests: list[IntegrationTestResult] | None = None
+    recommendations: list[str] = field(default_factory=list)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 class HomelabTestReporter:
     """Comprehensive test reporter and aggregator."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the test reporter."""
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
@@ -124,8 +124,8 @@ class HomelabTestReporter:
         return logger
 
     def run_config_validation(
-        self, config_paths: Optional[List[str]] = None
-    ) -> Optional[List[ValidationResult]]:
+        self, config_paths: list[str] | None = None,
+    ) -> list[ValidationResult] | None:
         """Run configuration validation tests."""
         if not self.config_validator:
             self.logger.warning("Config validator not available")
@@ -159,7 +159,7 @@ class HomelabTestReporter:
             self.logger.exception(f"Configuration validation failed: {e}")
             return None
 
-    def run_infrastructure_health_check(self) -> Optional[ClusterHealth]:
+    def run_infrastructure_health_check(self) -> ClusterHealth | None:
         """Run infrastructure health monitoring."""
         if not self.infra_monitor:
             self.logger.warning("Infrastructure monitor not available")
@@ -172,7 +172,7 @@ class HomelabTestReporter:
             self.logger.exception(f"Infrastructure health check failed: {e}")
             return None
 
-    def run_service_deployment_check(self) -> Optional[Dict[str, ServiceStatus]]:
+    def run_service_deployment_check(self) -> dict[str, ServiceStatus] | None:
         """Run service deployment validation."""
         if not self.service_checker:
             self.logger.warning("Service checker not available")
@@ -185,7 +185,7 @@ class HomelabTestReporter:
             self.logger.exception(f"Service deployment check failed: {e}")
             return None
 
-    def run_network_security_validation(self) -> Optional[List[SecurityStatus]]:
+    def run_network_security_validation(self) -> list[SecurityStatus] | None:
         """Run network and security validation."""
         if not self.security_validator:
             self.logger.warning("Security validator not available")
@@ -199,8 +199,8 @@ class HomelabTestReporter:
             return None
 
     def run_integration_tests(
-        self, include_workstation: bool = False
-    ) -> Optional[List[IntegrationTestResult]]:
+        self, include_workstation: bool = False,
+    ) -> list[IntegrationTestResult] | None:
         """Run integration and connectivity tests."""
         if not self.integration_tester:
             self.logger.warning("Integration tester not available")
@@ -213,7 +213,7 @@ class HomelabTestReporter:
             self.logger.exception(f"Integration tests failed: {e}")
             return None
 
-    def calculate_metrics(self, result: TestSuiteResult) -> Dict[str, Any]:
+    def calculate_metrics(self, result: TestSuiteResult) -> dict[str, Any]:
         """Calculate test metrics and statistics."""
         metrics = {"total_test_duration": result.duration, "timestamp": result.timestamp}
 
@@ -279,7 +279,7 @@ class HomelabTestReporter:
 
         return metrics
 
-    def generate_recommendations(self, result: TestSuiteResult) -> List[str]:
+    def generate_recommendations(self, result: TestSuiteResult) -> list[str]:
         """Generate actionable recommendations based on test results."""
         recommendations = []
 
@@ -303,7 +303,7 @@ class HomelabTestReporter:
             ]
             if unready_services:
                 recommendations.append(
-                    f"Investigate unready services: {', '.join(unready_services)}"
+                    f"Investigate unready services: {', '.join(unready_services)}",
                 )
 
         # Security recommendations
@@ -321,13 +321,13 @@ class HomelabTestReporter:
             failed_tests = [t for t in result.integration_tests if t.status == "fail"]
             if failed_tests:
                 recommendations.append(
-                    "Fix failing integration tests for complete system validation"
+                    "Fix failing integration tests for complete system validation",
                 )
 
         return recommendations
 
     def run_comprehensive_test_suite(
-        self, config_paths: Optional[List[str]] = None, include_workstation_tests: bool = False
+        self, config_paths: list[str] | None = None, include_workstation_tests: bool = False,
     ) -> TestSuiteResult:
         """Run the complete test suite and aggregate results."""
         start_time = time.time()
@@ -406,12 +406,12 @@ class HomelabTestReporter:
         }
 
         self.logger.info(
-            f"✅ Test suite completed in {duration:.2f}s with status: {overall_status.upper()}"
+            f"✅ Test suite completed in {duration:.2f}s with status: {overall_status.upper()}",
         )
 
         return result
 
-    def _process_config_issues(self, config_results: Optional[List[ValidationResult]]) -> None:
+    def _process_config_issues(self, config_results: list[ValidationResult] | None) -> None:
         """Process configuration validation results and add to issue tracker."""
         if not config_results:
             return
@@ -432,7 +432,7 @@ class HomelabTestReporter:
                     affects_deployment=severity == IssueSeverity.HIGH,
                 )
 
-    def _process_infrastructure_issues(self, infra_health: Optional[ClusterHealth]) -> None:
+    def _process_infrastructure_issues(self, infra_health: ClusterHealth | None) -> None:
         """Process infrastructure health results and add to issue tracker."""
         if not infra_health:
             return
@@ -470,7 +470,7 @@ class HomelabTestReporter:
                     category=IssueCategory.DEPLOYMENT,
                 )
 
-    def _process_service_issues(self, service_status: Optional[Dict[str, ServiceStatus]]) -> None:
+    def _process_service_issues(self, service_status: dict[str, ServiceStatus] | None) -> None:
         """Process service deployment results and add to issue tracker."""
         if not service_status:
             return
@@ -493,7 +493,7 @@ class HomelabTestReporter:
                     affects_deployment=True,
                 )
 
-    def _process_security_issues(self, security_results: Optional[List[SecurityStatus]]) -> None:
+    def _process_security_issues(self, security_results: list[SecurityStatus] | None) -> None:
         """Process security validation results and add to issue tracker."""
         if not security_results:
             return
@@ -569,7 +569,7 @@ class HomelabTestReporter:
                     )
 
     def _process_integration_issues(
-        self, integration_results: Optional[List[IntegrationTestResult]]
+        self, integration_results: list[IntegrationTestResult] | None,
     ) -> None:
         """Process integration test results and add to issue tracker."""
         if not integration_results:
@@ -594,7 +594,7 @@ class HomelabTestReporter:
                     details=test_result.details,
                 )
 
-    def export_json_report(self, result: TestSuiteResult, filename: Optional[str] = None) -> str:
+    def export_json_report(self, result: TestSuiteResult, filename: str | None = None) -> str:
         """Export results to JSON format."""
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -612,7 +612,7 @@ class HomelabTestReporter:
         return str(filepath)
 
     def export_markdown_report(
-        self, result: TestSuiteResult, filename: Optional[str] = None
+        self, result: TestSuiteResult, filename: str | None = None,
     ) -> str:
         """Export results to Markdown format."""
         if not filename:
@@ -674,7 +674,7 @@ class HomelabTestReporter:
                     ]
                     if component_issues:
                         highest_severity = min(
-                            component_issues, key=lambda x: list(IssueSeverity).index(x.severity)
+                            component_issues, key=lambda x: list(IssueSeverity).index(x.severity),
                         )
                         severity_icon = {
                             "critical": "🚨",
@@ -720,10 +720,10 @@ class HomelabTestReporter:
             if result.infrastructure_health:
                 f.write("## Infrastructure Health\n\n")
                 f.write(
-                    f"**Overall Status:** {result.infrastructure_health.cluster_status.upper()}\n"
+                    f"**Overall Status:** {result.infrastructure_health.cluster_status.upper()}\n",
                 )
                 f.write(
-                    f"**Health Score:** {result.infrastructure_health.health_percentage:.1f}%\n\n"
+                    f"**Health Score:** {result.infrastructure_health.health_percentage:.1f}%\n\n",
                 )
 
             if result.service_deployment:
@@ -744,7 +744,7 @@ class HomelabTestReporter:
                         else "🚨"
                     )
                     f.write(
-                        f"- {icon} **{security.check_type.replace('_', ' ').title()}:** {security.message}\n"
+                        f"- {icon} **{security.check_type.replace('_', ' ').title()}:** {security.message}\n",
                     )
                 f.write("\n")
 
@@ -753,13 +753,13 @@ class HomelabTestReporter:
                 for test in result.integration_tests:
                     icon = "✅" if test.passed else "❌" if test.status == "fail" else "⚠️"
                     f.write(
-                        f"- {icon} **{test.test_name.replace('_', ' ').title()}:** {test.message}\n"
+                        f"- {icon} **{test.test_name.replace('_', ' ').title()}:** {test.message}\n",
                     )
 
         self.logger.info(f"Markdown report exported to: {filepath}")
         return str(filepath)
 
-    def export_issue_report(self, filename: Optional[str] = None) -> str:
+    def export_issue_report(self, filename: str | None = None) -> str:
         """Export a dedicated issue report with comprehensive counting and prioritization."""
         if not filename:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -845,7 +845,7 @@ class HomelabTestReporter:
             critical_recommendations = []
             for issue in self.issue_tracker.get_critical_issues():
                 critical_recommendations.extend(
-                    issue.recommendations[:2]
+                    issue.recommendations[:2],
                 )  # Top 2 per critical issue
 
             # Remove duplicates and add to recommendations
@@ -855,7 +855,7 @@ class HomelabTestReporter:
                     unique_critical_recs.append(rec)
 
             all_recommendations.extend(
-                unique_critical_recs[:5]
+                unique_critical_recs[:5],
             )  # Add top 5 unique critical recommendations
 
         if all_recommendations:
@@ -866,20 +866,20 @@ class HomelabTestReporter:
         print(f"\n{'='*60}")
 
 
-def main():
+def main() -> int:
     """Main function for standalone testing."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Run comprehensive homelab test suite")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
-        "--config-paths", nargs="+", help="Specific configuration paths to validate"
+        "--config-paths", nargs="+", help="Specific configuration paths to validate",
     )
     parser.add_argument(
-        "--include-workstation", action="store_true", help="Include workstation perspective tests"
+        "--include-workstation", action="store_true", help="Include workstation perspective tests",
     )
     parser.add_argument(
         "--output-format",
@@ -889,7 +889,7 @@ def main():
     )
     parser.add_argument("--output-file", help="Custom output filename (without extension)")
     parser.add_argument(
-        "--export-issues", action="store_true", help="Export a detailed issue report"
+        "--export-issues", action="store_true", help="Export a detailed issue report",
     )
 
     args = parser.parse_args()
@@ -898,7 +898,7 @@ def main():
 
     # Run comprehensive test suite
     result = reporter.run_comprehensive_test_suite(
-        config_paths=args.config_paths, include_workstation_tests=args.include_workstation
+        config_paths=args.config_paths, include_workstation_tests=args.include_workstation,
     )
 
     # Output results

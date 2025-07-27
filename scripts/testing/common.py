@@ -7,8 +7,8 @@ to reduce boilerplate across all testing modules.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Tuple, Type
 import warnings
+from typing import Any
 
 
 def setup_logging(module_name: str, log_level: str = "INFO") -> logging.Logger:
@@ -35,7 +35,7 @@ def setup_logging(module_name: str, log_level: str = "INFO") -> logging.Logger:
     return logger
 
 
-def safe_import_kubernetes() -> Tuple[bool, Optional[Any], Optional[Any]]:
+def safe_import_kubernetes() -> tuple[bool, Any | None, Any | None]:
     """Safely import Kubernetes client with fallback handling.
 
     Returns:
@@ -51,7 +51,7 @@ def safe_import_kubernetes() -> Tuple[bool, Optional[Any], Optional[Any]]:
         return False, None, None
 
 
-def safe_import_requests() -> Tuple[bool, Optional[Any]]:
+def safe_import_requests() -> tuple[bool, Any | None]:
     """Safely import requests with fallback handling.
 
     Returns:
@@ -67,7 +67,7 @@ def safe_import_requests() -> Tuple[bool, Optional[Any]]:
         return False, None
 
 
-def safe_import_yaml() -> Tuple[bool, Optional[Any]]:
+def safe_import_yaml() -> tuple[bool, Any | None]:
     """Safely import YAML with fallback handling.
 
     Returns:
@@ -83,7 +83,7 @@ def safe_import_yaml() -> Tuple[bool, Optional[Any]]:
         return False, None
 
 
-def safe_import_jsonschema() -> Tuple[bool, Optional[Type], Optional[Type]]:
+def safe_import_jsonschema() -> tuple[bool, type | None, type | None]:
     """Safely import jsonschema with fallback handling.
 
     Returns:
@@ -99,7 +99,7 @@ def safe_import_jsonschema() -> Tuple[bool, Optional[Type], Optional[Type]]:
         return False, None, None
 
 
-def get_kubernetes_client(kubeconfig_path: Optional[str] = None) -> Optional[Any]:
+def get_kubernetes_client(kubeconfig_path: str | None = None) -> Any | None:
     """Get initialized Kubernetes API client.
 
     Args:
@@ -194,7 +194,7 @@ def truncate_string(text: str, max_length: int = 100) -> str:
     return text[: max_length - 3] + "..."
 
 
-def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
+def merge_configs(base_config: dict[str, Any], override_config: dict[str, Any]) -> dict[str, Any]:
     """Merge configuration dictionaries with override support.
 
     Args:

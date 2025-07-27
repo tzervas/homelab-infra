@@ -5,11 +5,11 @@ This module validates deployed services (GitLab, Keycloak, monitoring stack)
 and performs comprehensive health checks with intelligent retry logic.
 """
 
-from dataclasses import dataclass, field
 import logging
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any
 
 import requests
 
@@ -36,7 +36,7 @@ except ImportError:
             component: str
             status: str
             message: str
-            details: Dict[str, Any] = field(default_factory=dict)
+            details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -50,8 +50,8 @@ class ServiceStatus:
     pod_count: int = 0
     ready_pods: int = 0
     endpoints_healthy: bool = False
-    resource_usage: Dict[str, Any] = field(default_factory=dict)
-    health_checks: Dict[str, bool] = field(default_factory=dict)
+    resource_usage: dict[str, Any] = field(default_factory=dict)
+    health_checks: dict[str, bool] = field(default_factory=dict)
     retry_count: int = 0
 
     @property
@@ -63,7 +63,7 @@ class ServiceStatus:
 class ServiceDeploymentChecker:
     """Main checker for homelab service deployments."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the service checker."""
         self.logger = self._setup_logging(log_level)
         self.k8s_client = None
@@ -114,7 +114,7 @@ class ServiceDeploymentChecker:
 
         return logger
 
-    def _init_kubernetes_client(self, kubeconfig_path: Optional[str]) -> None:
+    def _init_kubernetes_client(self, kubeconfig_path: str | None) -> None:
         """Initialize Kubernetes API client."""
         try:
             if kubeconfig_path:
@@ -134,10 +134,10 @@ class ServiceDeploymentChecker:
     def check_pod_status_with_retry(
         self,
         namespace: str,
-        label_selector: Optional[str] = None,
+        label_selector: str | None = None,
         max_retries: int = 3,
         retry_delay: int = 5,
-    ) -> Tuple[int, int, List[Dict]]:
+    ) -> tuple[int, int, list[dict]]:
         """Check pod status with intelligent retry logic."""
         if not self.k8s_client:
             self.logger.warning("Kubernetes client not initialized - cannot check pod status")
@@ -180,7 +180,7 @@ class ServiceDeploymentChecker:
                                 cs.restart_count for cs in (pod.status.container_statuses or [])
                             ),
                             "resource_usage": resource_usage,
-                        }
+                        },
                     )
 
                 return total_pods, ready_pods, pod_details
@@ -189,7 +189,7 @@ class ServiceDeploymentChecker:
                 self.logger.warning(f"Pod status check attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(
-                        retry_delay
+                        retry_delay,
                     )  # Wait before retry to avoid overwhelming the API server
                 else:
                     return 0, 0, []
@@ -210,7 +210,7 @@ class ServiceDeploymentChecker:
                     # Check if service has endpoints
                     try:
                         endpoints = v1.read_namespaced_endpoints(
-                            name=svc.metadata.name, namespace=namespace
+                            name=svc.metadata.name, namespace=namespace,
                         )
 
                         if endpoints.subsets:
@@ -229,8 +229,8 @@ class ServiceDeploymentChecker:
             return False
 
     def perform_health_check(
-        self, service_name: str, namespace: str, health_path: Optional[str] = None
-    ) -> Dict[str, bool]:
+        self, service_name: str, namespace: str, health_path: str | None = None,
+    ) -> dict[str, bool]:
         """Perform application-specific health checks."""
         health_results = {}
 
@@ -291,7 +291,7 @@ class ServiceDeploymentChecker:
 
         # Perform health checks
         health_checks = self.perform_health_check(
-            service_name, namespace, service_config.get("health_path")
+            service_name, namespace, service_config.get("health_path"),
         )
 
         # Calculate resource usage summary
@@ -430,7 +430,7 @@ class ServiceDeploymentChecker:
             # Assume bytes if no unit
             return int(float(memory_str) / (1024**2))
 
-    def check_all_services(self) -> Dict[str, ServiceStatus]:
+    def check_all_services(self) -> dict[str, ServiceStatus]:
         """Check all defined services."""
         results = {}
 
@@ -440,7 +440,7 @@ class ServiceDeploymentChecker:
             cluster_health = self.infra_monitor.get_cluster_health()
             if cluster_health.cluster_status == "critical":
                 self.logger.warning(
-                    "Infrastructure health is critical, service checks may be unreliable"
+                    "Infrastructure health is critical, service checks may be unreliable",
                 )
 
         for service_name in self.services:
@@ -472,7 +472,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Check homelab service deployments")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--service",
@@ -516,7 +516,7 @@ def main() -> int:
         if args.include_details and result.resource_usage:
             print(
                 f"  Resources: CPU={result.resource_usage.get('total_cpu_requests', 'N/A')}, "
-                f"Memory={result.resource_usage.get('total_memory_requests', 'N/A')}"
+                f"Memory={result.resource_usage.get('total_memory_requests', 'N/A')}",
             )
 
         if result.health_checks:

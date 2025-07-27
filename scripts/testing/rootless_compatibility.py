@@ -5,13 +5,13 @@ This module specifically validates that the homelab deployment is properly
 configured for rootless operation with appropriate security contexts.
 """
 
-from dataclasses import dataclass, field
 import logging
 import os
-from pathlib import Path
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
 
 try:
     from kubernetes import client, config
@@ -42,8 +42,8 @@ except ImportError:
         component: str
         status: str
         message: str
-        details: Dict[str, Any] = field(default_factory=dict)
-        recommendations: List[str] = field(default_factory=list)
+        details: dict[str, Any] = field(default_factory=dict)
+        recommendations: list[str] = field(default_factory=list)
 
         @property
         def is_secure(self) -> bool:
@@ -56,15 +56,15 @@ class RootlessCompatibilityResult:
 
     component: str
     compatible: bool
-    issues: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    details: Dict[str, Any] = field(default_factory=dict)
+    issues: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 class RootlessCompatibilityChecker:
     """Validates homelab configuration for rootless deployment compatibility."""
 
-    def __init__(self, kubeconfig_path: Optional[str] = None, log_level: str = "INFO") -> None:
+    def __init__(self, kubeconfig_path: str | None = None, log_level: str = "INFO") -> None:
         """Initialize the rootless compatibility checker."""
         self.logger = setup_logger(__name__, log_level)
         self.k8s_client = None
@@ -78,7 +78,7 @@ class RootlessCompatibilityChecker:
         self.bastion_host = os.getenv("HOMELAB_SERVER_IP", "192.168.16.26")
         self.bastion_user = os.getenv("HOMELAB_SSH_USER", "kang")
         self.deployment_mode = os.getenv(
-            "HOMELAB_DEPLOYMENT_MODE", "vm-based"
+            "HOMELAB_DEPLOYMENT_MODE", "vm-based",
         )  # vm-based or bare-metal
 
         # Auto-detect deployment architecture
@@ -113,7 +113,7 @@ class RootlessCompatibilityChecker:
             if subprocess.run(["which", "virsh"], capture_output=True, check=False).returncode == 0:
                 # Check if VMs exist for cluster
                 result = subprocess.run(
-                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False
+                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False,
                 )
                 if result.returncode == 0 and "test-vm" in result.stdout:
                     self.deployment_mode = "vm-based"
@@ -142,7 +142,7 @@ class RootlessCompatibilityChecker:
             self.logger.debug(f"Architecture detection failed: {e}")
             self.deployment_mode = "unknown"
 
-    def _init_kubernetes_client(self, kubeconfig_path: Optional[str]) -> None:
+    def _init_kubernetes_client(self, kubeconfig_path: str | None) -> None:
         """Initialize Kubernetes API client with architecture-aware logic."""
         try:
             if kubeconfig_path:
@@ -157,7 +157,7 @@ class RootlessCompatibilityChecker:
                     config.load_kube_config()
                 except:
                     self.logger.warning(
-                        "No direct K8s access from bastion - normal for VM-based deployment"
+                        "No direct K8s access from bastion - normal for VM-based deployment",
                     )
                     return
             else:
@@ -177,13 +177,13 @@ class RootlessCompatibilityChecker:
         try:
             # Check if deployment user exists
             result = subprocess.run(
-                ["id", self.deployment_user], capture_output=True, text=True, check=False
+                ["id", self.deployment_user], capture_output=True, text=True, check=False,
             )
 
             if result.returncode != 0:
                 issues.append(f"Deployment user {self.deployment_user} does not exist")
                 recommendations.append(
-                    "Run setup-secure-deployment.sh to create the deployment user"
+                    "Run setup-secure-deployment.sh to create the deployment user",
                 )
             else:
                 details["user_info"] = result.stdout.strip()
@@ -345,7 +345,7 @@ class RootlessCompatibilityChecker:
 
             if total_privileged > 0:
                 issues.append(
-                    f"Found {total_privileged} deployments/containers with privileged access"
+                    f"Found {total_privileged} deployments/containers with privileged access",
                 )
                 if total_privileged > 5:
                     issues.append(f"Showing 5 examples: {', '.join(privileged_deployments[:5])}")
@@ -355,12 +355,12 @@ class RootlessCompatibilityChecker:
                         "Set runAsNonRoot: true in pod security contexts",
                         "Use non-zero runAsUser values",
                         "Update Helm values files with proper security contexts",
-                    ]
+                    ],
                 )
 
             if total_missing > 0:
                 issues.append(
-                    f"Found {total_missing} deployments/containers without security contexts"
+                    f"Found {total_missing} deployments/containers without security contexts",
                 )
                 if total_missing > 5:
                     issues.append(f"Showing 5 examples: {', '.join(missing_security_contexts[:5])}")
@@ -368,7 +368,7 @@ class RootlessCompatibilityChecker:
                     [
                         f"Add security contexts to {total_missing} containers/pods",
                         "Add security contexts to all pod specifications",
-                    ]
+                    ],
                 )
 
             # Check Pod Security Standards with comprehensive counting
@@ -390,17 +390,17 @@ class RootlessCompatibilityChecker:
 
             if total_pss_missing > 0:
                 issues.append(
-                    f"Found {total_pss_missing} namespaces without Pod Security Standards"
+                    f"Found {total_pss_missing} namespaces without Pod Security Standards",
                 )
                 if total_pss_missing > 5:
                     issues.append(
-                        f"Missing PSS namespaces (showing 5): {', '.join(namespaces_without_pss[:5])}"
+                        f"Missing PSS namespaces (showing 5): {', '.join(namespaces_without_pss[:5])}",
                     )
                 recommendations.extend(
                     [
                         f"Configure Pod Security Standards for {total_pss_missing} namespaces",
                         "Apply Pod Security Standards to all namespaces",
-                    ]
+                    ],
                 )
                 details["total_namespaces_without_pss"] = total_pss_missing
                 details["namespaces_without_pss_sample"] = namespaces_without_pss[:5]
@@ -462,11 +462,11 @@ class RootlessCompatibilityChecker:
 
             if total_files_without_security > 0:
                 issues.append(
-                    f"Found {total_files_without_security} Helm values files without security contexts"
+                    f"Found {total_files_without_security} Helm values files without security contexts",
                 )
                 if total_files_without_security > 5:
                     issues.append(
-                        f"Files missing security contexts (showing 5): {', '.join(files_without_security[:5])}"
+                        f"Files missing security contexts (showing 5): {', '.join(files_without_security[:5])}",
                     )
                 recommendations.extend(
                     [
@@ -474,7 +474,7 @@ class RootlessCompatibilityChecker:
                         "Add security contexts to all Helm values files",
                         "Use global security context configuration",
                         "Ensure runAsNonRoot: true is set for all components",
-                    ]
+                    ],
                 )
 
         except Exception as e:
@@ -596,7 +596,7 @@ class RootlessCompatibilityChecker:
 
                 # Check default network
                 net_list_result = subprocess.run(
-                    ["virsh", "net-list", "--all"], capture_output=True, text=True, check=False
+                    ["virsh", "net-list", "--all"], capture_output=True, text=True, check=False,
                 )
                 if net_list_result.returncode == 0:
                     if "default" not in net_list_result.stdout:
@@ -610,11 +610,11 @@ class RootlessCompatibilityChecker:
 
                 # Check existing VMs
                 vm_list_result = subprocess.run(
-                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False
+                    ["virsh", "list", "--all"], capture_output=True, text=True, check=False,
                 )
                 if vm_list_result.returncode == 0:
                     vm_count = len(
-                        [line for line in vm_list_result.stdout.split("\n") if "test-vm" in line]
+                        [line for line in vm_list_result.stdout.split("\n") if "test-vm" in line],
                     )
                     details["existing_vms"] = vm_count
 
@@ -630,7 +630,7 @@ class RootlessCompatibilityChecker:
             # Check user permissions for libvirt
             try:
                 groups_result = subprocess.run(
-                    ["groups"], capture_output=True, text=True, check=False
+                    ["groups"], capture_output=True, text=True, check=False,
                 )
                 if "libvirt" not in groups_result.stdout:
                     issues.append("Current user not in libvirt group")
@@ -642,7 +642,7 @@ class RootlessCompatibilityChecker:
 
             # Check bridge networking
             ip_result = subprocess.run(
-                ["ip", "addr", "show", "virbr0"], capture_output=True, text=True, check=False
+                ["ip", "addr", "show", "virbr0"], capture_output=True, text=True, check=False,
             )
             if ip_result.returncode != 0:
                 issues.append("virbr0 bridge interface not found")
@@ -694,7 +694,7 @@ class RootlessCompatibilityChecker:
                         "This is normal for VM-based deployments",
                         "Access cluster via SSH to VM guest",
                         "Use ProxyJump for kubectl commands",
-                    ]
+                    ],
                 )
                 details["k8s_access"] = "requires_vm_connection"
             else:
@@ -710,7 +710,7 @@ class RootlessCompatibilityChecker:
                         "Check if K3s cluster is running",
                         "Verify kubeconfig file exists and is valid",
                         "Ensure cluster API server is accessible",
-                    ]
+                    ],
                 )
             else:
                 details["k8s_access"] = "direct_bare_metal"
@@ -750,10 +750,10 @@ class RootlessCompatibilityChecker:
             details=details,
         )
 
-    def run_comprehensive_compatibility_check(self) -> List[RootlessCompatibilityResult]:
+    def run_comprehensive_compatibility_check(self) -> list[RootlessCompatibilityResult]:
         """Run all rootless compatibility checks with auto-switching based on deployment architecture."""
         self.logger.info(
-            f"Starting comprehensive rootless compatibility check for {self.deployment_mode} deployment..."
+            f"Starting comprehensive rootless compatibility check for {self.deployment_mode} deployment...",
         )
 
         # Base checks that apply to all deployment modes
@@ -770,21 +770,21 @@ class RootlessCompatibilityChecker:
         if self.deployment_mode in ["bastion-host", "vm-based"]:
             # VM-based deployment checks
             architecture_specific_checks.extend(
-                [self.check_vm_deployment_readiness, self.check_cluster_connectivity]
+                [self.check_vm_deployment_readiness, self.check_cluster_connectivity],
             )
             self.logger.info("Running VM-based deployment checks...")
 
         elif self.deployment_mode == "vm-guest":
             # Running on VM guest - check cluster directly
             architecture_specific_checks.extend(
-                [self.check_kubernetes_security_contexts, self.check_cluster_connectivity]
+                [self.check_kubernetes_security_contexts, self.check_cluster_connectivity],
             )
             self.logger.info("Running VM guest deployment checks...")
 
         elif self.deployment_mode == "bare-metal":
             # Bare metal deployment
             architecture_specific_checks.extend(
-                [self.check_kubernetes_security_contexts, self.check_cluster_connectivity]
+                [self.check_kubernetes_security_contexts, self.check_cluster_connectivity],
             )
             self.logger.info("Running bare-metal deployment checks...")
 
@@ -795,10 +795,10 @@ class RootlessCompatibilityChecker:
                     self.check_kubernetes_security_contexts,
                     self.check_vm_deployment_readiness,
                     self.check_cluster_connectivity,
-                ]
+                ],
             )
             self.logger.warning(
-                f"Unknown deployment mode '{self.deployment_mode}' - running all checks"
+                f"Unknown deployment mode '{self.deployment_mode}' - running all checks",
             )
 
         # Combine all checks
@@ -812,7 +812,7 @@ class RootlessCompatibilityChecker:
 
                 status_icon = "✅" if result.compatible else "❌"
                 self.logger.info(
-                    f"{status_icon} {result.component}: {'Compatible' if result.compatible else 'Issues found'}"
+                    f"{status_icon} {result.component}: {'Compatible' if result.compatible else 'Issues found'}",
                 )
 
                 if result.issues:
@@ -827,12 +827,12 @@ class RootlessCompatibilityChecker:
                         compatible=False,
                         issues=[f"Check failed: {e!s}"],
                         recommendations=["Investigate the error and retry"],
-                    )
+                    ),
                 )
 
         return results
 
-    def generate_compatibility_report(self, results: List[RootlessCompatibilityResult]) -> str:
+    def generate_compatibility_report(self, results: list[RootlessCompatibilityResult]) -> str:
         """Generate a comprehensive compatibility report."""
         compatible_count = sum(bool(r.compatible) for r in results)
         total_count = len(results)

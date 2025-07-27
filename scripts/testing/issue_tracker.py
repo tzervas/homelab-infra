@@ -5,11 +5,11 @@ This module provides comprehensive issue tracking with severity classification,
 aggregation, and prioritized reporting to ensure critical issues are not masked.
 """
 
+import logging
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class IssueSeverity(Enum):
@@ -43,8 +43,8 @@ class Issue:
     message: str
     severity: IssueSeverity
     category: IssueCategory
-    details: Dict[str, Any] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
     affects_deployment: bool = False  # Whether this blocks deployment
 
     def __str__(self) -> str:
@@ -57,7 +57,7 @@ class IssueGroup:
 
     category: IssueCategory
     component: str
-    issues: List[Issue] = field(default_factory=list)
+    issues: list[Issue] = field(default_factory=list)
     total_count: int = 0
     shown_count: int = 0
 
@@ -77,12 +77,12 @@ class IssueSummary:
     """Summary of all issues with counts and priorities."""
 
     total_issues: int = 0
-    by_severity: Dict[IssueSeverity, int] = field(default_factory=lambda: defaultdict(int))
-    by_category: Dict[IssueCategory, int] = field(default_factory=lambda: defaultdict(int))
-    by_component: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    by_severity: dict[IssueSeverity, int] = field(default_factory=lambda: defaultdict(int))
+    by_category: dict[IssueCategory, int] = field(default_factory=lambda: defaultdict(int))
+    by_component: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     deployment_blocking: int = 0
-    top_issues: List[Issue] = field(default_factory=list)
-    issue_groups: List[IssueGroup] = field(default_factory=list)
+    top_issues: list[Issue] = field(default_factory=list)
+    issue_groups: list[IssueGroup] = field(default_factory=list)
 
 
 class IssueTracker:
@@ -98,7 +98,7 @@ class IssueTracker:
         """
         self.max_issues_per_component = max_issues_per_component
         self.max_total_display = max_total_display
-        self.issues: List[Issue] = []
+        self.issues: list[Issue] = []
         self.logger = logging.getLogger(__name__)
 
     def add_issue(
@@ -107,8 +107,8 @@ class IssueTracker:
         message: str,
         severity: IssueSeverity,
         category: IssueCategory,
-        details: Optional[Dict[str, Any]] = None,
-        recommendations: Optional[List[str]] = None,
+        details: dict[str, Any] | None = None,
+        recommendations: list[str] | None = None,
         affects_deployment: bool = False,
     ) -> None:
         """Add a new issue to the tracker."""
@@ -126,10 +126,10 @@ class IssueTracker:
     def add_issues_from_list(
         self,
         component: str,
-        issues_list: List[str],
+        issues_list: list[str],
         severity: IssueSeverity,
         category: IssueCategory,
-        max_display: Optional[int] = None,
+        max_display: int | None = None,
     ) -> None:
         """Add multiple issues from a list with automatic counting."""
         total_count = len(issues_list)
@@ -138,7 +138,7 @@ class IssueTracker:
         # Add individual issues up to display limit
         for issue_msg in issues_list[:display_count]:
             self.add_issue(
-                component=component, message=issue_msg, severity=severity, category=category
+                component=component, message=issue_msg, severity=severity, category=category,
             )
 
         # Add summary issue if there are hidden items
@@ -153,8 +153,8 @@ class IssueTracker:
             )
 
     def categorize_security_issue(
-        self, issue_description: str
-    ) -> Tuple[IssueSeverity, IssueCategory]:
+        self, issue_description: str,
+    ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize security-related issues."""
         description_lower = issue_description.lower()
 
@@ -196,8 +196,8 @@ class IssueTracker:
         return IssueSeverity.LOW, IssueCategory.SECURITY
 
     def categorize_deployment_issue(
-        self, issue_description: str
-    ) -> Tuple[IssueSeverity, IssueCategory]:
+        self, issue_description: str,
+    ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize deployment-related issues."""
         description_lower = issue_description.lower()
 
@@ -226,8 +226,8 @@ class IssueTracker:
         return IssueSeverity.MEDIUM, IssueCategory.DEPLOYMENT
 
     def auto_categorize_issue(
-        self, component: str, message: str
-    ) -> Tuple[IssueSeverity, IssueCategory]:
+        self, component: str, message: str,
+    ) -> tuple[IssueSeverity, IssueCategory]:
         """Automatically categorize an issue based on component and message."""
         message_lower = message.lower()
         component_lower = component.lower()
@@ -268,8 +268,8 @@ class IssueTracker:
         self,
         component: str,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        recommendations: Optional[List[str]] = None,
+        details: dict[str, Any] | None = None,
+        recommendations: list[str] | None = None,
     ) -> None:
         """Add an issue with automatic severity and category detection."""
         severity, category = self.auto_categorize_issue(component, message)
@@ -342,15 +342,15 @@ class IssueTracker:
 
         return summary
 
-    def get_critical_issues(self) -> List[Issue]:
+    def get_critical_issues(self) -> list[Issue]:
         """Get all critical issues that must be addressed."""
         return [issue for issue in self.issues if issue.severity == IssueSeverity.CRITICAL]
 
-    def get_deployment_blocking_issues(self) -> List[Issue]:
+    def get_deployment_blocking_issues(self) -> list[Issue]:
         """Get all issues that would block deployment."""
         return [issue for issue in self.issues if issue.affects_deployment]
 
-    def format_summary_report(self, summary: Optional[IssueSummary] = None) -> str:
+    def format_summary_report(self, summary: IssueSummary | None = None) -> str:
         """Format a comprehensive summary report."""
         if summary is None:
             summary = self.generate_summary()
@@ -409,7 +409,7 @@ class IssueTracker:
 
             if len(non_critical_blocking) > 10:
                 report.append(
-                    f"- ... and {len(non_critical_blocking) - 10} more deployment blocking issues"
+                    f"- ... and {len(non_critical_blocking) - 10} more deployment blocking issues",
                 )
             report.append("")
 
@@ -420,7 +420,7 @@ class IssueTracker:
             component_issues = [i for i in summary.top_issues if i.component == component]
             if component_issues:
                 highest_severity = min(
-                    component_issues, key=lambda x: list(IssueSeverity).index(x.severity)
+                    component_issues, key=lambda x: list(IssueSeverity).index(x.severity),
                 )
                 severity_icon = {
                     "critical": "🚨",
@@ -443,7 +443,7 @@ class IssueTracker:
         if summary.deployment_blocking > 0:
             report.append("## 🔧 Next Steps")
             report.append(
-                "1. **Immediate Action Required**: Fix critical and deployment-blocking issues first"
+                "1. **Immediate Action Required**: Fix critical and deployment-blocking issues first",
             )
             report.append("2. **Security Review**: Address high-severity security issues")
             report.append("3. **Configuration**: Review and update configuration-related issues")
@@ -461,7 +461,7 @@ class IssueTracker:
 def create_missing_items_issues(
     tracker: IssueTracker,
     component: str,
-    missing_items: List[str],
+    missing_items: list[str],
     item_type: str,
     severity: IssueSeverity = IssueSeverity.HIGH,
     category: IssueCategory = IssueCategory.CONFIGURATION,
@@ -503,7 +503,7 @@ def create_missing_items_issues(
 def create_validation_failure_issues(
     tracker: IssueTracker,
     component: str,
-    failed_validations: List[str],
+    failed_validations: list[str],
     validation_type: str = "validation",
 ) -> None:
     """Create issues for validation failures."""
@@ -524,8 +524,8 @@ def create_validation_failure_issues(
 def create_security_context_issues(
     tracker: IssueTracker,
     component: str,
-    privileged_containers: List[str],
-    missing_contexts: List[str],
+    privileged_containers: list[str],
+    missing_contexts: list[str],
 ) -> None:
     """Create security context related issues with proper categorization."""
     if privileged_containers:

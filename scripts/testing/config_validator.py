@@ -5,15 +5,15 @@ This module provides validation capabilities for YAML/JSON configuration files,
 Ansible inventory files, Helm values files, and environment-specific configurations.
 """
 
-from dataclasses import dataclass, field
 import json
 import logging
-from pathlib import Path
 import sys
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
 
-from jsonschema import Draft7Validator
 import yaml
+from jsonschema import Draft7Validator
 
 
 @dataclass
@@ -22,8 +22,8 @@ class ValidationResult:
 
     file_path: str
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     file_type: str = ""
 
     def add_error(self, message: str) -> None:
@@ -58,7 +58,7 @@ class ConfigValidator:
 
         return logger
 
-    def _load_schemas(self) -> Dict[str, Dict[str, Any]]:
+    def _load_schemas(self) -> dict[str, dict[str, Any]]:
         """Load validation schemas for different configuration types."""
         return {
             "ansible_inventory": {
@@ -72,7 +72,7 @@ class ConfigValidator:
                             "vars": {"type": "object"},
                             "hosts": {"type": "object"},
                         },
-                    }
+                    },
                 },
             },
             "helm_values": {
@@ -90,7 +90,7 @@ class ConfigValidator:
             },
         }
 
-    def _load_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def _load_file(self, file_path: str) -> dict[str, Any] | None:
         """Safely load YAML or JSON file."""
         try:
             path = Path(file_path)
@@ -107,7 +107,7 @@ class ConfigValidator:
             self.logger.exception(f"Failed to load {file_path}: {e}")
             return None
 
-    def validate_schema(self, data: Dict[str, Any], schema: Dict[str, Any]) -> List[str]:
+    def validate_schema(self, data: dict[str, Any], schema: dict[str, Any]) -> list[str]:
         """Validate data against JSON schema."""
         validator = Draft7Validator(schema)
         errors = []
@@ -185,7 +185,7 @@ class ConfigValidator:
     def validate_environment_config(self, file_path: str) -> ValidationResult:
         """Validate environment-specific configuration files."""
         result = ValidationResult(
-            file_path=file_path, is_valid=True, file_type="environment_config"
+            file_path=file_path, is_valid=True, file_type="environment_config",
         )
 
         data = self._load_file(file_path)
@@ -248,7 +248,7 @@ class ConfigValidator:
         return bool(re.fullmatch("[0-9]+(\\.[0-9]+)?", value_str))
 
     def _check_sensitive_data(
-        self, data: Dict[str, Any], patterns: List[str], result: ValidationResult
+        self, data: dict[str, Any], patterns: list[str], result: ValidationResult,
     ) -> None:
         """Recursively check for potential sensitive data exposure."""
 
@@ -266,7 +266,7 @@ class ConfigValidator:
 
         _check_recursive(data)
 
-    def validate_file(self, file_path: str, file_type: Optional[str] = None) -> ValidationResult:
+    def validate_file(self, file_path: str, file_type: str | None = None) -> ValidationResult:
         """Validate a configuration file based on its type or path."""
         path = Path(file_path)
 
@@ -296,8 +296,8 @@ class ConfigValidator:
         return result
 
     def validate_directory(
-        self, directory: str, patterns: Optional[List[str]] = None
-    ) -> List[ValidationResult]:
+        self, directory: str, patterns: list[str] | None = None,
+    ) -> list[ValidationResult]:
         """Validate all configuration files in a directory."""
         if patterns is None:
             patterns = ["*.yml", "*.yaml", "*.json"]

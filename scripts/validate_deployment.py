@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Validate Deployment Configuration and Requirements."""
 
-from datetime import datetime
 import json
 import logging
 import os
 import sys
-from typing import Optional
+from datetime import datetime
 
 try:
     from testing.rootless_compatibility import (
@@ -39,10 +38,10 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
 
 
 def validate_deployment_readiness(
-    kubeconfig_path: Optional[str] = None,
-    deployment_user: Optional[str] = None,
+    kubeconfig_path: str | None = None,
+    deployment_user: str | None = None,
     include_workstation: bool = False,
-    output_file: Optional[str] = None,
+    output_file: str | None = None,
     log_level: str = "INFO",
 ) -> bool:
     """Validate deployment readiness by running all test suites."""
@@ -81,7 +80,7 @@ def validate_deployment_readiness(
     # Run comprehensive infrastructure tests
     reporter = HomelabTestReporter(kubeconfig_path=kubeconfig_path, log_level=log_level)
     test_results = reporter.run_comprehensive_test_suite(
-        include_workstation_tests=include_workstation
+        include_workstation_tests=include_workstation,
     )
 
     test_status = "PASS" if test_results.overall_status != "fail" else "FAIL"
@@ -98,7 +97,7 @@ def validate_deployment_readiness(
                 "duration": test_results.duration,
                 "recommendations": test_results.recommendations,
             },
-        }
+        },
     )
 
     if success:
@@ -132,7 +131,7 @@ def main() -> int:
     )
     parser.add_argument("--output", help="Output file for validation report")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
 
     args = parser.parse_args()

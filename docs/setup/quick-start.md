@@ -116,7 +116,7 @@ Once VM testing succeeds:
 
 Add these entries to your `/etc/hosts` file or router DNS:
 
-```
+```text
 192.168.1.201  gitlab.homelab.local
 192.168.1.202  keycloak.homelab.local
 192.168.1.204  prometheus.homelab.local
@@ -210,7 +210,7 @@ kubectl top pods -A
 
 - **[Architecture Overview](architecture.md)** - Understand the system design
 - **[Configuration Guide](../configuration/README.md)** - Customize your deployment
-- **[Security Best Practices](../security/best-practices.md)** - Harden your installation
+- **[Security Best Practices](../security/best-practices.md)** - Secure deployment guide
 
 ### Advanced Features
 
@@ -231,4 +231,5 @@ kubectl top pods -A
 
 ---
 
-**🎊 Congratulations!** You now have a production-ready homelab infrastructure with GitLab, Keycloak, and comprehensive monitoring. Time to start building amazing projects!
+**🎊 Congratulations!** Your production-ready homelab infrastructure is now complete!
+Time to start building amazing projects with GitLab, Keycloak, and monitoring.

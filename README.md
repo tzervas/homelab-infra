@@ -1,10 +1,12 @@
 # Homelab Infrastructure
 
-Infrastructure as Code (IaC) for managing homelab k3s environment with Helm and GitOps principles.
+Infrastructure as Code (IaC) for managing homelab k3s environment with Helm and GitOps
+principles.
 
 ## Overview
 
-This repository contains the complete infrastructure configuration for a homelab environment, featuring:
+This repository contains infrastructure configuration for a homelab environment, featuring:
+following features:
 
 - **k3s** - Lightweight Kubernetes distribution
 - **Helm/Helmfile** - Declarative application deployment
@@ -18,14 +20,17 @@ This repository contains the complete infrastructure configuration for a homelab
 
 ### Prerequisites
 
-- **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges
+- **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges  
+  - *Example: HomeServer (192.168.1.10)*
 - **Resources**: Minimum 4GB RAM, 2 CPU cores, 50GB storage  
+  - *Example: 8GB RAM, 4 CPU cores*
 - **Network**: Static IP configuration recommended
+  - *Configuration file: /etc/netplan/01-netcfg.yaml*
 - **Tools**: Git, Docker (will be installed by setup script)
 
 ### 🔒 Rootless Deployment (Recommended)
 
-This homelab uses security-hardened, rootless deployment with dedicated deployment user and minimal privileges:
+This homelab uses security-hardened, rootless deployment with a dedicated deployment user:
 
 #### 1. Initial Server Setup
 
@@ -67,22 +72,30 @@ python3 scripts/testing/validate_deployment.py
 
 ### 📋 Traditional Deployment
 
-For traditional deployment with existing tools:
+For traditional deployment with existing tools, you can customize the configuration using
+the provided templates and examples for flexibility and security.
 
 ### Configuration Setup
 
-This project uses a multi-repository approach for security:
+This project uses a multi-repository approach for enhanced security:
 
-1. **Main Repository** (this one): Public infrastructure code and documentation
-2. **Private Repository**: Sensitive configurations, secrets, and environment overrides
-3. **Examples Repository**: Template configurations
+1. **Main Repository** (this one): Contains public infrastructure code and documentation.
+2. **Private Repository**: Holds sensitive configurations, secrets, and environment overrides.
+3. **Examples Repository**: Contains template configurations for easy customization.
 
-#### Setting up Private Configuration
+```yaml
+# Configuration example
+PRIVATE_CONFIG_REPO: git@github.com:username/homelab-infra-private.git
+PRIVATE_CONFIG_BRANCH: main
+PRIVATE_CONFIG_DIR: config
+```
 
-1. Create a private repository for your sensitive configurations:
+#### Setting Up Private Configuration
+
+1. Create a private repository for sensitive configurations:
 
    ```bash
-   # Example: Create a private repo on GitHub/GitLab
+   # Example: Creating a private repository on GitHub/GitLab.
    git clone git@github.com:username/homelab-infra-private.git
    ```
 
@@ -100,7 +113,7 @@ This project uses a multi-repository approach for security:
    ./scripts/sync-private-config.sh sync
    ```
 
-This will automatically clone your private repo, set up the directory structure, and load sensitive environment variables during deployment.
+This setup will automatically clone the private repository, organize the directory structure, and load sensitive environment variables during deployment.
 
 ### Deploy Infrastructure
 
@@ -118,11 +131,13 @@ cd homelab-infra
 
 ## Private Documentation
 
-This repository includes public documentation in the `docs/` directory. Detailed architecture, network configuration, and other sensitive documentation is maintained locally in the `.private/docs/` directory, which is not tracked in git. These private documents are synchronized across branches using the local backup scripts.
+This repository includes public documentation in the `docs/` directory. Detailed architecture
+and sensitive documentation is maintained locally in `.private/docs/` (not tracked in git).
+These private documents are synchronized across branches using backup scripts.
 
 ## Repository Structure
 
-```
+```text
 .
 ├── docs/                    # Documentation
 │   ├── k3s-setup.md        # k3s installation guide
@@ -141,18 +156,57 @@ This repository includes public documentation in the `docs/` directory. Detailed
 └── terraform/            # Future Terraform configurations
 ```
 
+## Migration Status
+
+### Ansible to Helm Migration
+
+The project has been successfully migrated from individual Ansible playbooks to a
+Helmfile-based deployment strategy. The following playbooks were verified as safely
+removed during the simplification effort:
+
+- **Service Deployments**:
+  - `deploy-gitlab.yml` → GitLab Helm chart
+  - `deploy-keycloak.yml` → Keycloak Helm chart
+  - `deploy-cert-manager.yml` → cert-manager Helm chart
+  - `deploy-metallb.yml` → MetalLB Helm chart
+  - `deploy-monitoring.yml` → Prometheus/Grafana Helm charts
+  - `deploy-nginx-ingress.yml` → nginx-ingress Helm chart
+  - `deploy-backup.yml` → Velero Helm chart
+
+- **Infrastructure Management**:
+  - `cleanup-k3s.yml` → Managed via Helm releases
+  - `cleanup-vm.yml` → Managed via infrastructure scripts
+  - `test-bastion-access.yml` → Replaced by simplified direct access
+
+This migration simplifies deployment by:
+
+- Centralizing configuration in Helm values files
+- Enabling declarative state management
+- Simplifying rollbacks and updates
+- Reducing maintenance overhead
+
 ## Network Configuration
 
-### Server Details (customize in your private config)
+For network setup, use the provided configuration files and templates. Example values are shown
+below for reference.
 
-- **k3s Master**: Your homelab server IP
-- **Network Range**: Your internal network range
+### Server Details
 
-### MetalLB IP Allocation (customize in your private config)
+- **k3s Master**: Specify your homelab server IP.
+  - *Example: 192.168.1.100*
+- **Network Range**: Set your internal network range.
+  - *Example: 192.168.0.0/16*
 
-- **Development**: A small IP range for testing
-- **Staging**: Medium IP range for staging
-- **Production**: Larger IP range for production
+### MetalLB IP Allocation
+
+Configuration files should be customized according to your setup requirements.
+
+- **Development**: A small IP range for testing.
+  - *Example: 192.168.1.240-192.168.1.250*
+- **Staging**: Medium IP range for staging purposes.
+  - *Example: 192.168.1.200-192.168.1.220*
+- **Production**: Larger IP range for full-scale production deployments.
+  - *Example: 192.168.1.100-192.168.1.150*
 
 ## Environments
 
@@ -200,7 +254,7 @@ This repository includes public documentation in the `docs/` directory. Detailed
 
 ## 🧪 Testing and Validation
 
-This homelab includes a comprehensive testing framework with issue tracking and prioritized reporting:
+This homelab includes a testing framework with issue tracking and status reporting:
 
 ### Comprehensive Testing Suite
 
@@ -223,9 +277,9 @@ python3 scripts/testing/validate_deployment.py
 
 ### Test Categories
 
-- **🔧 Configuration Validation**: YAML/JSON schema validation, Ansible inventory checks
-- **🏥 Infrastructure Health**: Kubernetes cluster health, node status, component monitoring  
-- **🚀 Service Deployment**: Pod readiness, resource allocation, deployment status
+- **🔧 Configuration Validation**: YAML/JSON schema validation and checks
+- **🏥 Infrastructure Health**: Cluster health and component monitoring
+- **🚀 Service Deployment**: Pod readiness and resource management
 - **🔒 Network Security**: TLS certificates, network policies, RBAC, security contexts
 - **🔗 Integration Testing**: Service connectivity, SSO flows, end-to-end workflows
 - **📊 Issue Tracking**: Comprehensive counting, severity classification, prioritized reporting
@@ -246,9 +300,9 @@ python3 scripts/testing/validate_deployment.py
   ⚠️ High: 8  
   ⚡ Medium: 13
 
-🔧 Most Problematic Components:
-  - kubernetes_security_contexts: 15 issues
-  - service_deployment: 8 issues
+🔧 Component Status:
+  - Security Contexts: 15 validation issues
+  - Service Deployment: 8 configuration issues
 ```
 
 ## 📚 Documentation
@@ -256,7 +310,7 @@ python3 scripts/testing/validate_deployment.py
 - **[Rootless Deployment Guide](docs/rootless-deployment-guide.md)**: Comprehensive security-hardened deployment
 - **[Deployment Checklist](docs/deployment-checklist.md)**: Step-by-step validation checklist
 - **[Architecture Overview](docs/architecture.md)**: System design and component relationships
-- **[Security Guide](docs/security.md)**: Security best practices and configurations
+- **[Security Guide](docs/security.md)**: Security practices and hardening
 
 ## Deployment Commands
 
@@ -299,13 +353,13 @@ helmfile --environment production apply --selector name=prometheus
 
 After deployment, services will be available at:
 
-### Development
+### Development URLs
 
 - Grafana: <https://grafana.dev.homelab.local>
 - Longhorn: <https://longhorn.dev.homelab.local>
 - Prometheus: <https://prometheus.dev.homelab.local>
 
-### Production
+### Production URLs
 
 - Grafana: <https://grafana.homelab.local>
 - Longhorn: <https://longhorn.homelab.local>
@@ -331,21 +385,21 @@ After deployment, services will be available at:
 - Privileged access only where required
 - Resource limits on all workloads
 
-## Monitoring
+## System Observability
 
-### Metrics
+### System Metrics
 
 - Node and pod metrics via node-exporter
 - Application metrics via ServiceMonitor CRDs
 - Custom dashboards in Grafana
 
-### Logging
+### Log Management
 
 - Centralized logging with Loki
 - Log retention policies
 - Grafana integration for log exploration
 
-### Alerting
+### Alert Configuration
 
 - Prometheus AlertManager
 - Critical system alerts

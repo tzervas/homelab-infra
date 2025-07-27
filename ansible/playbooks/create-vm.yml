@@ -159,7 +159,7 @@
 
 - name: Create cloud-init user-data
   copy:
-    content: |
+    content: |  # pragma: allowlist secret
       #cloud-config
       hostname: {{ vm_config.name }}
       manage_etc_hosts: true
@@ -307,10 +307,12 @@
       shell: |
         #!/bin/bash
         HOST="{{ vm_ip.stdout }}"
+        HOMELAB_HOST="{{ ansible_host }}"
+        HOMELAB_USER="{{ ansible_user }}"
         MAX_ATTEMPTS=40
         ATTEMPT=0
 
-        echo "Starting SSH readiness monitoring for $HOST"
+        echo "Starting SSH readiness monitoring for $HOST through proxy $HOMELAB_HOST"
 
         while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
           ATTEMPT=$((ATTEMPT + 1))
@@ -325,12 +327,13 @@
             backoff=15
           fi
 
-          if nc -z -w3 $HOST 22 2>/dev/null; then
-            echo "✓ Port 22 is open"
+          # Check port 22 from homelab server since we need proxy
+          if ssh ${HOMELAB_USER}@${HOMELAB_HOST} "nc -z -w3 $HOST 22" 2>/dev/null; then
+            echo "✓ Port 22 is open (checked from homelab server)"
 
-            # Try SSH connection with detailed output
-            if ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no kang@$HOST 'echo "SSH_READY"' 2>/dev/null | grep -q "SSH_READY"; then
-              echo "✅ SSH connection successful!"
+            # Try SSH connection through proxy jump
+            if ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=no -o ProxyJump="${HOMELAB_USER}@${HOMELAB_HOST}" kang@$HOST 'echo "SSH_READY"' 2>/dev/null | grep -q "SSH_READY"; then
+              echo "✅ SSH connection successful through proxy!"
               exit 0
             else
               echo "⏳ Port open but SSH not ready, retrying..."
@@ -377,7 +380,9 @@
 
     - name: Verify SSH functionality with system info
       shell: |
-        ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no kang@{{ vm_ip.stdout }} '
+        ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no \
+            -o ProxyJump="{{ ansible_user }}@{{ ansible_host }}" \
+            kang@{{ vm_ip.stdout }} '
           echo "=== VM System Information ==="
           echo "Hostname: $(hostname)"
           echo "Uptime: $(uptime)"

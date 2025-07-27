@@ -53,16 +53,33 @@ log() {
 # Function to check if running as correct user
 check_user() {
     local current_user=$(whoami)
+    local requested_command="${1:-}"
+    local root_allowed_commands=("user-setup")
 
     if [[ "$current_user" == "root" ]]; then
-        log "ERROR" "This script should not be run as root for security reasons"
-        log "INFO" "Please run as the deployment user: $DEPLOYMENT_USER"
-        exit 1
+        # Check if this is a root-allowed command
+        if [[ "$requested_command" == "user-setup" ]]; then
+            log "INFO" "Running as root for initial setup: $requested_command"
+            return 0
+        else
+            log "ERROR" "This script should not be run as root for security reasons"
+            log "INFO" "Please run as the deployment user: $DEPLOYMENT_USER"
+            log "INFO" "Root is only allowed for initial setup commands: ${root_allowed_commands[*]}"
+            return 1
+        fi
     fi
 
+    # For non-root users, warn if not running as deployment user
     if [[ "$current_user" != "$DEPLOYMENT_USER" ]]; then
-        log "WARN" "Running as '$current_user' instead of recommended '$DEPLOYMENT_USER'"
-        log "INFO" "Consider switching to the deployment user for better security"
+        # For setup commands, this is an error
+        if [[ "$requested_command" == "user-setup" ]]; then
+            log "ERROR" "Setup must be run as root: $requested_command"
+            log "INFO" "Please run with: sudo $0 deploy user-setup"
+            return 1
+        else
+            log "WARN" "Running as '$current_user' instead of recommended '$DEPLOYMENT_USER'"
+            log "INFO" "Consider switching to the deployment user for better security"
+        fi
     fi
 
     log "INFO" "Running as user: $current_user"
@@ -72,26 +89,50 @@ check_user() {
 check_sudo_permissions() {
     log "INFO" "Checking sudo permissions for deployment operations..."
 
+    local current_user=$(whoami)
+    local sudo_example="$current_user ALL=(ALL) NOPASSWD:ALL"
+
     # Test sudo access without prompting for password
     if ! sudo -n true 2>/dev/null; then
-        log "ERROR" "Passwordless sudo is not configured or user is not in sudoers"
-        log "INFO" "Please ensure the deployment user is properly configured with sudo access"
-        return 1
+        log "WARN" "Passwordless sudo is not configured."
+        log "INFO" "To enable passwordless sudo, add this line to /etc/sudoers using 'visudo':"
+        log "INFO" "  $sudo_example"
+        log "INFO" "Falling back to interactive sudo. You may be prompted for your password."
+
+        # Try interactive sudo
+        if ! sudo -v; then
+            log "ERROR" "Interactive sudo failed. Please ensure the user has sudo access."
+            log "INFO" "Run 'visudo' as root and ensure your user is in the sudoers file."
+            return 1
+        fi
     fi
 
     # Test specific commands that we need
     local test_commands=(
         "systemctl status"
         "mkdir -p /tmp/homelab-test"
+        "kubectl apply"
+        "helm install"
     )
 
+    local failed_commands=()
     for cmd in "${test_commands[@]}"; do
         if sudo -n $cmd >/dev/null 2>&1; then
             log "DEBUG" "Sudo access verified for: $cmd"
         else
+            failed_commands+=("$cmd")
             log "WARN" "Limited sudo access for: $cmd"
         fi
     done
+
+    # Report on failed commands
+    if [[ ${#failed_commands[@]} -gt 0 ]]; then
+        log "WARN" "Some commands require additional sudo permissions:"
+        for cmd in "${failed_commands[@]}"; do
+            log "INFO" "  $current_user ALL=(ALL) NOPASSWD: $cmd"
+        done
+        log "INFO" "Add these lines to /etc/sudoers using 'visudo'"
+    fi
 
     # Cleanup test directory
     sudo rm -rf /tmp/homelab-test 2>/dev/null || true
@@ -115,18 +156,43 @@ setup_environment() {
     export HOMELAB_DEPLOYMENT_MODE="rootless"
     export HOMELAB_USER="$DEPLOYMENT_USER"
 
-    # Verify required tools are available
-    local required_tools=("kubectl" "helm" "ansible-playbook")
+# Verify required tools are available
+    local required_tools=("kubectl" "helm" "ansible-playbook" "python3")
+    local missing_tools=()
 
     for tool in "${required_tools[@]}"; do
         if command -v "$tool" >/dev/null 2>&1; then
             log "DEBUG" "Found required tool: $tool"
         else
-            log "WARN" "Required tool not found: $tool"
+            missing_tools+=("$tool")
+            log "ERROR" "Required tool not found: $tool"
         fi
     done
 
-    log "INFO" "Environment setup completed"
+    # Exit if any required tools are missing
+    if [[ ${#missing_tools[@]} -gt 0 ]]; then
+        log "ERROR" "Missing required tools: ${missing_tools[*]}"
+        log "INFO" "Please install the missing tools before continuing:"
+        for tool in "${missing_tools[@]}"; do
+            case "$tool" in
+                kubectl)
+                    log "INFO" "  kubectl: https://kubernetes.io/docs/tasks/tools/"
+                    ;;
+                helm)
+                    log "INFO" "  helm: https://helm.sh/docs/intro/install/"
+                    ;;
+                ansible-playbook)
+                    log "INFO" "  ansible: pip install ansible"
+                    ;;
+                python3)
+                    log "INFO" "  python3: Use your system's package manager"
+                    ;;
+            esac
+        done
+        return 1
+    fi
+
+    log "INFO" "Environment setup completed - all required tools found"
 }
 
 # Function to run Ansible playbook with proper privilege handling
@@ -266,9 +332,10 @@ check_prerequisites() {
     log "INFO" "Checking deployment prerequisites..."
 
     local errors=0
+    local requested_command="${1:-}"
 
     # Check if we're running as the right user
-    check_user || ((errors++))
+    check_user "$requested_command" || ((errors++))
 
     # Check sudo permissions
     check_sudo_permissions || ((errors++))
@@ -339,38 +406,64 @@ main() {
     local command=""
     local component=""
 
+    # Define valid commands and options
+    local valid_commands=("deploy" "check" "test" "status")
+    local valid_options=("-h" "--help" "-d" "--debug" "-u" "--user")
+    local requires_value=("-u" "--user")
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
-        case $1 in
-            -h|--help)
+        # Check if argument is an option
+        if [[ "$1" == -* ]]; then
+            # Validate option
+            if [[ ! " ${valid_options[*]} " =~ " $1 " ]]; then
+                log "ERROR" "Unknown option: $1"
                 usage
-                exit 0
-                ;;
-            -d|--debug)
-                export DEBUG=true
-                log "DEBUG" "Debug mode enabled"
-                shift
-                ;;
-            -u|--user)
-                DEPLOYMENT_USER="$2"
-                log "INFO" "Using deployment user: $DEPLOYMENT_USER"
-                shift 2
-                ;;
-            deploy|check|test|status)
-                command="$1"
-                shift
-                ;;
-            *)
-                if [[ -z "$component" && -n "$command" ]]; then
-                    component="$1"
-                else
-                    log "ERROR" "Unknown argument: $1"
+                exit 1
+            fi
+
+            case $1 in
+                -h|--help)
+                    usage
+                    exit 0
+                    ;;
+                -d|--debug)
+                    export DEBUG=true
+                    log "DEBUG" "Debug mode enabled"
+                    shift
+                    ;;
+                -u|--user)
+                    # Check if value is provided
+                    if [[ -z "$2" || "$2" == -* ]]; then
+                        log "ERROR" "Option $1 requires a value"
+                        usage
+                        exit 1
+                    fi
+                    DEPLOYMENT_USER="$2"
+                    log "INFO" "Using deployment user: $DEPLOYMENT_USER"
+                    shift 2
+                    ;;
+            esac
+        else
+            # Not an option, must be command or component
+            if [[ -z "$command" ]]; then
+                # Validate command
+                if [[ ! " ${valid_commands[*]} " =~ " $1 " ]]; then
+                    log "ERROR" "Unknown command: $1"
                     usage
                     exit 1
                 fi
+                command="$1"
                 shift
-                ;;
-        esac
+            elif [[ -z "$component" && "$command" == "deploy" ]]; then
+                component="$1"
+                shift
+            else
+                log "ERROR" "Unexpected argument: $1"
+                usage
+                exit 1
+            fi
+        fi
     done
 
     # Validate command
@@ -394,7 +487,7 @@ main() {
                 usage
                 exit 1
             fi
-            check_prerequisites && deploy_component "$component"
+            check_prerequisites "$component" && deploy_component "$component"
             ;;
         test)
             log "INFO" "Running deployment tests..."

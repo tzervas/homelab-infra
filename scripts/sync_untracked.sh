@@ -34,35 +34,35 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 # Function to get all branches
 get_branches() {
-    git branch | sed 's/^[ *]*//'
+  git branch | sed 's/^[ *]*//'
 }
 
 # Function to get untracked files
 get_untracked_files() {
-    git ls-files --others --exclude-standard | grep -v "untracked_backup/"
+  git ls-files --others --exclude-standard | grep -v "untracked_backup/"
 }
 
 # Function to backup untracked files
 backup_untracked() {
-    local dest_dir="$1"
-    mkdir -p "$dest_dir"
+  local dest_dir="$1"
+  mkdir -p "$dest_dir"
 
-    while IFS= read -r file; do
-        if [ -n "$file" ]; then
-            mkdir -p "$(dirname "$dest_dir/$file")"
-            cp --parents "$file" "$dest_dir/"
-        fi
-    done < <(get_untracked_files)
+  while IFS= read -r file; do
+    if [ -n "$file" ]; then
+      mkdir -p "$(dirname "$dest_dir/$file")"
+      cp --parents "$file" "$dest_dir/"
+    fi
+  done < <(get_untracked_files)
 }
 
 # Function to restore untracked files
 restore_untracked() {
-    local src_dir="$1"
-    if [ ! -d "$src_dir" ]; then
-        echo "No files to restore from $src_dir"
-        return
-    fi
-    cp -r "$src_dir/"* ./ 2>/dev/null || true
+  local src_dir="$1"
+  if [ ! -d "$src_dir" ]; then
+    echo "No files to restore from $src_dir"
+    return
+  fi
+  cp -r "$src_dir/"* ./ 2>/dev/null || true
 }
 
 # Create backup directory
@@ -74,14 +74,14 @@ backup_untracked "$TEMP_DIR"
 
 # Process each branch
 for branch in $(get_branches); do
-    echo "Processing branch: $branch"
-    git checkout "$branch"
+  echo "Processing branch: $branch"
+  git checkout "$branch"
 
-    echo "Creating backup of existing untracked files in $branch..."
-    backup_untracked "$BACKUP_DIR/$branch"
+  echo "Creating backup of existing untracked files in $branch..."
+  backup_untracked "$BACKUP_DIR/$branch"
 
-    echo "Restoring untracked files to $branch..."
-    restore_untracked "$TEMP_DIR"
+  echo "Restoring untracked files to $branch..."
+  restore_untracked "$TEMP_DIR"
 done
 
 # Return to original branch

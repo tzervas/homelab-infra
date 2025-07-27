@@ -522,9 +522,17 @@ def create_validation_failure_issues(
     total_count = len(failed_validations)
     severity = IssueSeverity.CRITICAL if total_count > 5 else IssueSeverity.HIGH
 
+    # Prepend validation type to each message if not already present
+    updated_validations = [
+        f"{validation_type.capitalize()} failed: {val}"
+        if not val.lower().startswith(validation_type.lower())
+        else val
+        for val in failed_validations
+    ]
+
     tracker.add_issues_from_list(
         component=component,
-        issues_list=failed_validations,
+        issues_list=updated_validations,
         severity=severity,
         category=IssueCategory.VALIDATION,
     )

@@ -264,6 +264,38 @@ ignore = [
     "T201",  # Allow print statements in scripts
 ]
 
+# Conditional imports for optional dependencies
+"scripts/testing/common.py" = [
+    "PLC0415",  # Import not at top-level (intentional for optional deps)
+]
+"scripts/testing/config_validator.py" = [
+    "PLC0415",  # Import not at top-level (intentional for argparse in main)
+]
+"scripts/testing/infrastructure_health.py" = [
+    "PLC0415",  # Import not at top-level (intentional for argparse in main)
+]
+"scripts/testing/integration_tester.py" = [
+    "PLC0415",  # Import not at top-level (intentional for argparse in main)
+]
+"scripts/testing/network_security.py" = [
+    "PLC0415",  # Import not at top-level (intentional for optional deps)
+]
+"scripts/testing/permission_verifier.py" = [
+    "PLC0415",  # Import not at top-level (intentional for optional deps)
+]
+"scripts/testing/rootless_compatibility.py" = [
+    "PLC0415",  # Import not at top-level (intentional for optional deps)
+]
+"scripts/testing/service_checker.py" = [
+    "PLC0415",  # Import not at top-level (intentional for optional deps)
+]
+"scripts/testing/test_reporter.py" = [
+    "PLC0415",  # Import not at top-level (intentional for argparse in main)
+]
+"scripts/validate_deployment.py" = [
+    "PLC0415",  # Import not at top-level (intentional for argparse in main)
+]
+
 # Configuration files
 "setup.py" = ["D100"]
 "conf.py" = ["D100"]

@@ -16,39 +16,39 @@ PURPLE='\033[0;35m'
 NC='\033[0m'
 
 print_header() {
-    echo -e "${PURPLE}$1${NC}"
+  echo -e "${PURPLE}$1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+  echo -e "${GREEN}✅ $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+  echo -e "${RED}❌ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+  echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+  echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 validate_k8s_manifest() {
-    local file="$1"
-    local errors=0
+  local file="$1"
+  local errors=0
 
-    print_info "Validating $file..."
+  print_info "Validating $file..."
 
-    # Check YAML syntax
-    if ! python3 -c "import yaml; list(yaml.safe_load_all(open('$file')))" 2>/dev/null; then
-        print_error "Invalid YAML syntax"
-        return 1
-    fi
+  # Check YAML syntax
+  if ! python3 -c "import yaml; list(yaml.safe_load_all(open('$file')))" 2>/dev/null; then
+    print_error "Invalid YAML syntax"
+    return 1
+  fi
 
-    # Extract and validate each document
-    python3 << EOF
+  # Extract and validate each document
+  python3 <<EOF
 import yaml
 import sys
 
@@ -107,7 +107,7 @@ with open('$file', 'r') as f:
         sys.exit(1)
 EOF
 
-    return $?
+  return $?
 }
 
 print_header "🔍 Kubernetes Manifest Validation"
@@ -120,8 +120,8 @@ cd "$PROJECT_ROOT"
 K8S_FILES=$(find kubernetes/ -name "*.yaml" -o -name "*.yml" 2>/dev/null)
 
 if [ -z "$K8S_FILES" ]; then
-    print_warning "No Kubernetes manifest files found"
-    exit 0
+  print_warning "No Kubernetes manifest files found"
+  exit 0
 fi
 
 TOTAL_FILES=0
@@ -129,16 +129,16 @@ VALID_FILES=0
 INVALID_FILES=0
 
 for file in $K8S_FILES; do
-    TOTAL_FILES=$((TOTAL_FILES + 1))
-    echo ""
+  TOTAL_FILES=$((TOTAL_FILES + 1))
+  echo ""
 
-    if validate_k8s_manifest "$file"; then
-        print_success "$file - Valid Kubernetes manifest"
-        VALID_FILES=$((VALID_FILES + 1))
-    else
-        print_error "$file - Invalid Kubernetes manifest"
-        INVALID_FILES=$((INVALID_FILES + 1))
-    fi
+  if validate_k8s_manifest "$file"; then
+    print_success "$file - Valid Kubernetes manifest"
+    VALID_FILES=$((VALID_FILES + 1))
+  else
+    print_error "$file - Invalid Kubernetes manifest"
+    INVALID_FILES=$((INVALID_FILES + 1))
+  fi
 done
 
 echo ""
@@ -152,16 +152,16 @@ echo "  • Invalid manifests: $INVALID_FILES"
 echo ""
 
 if [ $INVALID_FILES -eq 0 ]; then
-    print_success "All Kubernetes manifests are valid! 🎉"
-    echo ""
-    echo "💡 Ready for deployment:"
-    echo "  • All YAML syntax is correct"
-    echo "  • All required Kubernetes fields present"
-    echo "  • Manifests ready for kubectl apply"
-    exit 0
+  print_success "All Kubernetes manifests are valid! 🎉"
+  echo ""
+  echo "💡 Ready for deployment:"
+  echo "  • All YAML syntax is correct"
+  echo "  • All required Kubernetes fields present"
+  echo "  • Manifests ready for kubectl apply"
+  exit 0
 else
-    print_error "Some manifests need attention"
-    echo ""
-    echo "🔧 Please fix the invalid manifests before deployment"
-    exit 1
+  print_error "Some manifests need attention"
+  echo ""
+  echo "🔧 Please fix the invalid manifests before deployment"
+  exit 1
 fi

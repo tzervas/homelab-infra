@@ -17,38 +17,38 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 print_header() {
-    echo -e "${PURPLE}$1${NC}"
+  echo -e "${PURPLE}$1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+  echo -e "${GREEN}✅ $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+  echo -e "${RED}❌ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+  echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+  echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 print_step() {
-    echo -e "${CYAN}🔧 $1${NC}"
+  echo -e "${CYAN}🔧 $1${NC}"
 }
 
 simulate_delay() {
-    local duration=$1
-    local message=$2
-    echo -n "   $message"
-    for i in $(seq 1 $duration); do
-        echo -n "."
-        sleep 0.5
-    done
-    echo " Done!"
+  local duration=$1
+  local message=$2
+  echo -n "   $message"
+  for i in $(seq 1 $duration); do
+    echo -n "."
+    sleep 0.5
+  done
+  echo " Done!"
 }
 
 print_header "🧪 Homelab Deployment Dry-Run Test"
@@ -63,49 +63,49 @@ echo ""
 
 print_step "Validating project structure..."
 REQUIRED_FILES=(
-    "ansible/ansible.cfg"
-    "ansible/site.yml"
-    "ansible/inventory/hosts.yml"
-    "ansible/playbooks/create-vm.yml"
-    "ansible/playbooks/deploy-k3s.yml"
-    "scripts/deploy-homelab.sh"
+  "ansible/ansible.cfg"
+  "ansible/site.yml"
+  "ansible/inventory/hosts.yml"
+  "ansible/playbooks/create-vm.yml"
+  "ansible/playbooks/deploy-k3s.yml"
+  "scripts/deploy-homelab.sh"
 )
 
 for file in "${REQUIRED_FILES[@]}"; do
-    if [ -f "$file" ]; then
-        print_success "$file exists"
-    else
-        print_error "$file missing"
-        exit 1
-    fi
+  if [ -f "$file" ]; then
+    print_success "$file exists"
+  else
+    print_error "$file missing"
+    exit 1
+  fi
 done
 
 print_step "Testing Ansible configuration..."
 cd ansible
-if ansible-playbook --syntax-check site.yml > /dev/null 2>&1; then
-    print_success "Ansible playbook syntax valid"
+if ansible-playbook --syntax-check site.yml >/dev/null 2>&1; then
+  print_success "Ansible playbook syntax valid"
 else
-    print_error "Ansible playbook syntax errors"
-    exit 1
+  print_error "Ansible playbook syntax errors"
+  exit 1
 fi
 
-if ansible-inventory --list > /dev/null 2>&1; then
-    print_success "Ansible inventory configuration valid"
+if ansible-inventory --list >/dev/null 2>&1; then
+  print_success "Ansible inventory configuration valid"
 else
-    print_error "Ansible inventory configuration invalid"
-    exit 1
+  print_error "Ansible inventory configuration invalid"
+  exit 1
 fi
 
 cd "$PROJECT_ROOT"
 
 print_step "Validating Kubernetes manifests..."
-if ./scripts/validate-k8s-manifests.sh > /tmp/k8s-validation.log 2>&1; then
-    MANIFEST_COUNT=$(grep -c "Valid Kubernetes manifest" /tmp/k8s-validation.log)
-    print_success "$MANIFEST_COUNT Kubernetes manifests validated"
+if ./scripts/validate-k8s-manifests.sh >/tmp/k8s-validation.log 2>&1; then
+  MANIFEST_COUNT=$(grep -c "Valid Kubernetes manifest" /tmp/k8s-validation.log)
+  print_success "$MANIFEST_COUNT Kubernetes manifests validated"
 else
-    print_error "Kubernetes manifest validation failed"
-    cat /tmp/k8s-validation.log
-    exit 1
+  print_error "Kubernetes manifest validation failed"
+  cat /tmp/k8s-validation.log
+  exit 1
 fi
 
 rm -f /tmp/k8s-validation.log
@@ -279,7 +279,7 @@ echo "📝 To proceed with actual deployment:"
 echo ""
 echo "1. **Configure Server Access:**"
 echo "   # Update ansible/inventory/hosts.yml with your server IP"
-echo "   ansible_host: \"YOUR_SERVER_IP\""
+echo '   ansible_host: "YOUR_SERVER_IP"'
 echo "   "
 echo "   # Copy SSH key to server"
 echo "   ssh-copy-id kang@YOUR_SERVER_IP"

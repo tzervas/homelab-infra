@@ -501,17 +501,17 @@ class PermissionVerifier:
         return results
 
     @staticmethod
-    def _count_passed_tests(test_results: list[PermissionResult]) -> int:
+    def count_passed_tests(test_results: list[PermissionResult]) -> int:
         """Count number of passed tests in a list of results."""
         return sum(bool(result.passed) for result in test_results)
 
     @classmethod
-    def _count_total_passed_tests(cls, results: dict[str, list[PermissionResult]]) -> int:
+    def count_total_passed_tests(cls, results: dict[str, list[PermissionResult]]) -> int:
         """Count total number of passed tests across all categories."""
-        return sum(cls._count_passed_tests(test_results) for test_results in results.values())
+        return sum(cls.count_passed_tests(test_results) for test_results in results.values())
 
     @staticmethod
-    def _count_total_tests(results: dict[str, list[PermissionResult]]) -> int:
+    def count_total_tests(results: dict[str, list[PermissionResult]]) -> int:
         """Count total number of tests across all categories."""
         return sum(len(test_results) for test_results in results.values())
 
@@ -529,8 +529,8 @@ class PermissionVerifier:
         }
 
         # Summary logging
-        total_tests = self._count_total_tests(results)
-        passed_tests = self._count_total_passed_tests(results)
+        total_tests = self.count_total_tests(results)
+        passed_tests = self.count_total_passed_tests(results)
 
         self.logger.info(
             f"Permission verification completed: {passed_tests}/{total_tests} tests passed",
@@ -545,8 +545,8 @@ class PermissionVerifier:
         report.append("")
 
         # Summary
-        total_tests = self._count_total_tests(results)
-        passed_tests = self._count_total_passed_tests(results)
+        total_tests = self.count_total_tests(results)
+        passed_tests = self.count_total_passed_tests(results)
 
         report.append(f"**Overall Status**: {passed_tests}/{total_tests} tests passed")
         if passed_tests == total_tests:
@@ -560,7 +560,7 @@ class PermissionVerifier:
             if not test_results:
                 continue
 
-            category_passed = self._count_passed_tests(test_results)
+            category_passed = self.count_passed_tests(test_results)
             category_total = len(test_results)
 
             report.append(f"## {category.replace('_', ' ').title()}")
@@ -635,8 +635,8 @@ def main() -> None:
         print(report)
 
     # Exit with error code if any tests failed
-    total_tests = verifier._count_total_tests(results)
-    passed_tests = verifier._count_total_passed_tests(results)
+    total_tests = verifier.count_total_tests(results)
+    passed_tests = verifier.count_total_passed_tests(results)
 
     if passed_tests < total_tests:
         sys.exit(1)

@@ -42,13 +42,13 @@ FAIL_FAST=${FAIL_FAST:-${CI_MODE}}
 TARGETS=()
 
 # Configuration with defaults
-MAX_PYTHON_FILES=${MAX_PYTHON_FILES:-0}  # 0 means no limit
+MAX_PYTHON_FILES=${MAX_PYTHON_FILES:-0} # 0 means no limit
 MAX_SHELL_FILES=${MAX_SHELL_FILES:-0}   # 0 means no limit
 MAX_JSON_FILES=${MAX_JSON_FILES:-0}     # 0 means no limit
 
 # Parse command line arguments
 show_help() {
-  cat << EOF
+  cat <<EOF
 Usage: $0 [OPTIONS] [TARGETS...]
 
 Comprehensive code quality checking and fixing for homelab infrastructure.
@@ -150,7 +150,7 @@ check_dependencies() {
   local missing=()
 
   for dep in "${deps[@]}"; do
-    if ! command -v "$dep" &> /dev/null; then
+    if ! command -v "$dep" &>/dev/null; then
       missing+=("$dep")
     fi
   done
@@ -167,10 +167,10 @@ run_python_checks() {
   log_info "Running Python code quality checks..."
 
   local python_files
-  local find_cmd="find . -type f -name \"*.py\" -not -path \"./untracked_backup/*\" -not -path \"./examples/*\" -not -path \"./venv/*\" -not -path \"./.pytest_cache/*\" -not -path \"*/__pycache__/*\""
+  local find_cmd='find . -type f -name "*.py" -not -path "./untracked_backup/*" -not -path "./examples/*" -not -path "./venv/*" -not -path "./.pytest_cache/*" -not -path "*/__pycache__/*"'
 
-  if [[ "$MAX_PYTHON_FILES" -gt 0 ]]; then
-    if [[ "$VERBOSE" == true ]]; then
+  if [[ $MAX_PYTHON_FILES -gt 0 ]]; then
+    if [[ $VERBOSE == true ]]; then
       log_info "Limiting to $MAX_PYTHON_FILES Python files"
     fi
     python_files=$(eval "$find_cmd" | head -n "$MAX_PYTHON_FILES")
@@ -182,15 +182,15 @@ run_python_checks() {
   total_files=$(echo "$python_files" | wc -l)
   log_info "Found $total_files Python files to check"
 
-  if [[ -z "$python_files" ]]; then
+  if [[ -z $python_files ]]; then
     log_warning "No Python files found"
     return 0
   fi
 
   # Ruff linting and formatting
-  if command -v ruff &> /dev/null; then
+  if command -v ruff &>/dev/null; then
     log_info "Running Ruff linter..."
-    if [[ "$FIX_MODE" == true ]]; then
+    if [[ $FIX_MODE == true ]]; then
       ruff check --fix --unsafe-fixes . || log_warning "Ruff found issues (some may be fixed)"
       ruff format . || log_warning "Ruff formatting had issues"
     else
@@ -202,13 +202,13 @@ run_python_checks() {
   fi
 
   # Type checking with MyPy
-  if command -v mypy &> /dev/null && [[ "$CI_MODE" == false ]]; then
+  if command -v mypy &>/dev/null && [[ $CI_MODE == false ]]; then
     log_info "Running MyPy type checking..."
     mypy scripts/testing/ --ignore-missing-imports || log_warning "MyPy found type issues"
   fi
 
   # Security scanning with Bandit
-  if command -v bandit &> /dev/null; then
+  if command -v bandit &>/dev/null; then
     log_info "Running Bandit security scan..."
     bandit -r scripts/ -f json -o bandit-report.json || log_warning "Bandit found security issues"
   fi
@@ -221,10 +221,10 @@ run_shell_checks() {
   log_info "Running shell script quality checks..."
 
   local shell_files
-  local find_cmd="find . -type f -name \"*.sh\" -not -path \"./untracked_backup/*\" -not -path \"./venv/*\""
+  local find_cmd='find . -type f -name "*.sh" -not -path "./untracked_backup/*" -not -path "./venv/*"'
 
-  if [[ "$MAX_SHELL_FILES" -gt 0 ]]; then
-    if [[ "$VERBOSE" == true ]]; then
+  if [[ $MAX_SHELL_FILES -gt 0 ]]; then
+    if [[ $VERBOSE == true ]]; then
       log_info "Limiting to $MAX_SHELL_FILES shell files"
     fi
     shell_files=$(eval "$find_cmd" | head -n "$MAX_SHELL_FILES")
@@ -236,13 +236,13 @@ run_shell_checks() {
   total_files=$(echo "$shell_files" | wc -l)
   log_info "Found $total_files shell files to check"
 
-  if [[ -z "$shell_files" ]]; then
+  if [[ -z $shell_files ]]; then
     log_warning "No shell files found"
     return 0
   fi
 
   # ShellCheck linting
-  if command -v shellcheck &> /dev/null; then
+  if command -v shellcheck &>/dev/null; then
     log_info "Running ShellCheck..."
     # shellcheck disable=SC2086
     shellcheck -e SC1091 -e SC2034 -e SC2086 -e SC2155 $shell_files || log_warning "ShellCheck found issues"
@@ -251,9 +251,9 @@ run_shell_checks() {
   fi
 
   # Shell formatting with shfmt
-  if command -v shfmt &> /dev/null; then
+  if command -v shfmt &>/dev/null; then
     log_info "Running shfmt..."
-    if [[ "$FIX_MODE" == true ]]; then
+    if [[ $FIX_MODE == true ]]; then
       # shellcheck disable=SC2086
       shfmt -w -s -i 2 -ci $shell_files || log_warning "shfmt formatting had issues"
     else
@@ -272,7 +272,7 @@ run_yaml_checks() {
   log_info "Running YAML/JSON validation..."
 
   # YAML linting
-  if command -v yamllint &> /dev/null; then
+  if command -v yamllint &>/dev/null; then
     log_info "Running yamllint..."
     yamllint -d relaxed helm/ kubernetes/ || log_warning "YAML files have formatting issues"
   else
@@ -283,10 +283,10 @@ run_yaml_checks() {
   log_info "Checking JSON syntax..."
 
   local json_files
-  local find_cmd="find . -type f -name \"*.json\" -not -path \"./untracked_backup/*\" -not -path \"./.vscode/*\" -not -path \"./node_modules/*\" -not -path \"*/.pytest_cache/*\""
+  local find_cmd='find . -type f -name "*.json" -not -path "./untracked_backup/*" -not -path "./.vscode/*" -not -path "./node_modules/*" -not -path "*/.pytest_cache/*" -not -path "./.venv/*"'
 
-  if [[ "$MAX_JSON_FILES" -gt 0 ]]; then
-    if [[ "$VERBOSE" == true ]]; then
+  if [[ $MAX_JSON_FILES -gt 0 ]]; then
+    if [[ $VERBOSE == true ]]; then
       log_info "Limiting to $MAX_JSON_FILES JSON files"
     fi
     json_files=$(eval "$find_cmd" | head -n "$MAX_JSON_FILES")
@@ -298,7 +298,7 @@ run_yaml_checks() {
   total_files=$(echo "$json_files" | wc -l)
   log_info "Found $total_files JSON files to check"
 
-  if [[ -z "$json_files" ]]; then
+  if [[ -z $json_files ]]; then
     log_warning "No JSON files found"
     return 0
   fi
@@ -306,10 +306,10 @@ run_yaml_checks() {
   # Check each JSON file for validity
   local invalid_count=0
   for file in $json_files; do
-    if ! python3 -m json.tool "$file" > /dev/null 2>/dev/null; then
+    if ! python3 -m json.tool "$file" >/dev/null 2>/dev/null; then
       log_error "Invalid JSON: $file"
       ((invalid_count++))
-    elif [[ "$VERBOSE" == true ]]; then
+    elif [[ $VERBOSE == true ]]; then
       log_info "Valid JSON: $file"
     fi
   done
@@ -322,7 +322,7 @@ run_yaml_checks() {
   fi
 
   # Check if we hit the file limit
-  if [[ "$MAX_JSON_FILES" -gt 0 ]]; then
+  if [[ $MAX_JSON_FILES -gt 0 ]]; then
     local actual_total
     actual_total=$(eval "$find_cmd" | wc -l)
     if [[ $actual_total -gt $total_files ]]; then
@@ -342,9 +342,9 @@ run_ansible_checks() {
     return 0
   fi
 
-  if command -v ansible-lint &> /dev/null; then
+  if command -v ansible-lint &>/dev/null; then
     log_info "Running ansible-lint..."
-    if [[ "$FIX_MODE" == true ]]; then
+    if [[ $FIX_MODE == true ]]; then
       ansible-lint --fix ansible/ || log_warning "Ansible-lint found issues (some may be fixed)"
     else
       ansible-lint ansible/ || log_warning "Ansible-lint found issues"
@@ -367,16 +367,16 @@ run_terraform_checks() {
 
   cd terraform || return 1
 
-  if command -v terraform &> /dev/null; then
+  if command -v terraform &>/dev/null; then
     log_info "Running terraform fmt..."
-    if [[ "$FIX_MODE" == true ]]; then
+    if [[ $FIX_MODE == true ]]; then
       terraform fmt -recursive .
     else
       terraform fmt -check -recursive . || log_error "Terraform files need formatting"
     fi
 
     log_info "Running terraform validate..."
-    terraform init -backend=false > /dev/null
+    terraform init -backend=false >/dev/null
     terraform validate || log_error "Terraform validation failed"
   else
     log_warning "terraform not available"
@@ -391,7 +391,7 @@ run_security_checks() {
   log_info "Running security scans..."
 
   # Gitleaks
-  if command -v gitleaks &> /dev/null; then
+  if command -v gitleaks &>/dev/null; then
     log_info "Running gitleaks..."
     gitleaks detect --verbose || log_warning "Gitleaks found potential secrets"
   else
@@ -399,7 +399,7 @@ run_security_checks() {
   fi
 
   # detect-secrets
-  if command -v detect-secrets &> /dev/null; then
+  if command -v detect-secrets &>/dev/null; then
     log_info "Running detect-secrets..."
     if [[ ! -f .secrets.baseline ]]; then
       detect-secrets scan --baseline .secrets.baseline
@@ -419,9 +419,9 @@ run_docs_checks() {
   local md_files
   md_files=$(find . -name "*.md" -not -path "./untracked_backup/*" -not -path "./examples/*")
 
-  if command -v markdownlint &> /dev/null; then
+  if command -v markdownlint &>/dev/null; then
     log_info "Running markdownlint..."
-    if [[ "$FIX_MODE" == true ]]; then
+    if [[ $FIX_MODE == true ]]; then
       # shellcheck disable=SC2086
       markdownlint --fix $md_files || log_warning "Markdown files had issues (some may be fixed)"
     else
@@ -439,8 +439,8 @@ run_docs_checks() {
 run_precommit_checks() {
   log_info "Running pre-commit hooks..."
 
-  if command -v pre-commit &> /dev/null; then
-    if [[ "$FIX_MODE" == true ]]; then
+  if command -v pre-commit &>/dev/null; then
+    if [[ $FIX_MODE == true ]]; then
       pre-commit run --all-files || log_warning "Pre-commit found issues (some may be fixed)"
     else
       pre-commit run --all-files || log_error "Pre-commit hooks failed"
@@ -467,7 +467,7 @@ run_homelab_checks() {
   python3 scripts/testing/rootless_compatibility.py --deployment-mode auto --log-level WARN || log_warning "Security context check found issues"
 
   # Helm chart validation
-  if command -v helm &> /dev/null; then
+  if command -v helm &>/dev/null; then
     log_info "Running Helm chart validation..."
     find helm/charts -name "Chart.yaml" -exec dirname {} \; | while read -r chart; do
       helm lint "$chart" || log_warning "Helm chart validation failed for $chart"
@@ -479,7 +479,7 @@ run_homelab_checks() {
 
 # Run tests
 run_tests() {
-  if [[ "$SKIP_TESTS" == true ]]; then
+  if [[ $SKIP_TESTS == true ]]; then
     log_info "Skipping tests (--skip-tests)"
     return 0
   fi
@@ -487,8 +487,8 @@ run_tests() {
   log_info "Running tests..."
   log_info "Fail-fast mode: $FAIL_FAST"
 
-  if ! command -v pytest &> /dev/null; then
-    if [[ "$CI_MODE" == true ]] || [[ "$FAIL_FAST" == true ]]; then
+  if ! command -v pytest &>/dev/null; then
+    if [[ $CI_MODE == true ]] || [[ $FAIL_FAST == true ]]; then
       log_error "pytest not available in CI/fail-fast mode. Exiting."
       exit 1
     else
@@ -499,7 +499,7 @@ run_tests() {
 
   # Run pytest with detailed output
   if ! pytest scripts/testing/ -v; then
-    if [[ "$FAIL_FAST" == true ]]; then
+    if [[ $FAIL_FAST == true ]]; then
       log_error "Tests failed in fail-fast mode. Exiting."
       exit 1
     else
@@ -520,9 +520,9 @@ main() {
   log_info "CI mode: $CI_MODE"
   log_info "Fail-fast mode: $FAIL_FAST"
   log_info "Targets: ${TARGETS[*]}"
-  [[ "$MAX_PYTHON_FILES" -gt 0 ]] && log_info "Max Python files: $MAX_PYTHON_FILES"
-  [[ "$MAX_SHELL_FILES" -gt 0 ]] && log_info "Max shell files: $MAX_SHELL_FILES"
-  [[ "$MAX_JSON_FILES" -gt 0 ]] && log_info "Max JSON files: $MAX_JSON_FILES"
+  [[ $MAX_PYTHON_FILES -gt 0 ]] && log_info "Max Python files: $MAX_PYTHON_FILES"
+  [[ $MAX_SHELL_FILES -gt 0 ]] && log_info "Max shell files: $MAX_SHELL_FILES"
+  [[ $MAX_JSON_FILES -gt 0 ]] && log_info "Max JSON files: $MAX_JSON_FILES"
 
   check_dependencies
 
@@ -579,7 +579,7 @@ main() {
 
   log_success "Code quality checks completed!"
 
-  if [[ "$FIX_MODE" == true ]]; then
+  if [[ $FIX_MODE == true ]]; then
     log_info "Some issues may have been automatically fixed"
     log_info "Review changes and commit if appropriate"
   fi

@@ -63,9 +63,9 @@ class TestingConfig:
     verify_internal_ssl: bool = os.getenv("VERIFY_INTERNAL_SSL", "False").lower() == "false"
 
     # Network settings [from environment variables]
-    metallb_ip_range: str = os.getenv("METALLB_IP_RANGE")
-    homelab_domain: str = os.getenv("HOMELAB_DOMAIN")
-    dev_domain: str = os.getenv("HOMELAB_DEV_DOMAIN")
+    metallb_ip_range: str = os.getenv("METALLB_IP_RANGE", "192.168.1.200-192.168.1.220")
+    homelab_domain: str = os.getenv("HOMELAB_DOMAIN", "homelab.local")
+    dev_domain: str = os.getenv("HOMELAB_DEV_DOMAIN", "dev.homelab.local")
 
     # Critical namespaces for health checking [from environment variables]
     critical_namespaces: list[str] = field(
@@ -209,20 +209,21 @@ class TestingConfig:
     )
 
     # Service communication test patterns
-    service_communication_tests: list[tuple] = field(
+    service_communication_tests: list[tuple[str, str, str]] = field(
         default_factory=lambda: [
             ("prometheus", "grafana", "Prometheus -> Grafana data source"),
             ("keycloak", "gitlab", "Keycloak -> GitLab SSO"),
-            ("keycloak", "grafana", "Keycloak -\x1b[0;000m -> Grafana SSO"),
+            ("keycloak", "grafana", "Keycloak -> Grafana SSO"),
         ],
     )
 
-
-def __post_init__(self) -> None:
-    """Initialize and validate configuration after instantiation."""
-    print(f"Using METALLB_IP_RANGE: {self.metallb_ip_range}")
-    print(f"Using HOMELAB_DOMAIN: {self.homelab_domain}")
-    print(f"Using CRITICAL_NAMESPACES: {self.critical_namespaces}")
+    def __post_init__(self) -> None:
+        """Initialize and validate configuration after instantiation."""
+        # Validate critical environment variables are set
+        if not self.metallb_ip_range:
+            warnings.warn("METALLB_IP_RANGE not set, using default", RuntimeWarning)
+        if not self.homelab_domain:
+            warnings.warn("HOMELAB_DOMAIN not set, using default", RuntimeWarning)
 
 
 # Default configuration instance

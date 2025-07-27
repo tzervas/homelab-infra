@@ -102,7 +102,7 @@ class InfrastructureHealthMonitor:
             else:
                 try:
                     config.load_incluster_config()
-                except:
+                except Exception:
                     config.load_kube_config()
 
             self.k8s_client = client.ApiClient()

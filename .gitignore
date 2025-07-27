@@ -198,3 +198,11 @@ logs/
 # Generated files
 *.generated
 *.auto.tfvars
+
+# Backup files
+*.backup
+*.bak
+*.orig
+*.old
+*.tmp
+*~

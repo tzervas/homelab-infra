@@ -20,19 +20,18 @@ following features:
 
 ### Prerequisites
 
-- **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges  
-  - *Example: HomeServer (192.168.1.10)*
-- **Resources**: Minimum 4GB RAM, 2 CPU cores, 50GB storage  
-  - *Example: 8GB RAM, 4 CPU cores*
-- **Network**: Static IP configuration recommended
-  - *Configuration file: /etc/netplan/01-netcfg.yaml*
-- **Tools**: Git, Docker (will be installed by setup script)
-
-### 🔒 Rootless Deployment (Recommended)
-
-This homelab uses security-hardened, rootless deployment with a dedicated deployment user:
-
-#### 1. Initial Server Setup
+- **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges
+  - k3s cluster running on 192.168.16.26
+  - Static IP configuration recommended
+  - Configuration file: /etc/netplan/01-netcfg.yaml
+- **Resources**: Minimum 4GB RAM, 2 CPU cores, 50GB storage
+  - Example: 8GB RAM, 4 CPU cores
+- **Tools**: Required software (will be installed by setup script)
+  - Git
+  - Docker
+  - kubectl
+  - Helm 3.x
+  - Helmfile
 
 ```bash
 # Clone repository on homelab server
@@ -187,26 +186,20 @@ This migration simplifies deployment by:
 
 ## Network Configuration
 
-For network setup, use the provided configuration files and templates. Example values are shown
-below for reference.
+For network setup, use the provided configuration files and templates.
 
 ### Server Details
 
-- **k3s Master**: Specify your homelab server IP.
-  - *Example: 192.168.1.100*
-- **Network Range**: Set your internal network range.
-  - *Example: 192.168.0.0/16*
+- **k3s Master**: 192.168.16.26
+- **Network Range**: 192.168.25.x
 
 ### MetalLB IP Allocation
 
 Configuration files should be customized according to your setup requirements.
 
-- **Development**: A small IP range for testing.
-  - *Example: 192.168.1.240-192.168.1.250*
-- **Staging**: Medium IP range for staging purposes.
-  - *Example: 192.168.1.200-192.168.1.220*
-- **Production**: Larger IP range for full-scale production deployments.
-  - *Example: 192.168.1.100-192.168.1.150*
+- **Development**: 192.168.25.200-192.168.25.210
+- **Staging**: 192.168.25.220-192.168.25.235
+- **Production**: 192.168.25.240-192.168.25.250
 
 ## Environments
 

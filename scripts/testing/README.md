@@ -43,7 +43,24 @@ pip install kubernetes requests pyyaml jsonschema
 
 ## 🎯 Quick Start
 
-### Run Complete Test Suite
+### Run Integrated Test Suite (Recommended)
+
+```bash
+# Run both Python framework and K3s validation tests
+python scripts/testing/integrated_test_orchestrator.py
+
+# Run specific test categories
+python scripts/testing/integrated_test_orchestrator.py --k3s-categories core k3s-specific
+
+# Include workstation testing and generate all report formats
+python scripts/testing/integrated_test_orchestrator.py --include-workstation --output-format all
+
+# Skip specific frameworks if needed
+python scripts/testing/integrated_test_orchestrator.py --skip-k3s  # Python framework only
+python scripts/testing/integrated_test_orchestrator.py --skip-python  # K3s validation only
+```
+
+### Run Python Framework Only
 
 ```bash
 # Run all tests with comprehensive reporting
@@ -54,6 +71,19 @@ python scripts/testing/test_reporter.py --include-workstation
 
 # Generate reports in all formats
 python scripts/testing/test_reporter.py --output-format all
+```
+
+### Run K3s Validation Framework Only
+
+```bash
+# Run all K3s validation tests
+./testing/k3s-validation/orchestrator.sh --all
+
+# Run specific categories
+./testing/k3s-validation/orchestrator.sh core k3s-specific
+
+# Generate HTML report with parallel execution
+./testing/k3s-validation/orchestrator.sh --all --report-format html --parallel
 ```
 
 ### Run Individual Test Modules

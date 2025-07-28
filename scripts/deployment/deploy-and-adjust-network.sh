@@ -22,13 +22,13 @@ log_error() {
 log_info "Starting deployment script with more robust handling."
 
 # Run the deployment and network adjustment
-VERBOSE=true ./scripts/deploy-and-validate.sh vm-test || true
+VERBOSE=true ./scripts/deployment/deploy-and-validate.sh vm-test || true
 
 # Step 2: Check for the known network issues and fix them
 log_info "Running network fix script..."
-./scripts/fix-vm-network.sh
+./scripts/utilities/fix-vm-network.sh
 
 log_success "Deployment and network adjustment completed! Check VM access and configuration."
 
 # Validate results through vm and ansible inventory access
-./scripts/deploy-and-validate.sh vm-test
+./scripts/deployment/deploy-and-validate.sh vm-test

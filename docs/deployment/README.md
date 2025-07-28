@@ -30,9 +30,9 @@
 ### Installation Guide
 
 - Install prerequisites
-- Setup deployment tools using `setup-deployment-tools.sh`
-- Configure K3s access and DNS resolution
-- Deploy using scripts like `deploy-gitlab-keycloak.sh`
+- Setup deployment tools using `scripts/setup/setup-deployment-tools.sh`
+- Configure K3s access and DNS resolution using `scripts/setup/setup-k3s-access.sh`
+- Deploy using scripts like `scripts/deployment/deploy-gitlab-keycloak.sh`
 
 ### Upgrade Procedures
 
@@ -48,7 +48,8 @@
 
 - Common issues: DNS, SSO, service accessibility
 - Commands: `kubectl logs`, `kubectl get pods`
-- Use `cleanup-failed.sh` for failed deployments
+- Use `scripts/utilities/cleanup-failed.sh` for failed deployments
+- Comprehensive validation with `scripts/validation/validate-deployment-comprehensive.sh`
 
 ## Maintenance Documentation
 

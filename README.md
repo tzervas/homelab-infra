@@ -134,26 +134,35 @@ This repository includes public documentation in the `docs/` directory. Detailed
 and sensitive documentation is maintained locally in `.private/docs/` (not tracked in git).
 These private documents are synchronized across branches using backup scripts.
 
-## Repository Structure
+## 📁 Repository Structure
+
+The project follows an industry-standard directory structure for improved maintainability:
 
 ```text
 .
-├── docs/                    # Documentation
-│   ├── k3s-setup.md        # k3s installation guide
-│   └── claude_integration.md
-├── helm/                    # Helm configurations
-│   ├── charts/             # Custom Helm charts
-│   │   ├── core-infrastructure/  # MetalLB, cert-manager, ingress
-│   │   ├── monitoring/     # Prometheus, Grafana, Loki
-│   │   └── storage/        # Longhorn storage
-│   ├── environments/       # Environment-specific values
-│   ├── repositories.yaml   # Helm repository definitions
-│   └── helmfile.yaml      # Declarative release management
-├── kubernetes/             # Base Kubernetes manifests
-│   └── base/              # Namespace, RBAC, network policies
-├── scripts/               # Deployment and utility scripts
-└── terraform/            # Future Terraform configurations
+├── 📚 docs/                    # Comprehensive documentation
+├── ⚙️ config/                  # Configuration management  
+├── 🚀 deployments/             # Deployment manifests and IaC
+├── 📜 scripts/                 # Automation and utility scripts
+├── 🧪 testing/                 # Testing framework and validation
+├── 🛠️ tools/                   # Development and operational tools
+├── ⎈ helm/                     # Helm charts and configurations
+├── ☸️ kubernetes/              # Base Kubernetes manifests
+└── 🤖 ansible/                 # System-level automation (legacy)
 ```
+
+### 📖 Documentation Navigation
+
+Each directory contains comprehensive README documentation:
+
+- **[📚 docs/README.md](docs/README.md)** - Complete documentation index
+- **[⚙️ config/README.md](config/README.md)** - Configuration management guide
+- **[🚀 deployments/README.md](deployments/README.md)** - Deployment strategy overview
+- **[📜 scripts/README.md](scripts/README.md)** - Script organization and usage
+- **[🧪 testing/k3s-validation/README.md](testing/k3s-validation/README.md)** - Testing framework guide
+- **[🛠️ tools/README.md](tools/README.md)** - Development tools overview
+- **[⎈ helm/README.md](helm/README.md)** - Helm deployment guide
+- **[🤖 ansible/README.md](ansible/README.md)** - Ansible usage and migration status
 
 ## Migration Status
 
@@ -247,14 +256,40 @@ Configuration files should be customized according to your setup requirements.
 
 ## 🧪 Testing and Validation
 
-This homelab includes a testing framework with issue tracking and status reporting:
+Comprehensive integrated testing framework that validates your entire homelab infrastructure:
 
-### Comprehensive Testing Suite
+### Integrated Testing Suite (Recommended)
 
 ```bash
-# Run all tests with detailed issue reporting
+# Run complete integrated test suite (Python + K3s validation)
+./run-tests.sh
+
+# Quick health check
+./run-tests.sh --quick
+
+# Comprehensive testing with all reports
+./run-tests.sh --full --output-format all
+
+# Include workstation perspective tests
+./run-tests.sh --include-workstation
+```
+
+### Framework-Specific Testing
+
+```bash
+# Python framework only (config, infrastructure, services, security, integration)
 python3 scripts/testing/test_reporter.py --output-format all --export-issues
 
+# K3s validation framework only (cluster-specific tests)
+./testing/k3s-validation/orchestrator.sh --all
+
+# Integrated orchestrator (combines both frameworks)
+python3 scripts/testing/integrated_test_orchestrator.py
+```
+
+### Individual Test Modules
+
+```bash
 # Quick compatibility check
 python3 scripts/testing/rootless_compatibility.py
 
@@ -330,13 +365,13 @@ python3 scripts/testing/validate_deployment.py
 
 ```bash
 # Deploy specific environment
-./scripts/deploy.sh -e production
+./scripts/deployment/deploy.sh -e production
 
 # Dry run deployment
-./scripts/deploy.sh -e production --dry-run
+./scripts/deployment/deploy.sh -e production --dry-run
 
 # Skip dependency updates
-./scripts/deploy.sh -e development --skip-deps
+./scripts/deployment/deploy.sh -e development --skip-deps
 
 # Update only specific release
 helmfile --environment production apply --selector name=prometheus

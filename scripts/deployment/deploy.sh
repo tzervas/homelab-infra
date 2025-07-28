@@ -22,7 +22,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set -e
+set -euo pipefail
+
+# Logging functions
+log_info() {
+    echo -e "\033[0;34m[INFO]\033[0m $*" >&2
+}
+
+log_success() {
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" >&2
+}
+
+log_warning() {
+    echo -e "\033[1;33m[WARNING]\033[0m $*" >&2
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" >&2
+}
 
 # Colors for output
 RED='\033[0;31m'

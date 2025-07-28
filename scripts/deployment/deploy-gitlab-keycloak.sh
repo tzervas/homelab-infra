@@ -1,14 +1,73 @@
 #!/bin/bash
 
+# MIT License
+#
+# Copyright (c) 2025 Tyler Zervas
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # GitLab + Keycloak SSO Deployment Script
 # This script deploys GitLab and Keycloak with SSO integration from your local workstation
+#
+# USAGE:
+#   ./deploy-gitlab-keycloak.sh [ENVIRONMENT]
+#
+# DESCRIPTION:
+#   Deploys GitLab and Keycloak with SSO integration to Kubernetes cluster.
+#   Includes SSL certificate management and load balancer configuration.
+#
+# ENVIRONMENT VALUES:
+#   development   Development environment (default)
+#   staging       Staging environment
+#   production    Production environment
+#
+# EXIT CODES:
+#   0: Success
+#   1: Deployment failed or prerequisites missing
+#
+# DEPENDENCIES:
+#   - kubectl
+#   - helm
+#   - helmfile
 
-set -e
+set -euo pipefail
+
+# Logging functions
+log_info() {
+    echo -e "\033[0;34m[INFO]\033[0m $*" >&2
+}
+
+log_success() {
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" >&2
+}
+
+log_warning() {
+    echo -e "\033[1;33m[WARNING]\033[0m $*" >&2
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" >&2
+}
 
 ENVIRONMENT=${1:-development}
 NAMESPACE_GITLAB="gitlab"
 NAMESPACE_KEYCLOAK="keycloak"
-NAMESPACE_BACKUP="backup"
 CONTEXT_NAME="homelab-k3s"
 
 echo "🚀 GitLab + Keycloak SSO Deployment"
@@ -26,19 +85,19 @@ command_exists() {
 echo "🔍 Checking prerequisites..."
 if ! command_exists kubectl; then
   echo "❌ Error: kubectl is not installed"
-  echo "Run: ./scripts/setup-workstation.sh"
+  echo "Run: ./scripts/setup/setup-workstation.sh"
   exit 1
 fi
 
 if ! command_exists helm; then
   echo "❌ Error: helm is not installed"
-  echo "Run: ./scripts/setup-workstation.sh"
+  echo "Run: ./scripts/setup/setup-workstation.sh"
   exit 1
 fi
 
 if ! command_exists helmfile; then
   echo "❌ Error: helmfile is not installed"
-  echo "Run: ./scripts/setup-workstation.sh"
+  echo "Run: ./scripts/setup/setup-workstation.sh"
   exit 1
 fi
 
@@ -83,8 +142,8 @@ configs=(
 )
 
 for config in "${configs[@]}"; do
-  file=$(echo $config | cut -d: -f1)
-  desc=$(echo $config | cut -d: -f2)
+  file=$(echo "$config" | cut -d: -f1)
+  desc=$(echo "$config" | cut -d: -f2)
   echo "   Applying $desc..."
   kubectl apply -f "$file"
 done
@@ -120,7 +179,7 @@ echo "   This will take 15-20 minutes..."
 echo ""
 
 cd helm
-if helmfile -e $ENVIRONMENT sync; then
+if helmfile -e "$ENVIRONMENT" sync; then
   echo "✅ Helmfile deployment completed successfully"
 else
   echo "❌ Helmfile deployment failed"
@@ -202,6 +261,6 @@ echo "     kubectl patch secret gitlab-oidc-secret -n $NAMESPACE_GITLAB -p '{\"s
 echo "     kubectl rollout restart deployment/gitlab-webservice-default -n $NAMESPACE_GITLAB"
 echo ""
 echo "4. 🧪 Test the deployment:"
-echo "     ./scripts/test-sso-flow.sh"
+echo "     ./scripts/validation/test-sso-flow.sh"
 echo ""
 echo "🎯 Deployment completed successfully!"

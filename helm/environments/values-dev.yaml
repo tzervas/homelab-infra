@@ -2,6 +2,11 @@ global:
   domain: "dev.homelab.local"
   environment: "development"
 
+  # TLS Configuration
+  tls:
+    enabled: true
+    issuer: "letsencrypt-staging"
+
   # Development security contexts - baseline enforcement
   securityContext:
     runAsNonRoot: true
@@ -14,11 +19,11 @@ global:
       drop:
         - ALL
 
-  # Pod security standards - relaxed for development
+  # Pod security standards - baseline for development
   podSecurityStandards:
     enforce: "baseline"
-    audit: "restricted"
-    warn: "restricted"
+    audit: "baseline"
+    warn: "baseline"
 
 # Resource constraints for development
 resources:

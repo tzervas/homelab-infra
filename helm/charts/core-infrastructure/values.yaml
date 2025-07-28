@@ -67,15 +67,22 @@ metallb:
         memory: 100Mi
   speaker:
     securityContext:
+      # SECURITY JUSTIFICATION: Root privileges required for MetalLB speaker
+      # - Layer 2 ARP/NDP announcement for load balancer IPs
+      # - BGP routing protocol communication
+      # - Network interface manipulation and IP address binding
+      # - Raw socket operations for network protocol handling
+      # This is the standard requirement for load balancer network controllers
+      # Mitigation: Capabilities limited to network operations only
       runAsNonRoot: false  # Speaker needs root for network operations
       runAsUser: 0
       capabilities:
         drop:
           - ALL
         add:
-          - NET_ADMIN
-          - NET_RAW
-          - SYS_ADMIN
+          - NET_ADMIN  # Required for network interface and routing operations
+          - NET_RAW  # Required for raw socket operations (ARP, BGP)
+          - SYS_ADMIN  # Required for advanced networking features
     resources:
       limits:
         cpu: 100m

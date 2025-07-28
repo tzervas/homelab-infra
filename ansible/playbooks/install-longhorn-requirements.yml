@@ -1,0 +1,33 @@
+---
+- name: Install Longhorn Storage Requirements
+  hosts: homelab-server
+  become: yes
+  tasks:
+    - name: Install open-iscsi for Longhorn
+      apt:
+        name:
+          - open-iscsi
+          - nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Start and enable iscsid service
+      systemd:
+        name: iscsid
+        state: started
+        enabled: yes
+
+    - name: Start and enable open-iscsi service
+      systemd:
+        name: open-iscsi
+        state: started
+        enabled: yes
+
+    - name: Verify open-iscsi installation
+      command: systemctl is-active iscsid
+      register: iscsid_status
+      changed_when: false
+
+    - name: Display iscsid service status
+      debug:
+        msg: "iscsid service status: {{ iscsid_status.stdout }}"

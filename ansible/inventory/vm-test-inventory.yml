@@ -1,0 +1,18 @@
+---
+all:
+  children:
+    homelab:
+      hosts:
+        homelab-server:
+          ansible_host: 192.168.16.26
+          ansible_user: kang
+          ansible_become: true
+    vm_test:
+      hosts:
+        test-vm:
+          ansible_host: 192.168.122.29
+          ansible_user: kang
+          ansible_ssh_private_key_file: ~/.ssh/homelab-test-vm-key
+          ansible_ssh_common_args: '-o ProxyJump=kang@192.168.16.26 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          ansible_become: true
+          node_role: worker

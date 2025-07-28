@@ -3,7 +3,13 @@ global:
   storageClass: "longhorn"
   timezone: "UTC"
 
-  # Security contexts for rootless deployment
+  # Enable TLS by default
+  tls:
+    enabled: true
+    issuer: "letsencrypt-staging"
+    secretName: "tls-secret"
+
+  # Security contexts for rootless deployment (inherited from security-baseline)
   securityContext:
     runAsNonRoot: true
     runAsUser: 1000
@@ -14,6 +20,30 @@ global:
     capabilities:
       drop:
         - ALL
+
+# Enable security baseline for all components
+security-baseline:
+  enabled: true
+
+  # Override global settings for core infrastructure
+  global:
+    environment: "development"  # Will be overridden by environment-specific values
+
+  # Enable network policies for core infrastructure
+  networkPolicies:
+    defaultDeny:
+      enabled: true
+    allowDNS:
+      enabled: true
+    allowKubeAPI:
+      enabled: true
+
+  # RBAC configuration
+  rbac:
+    create: true
+    serviceAccount:
+      create: true
+      automountServiceAccountToken: false
 
 metallb:
   enabled: true

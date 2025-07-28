@@ -30,6 +30,8 @@ try:
     )
     from .network_security import NetworkSecurityValidator, SecurityStatus
     from .service_checker import ServiceDeploymentChecker, ServiceStatus
+    from .terraform_validator import TerraformStateValidator, TerraformValidationResult
+    from .tls_validator import TLSSecurityValidator, TLSValidationResult
 except ImportError:
     try:
         from config_validator import ConfigValidator, ValidationResult
@@ -44,11 +46,13 @@ except ImportError:
         )
         from network_security import NetworkSecurityValidator, SecurityStatus
         from service_checker import ServiceDeploymentChecker, ServiceStatus
+        from terraform_validator import TerraformStateValidator, TerraformValidationResult
+        from tls_validator import TLSSecurityValidator, TLSValidationResult
     except ImportError as e:
         print(f"Warning: Could not import some testing modules: {e}")
         print("Some functionality may be limited.")
 
-        # Create mock classes if issue tracker is not available
+        # Create mock classes if modules are not available
         class IssueTracker:
             def __init__(self, *args, **kwargs) -> None:
                 pass
@@ -58,6 +62,20 @@ except ImportError:
 
             def format_summary_report(self) -> str:
                 return "Issue tracking not available"
+
+        class TerraformStateValidator:
+            def __init__(self, *args, **kwargs) -> None:
+                pass
+
+            def run_comprehensive_validation(self) -> list:
+                return []
+
+        class TLSSecurityValidator:
+            def __init__(self, *args, **kwargs) -> None:
+                pass
+
+            def run_comprehensive_tls_validation(self) -> list:
+                return []
 
 
 @dataclass
@@ -93,6 +111,8 @@ class HomelabTestReporter:
         self.service_checker = None
         self.security_validator = None
         self.integration_tester = None
+        self.terraform_validator = None
+        self.tls_validator = None
 
         # Initialize issue tracker
         self.issue_tracker = IssueTracker(max_issues_per_component=10, max_total_display=50)
@@ -108,6 +128,10 @@ class HomelabTestReporter:
                 self.security_validator = NetworkSecurityValidator(kubeconfig_path, log_level)
             if "IntegrationConnectivityTester" in globals():
                 self.integration_tester = IntegrationConnectivityTester(kubeconfig_path, log_level)
+            if "TerraformStateValidator" in globals():
+                self.terraform_validator = TerraformStateValidator(log_level=log_level)
+            if "TLSSecurityValidator" in globals():
+                self.tls_validator = TLSSecurityValidator(log_level=log_level)
         except Exception as e:
             self.logger.exception(f"Failed to initialize testing modules: {e}")
 
@@ -214,6 +238,32 @@ class HomelabTestReporter:
             return self.integration_tester.run_comprehensive_integration_tests(include_workstation)
         except Exception as e:
             self.logger.exception(f"Integration tests failed: {e}")
+            return None
+
+    def run_terraform_validation(self) -> list | None:
+        """Run Terraform state validation."""
+        if not self.terraform_validator:
+            self.logger.warning("Terraform validator not available")
+            return None
+
+        try:
+            self.logger.info("Running Terraform state validation...")
+            return self.terraform_validator.run_comprehensive_validation()
+        except Exception as e:
+            self.logger.exception(f"Terraform validation failed: {e}")
+            return None
+
+    def run_tls_validation(self) -> list | None:
+        """Run TLS/mTLS security validation."""
+        if not self.tls_validator:
+            self.logger.warning("TLS validator not available")
+            return None
+
+        try:
+            self.logger.info("Running TLS/mTLS security validation...")
+            return self.tls_validator.run_comprehensive_tls_validation()
+        except Exception as e:
+            self.logger.exception(f"TLS validation failed: {e}")
             return None
 
     def calculate_metrics(self, result: TestSuiteResult) -> dict[str, Any]:
@@ -355,6 +405,13 @@ class HomelabTestReporter:
 
         security_results = self.run_network_security_validation()
         self._process_security_issues(security_results)
+
+        # Run enhanced validation for deployment framework
+        terraform_results = self.run_terraform_validation()
+        self._process_terraform_issues(terraform_results)
+
+        tls_results = self.run_tls_validation()
+        self._process_tls_issues(tls_results)
 
         integration_results = self.run_integration_tests(include_workstation_tests)
         self._process_integration_issues(integration_results)
@@ -598,6 +655,73 @@ class HomelabTestReporter:
                     severity=IssueSeverity.MEDIUM,
                     category=IssueCategory.CONNECTIVITY,
                     details=test_result.details,
+                )
+
+    def _process_terraform_issues(self, terraform_results: list | None) -> None:
+        """Process Terraform validation results and add to issue tracker."""
+        if not terraform_results:
+            return
+
+        for result in terraform_results:
+            if not result.is_valid:
+                # Determine severity based on component and validation percentage
+                severity = IssueSeverity.HIGH
+                if result.component == "infrastructure_state" and result.resources_checked > 0:
+                    validation_percentage = result.validation_percentage
+                    if validation_percentage < 80:
+                        severity = IssueSeverity.CRITICAL
+                    elif validation_percentage < 95:
+                        severity = IssueSeverity.HIGH
+                    else:
+                        severity = IssueSeverity.MEDIUM
+
+                self.issue_tracker.add_issue(
+                    component=f"terraform_{result.component}",
+                    message=result.message,
+                    severity=severity,
+                    category=IssueCategory.DEPLOYMENT,
+                    details=result.details,
+                    affects_deployment=severity in [IssueSeverity.CRITICAL, IssueSeverity.HIGH],
+                )
+
+    def _process_tls_issues(self, tls_results: list | None) -> None:
+        """Process TLS validation results and add to issue tracker."""
+        if not tls_results:
+            return
+
+        for result in tls_results:
+            if not result.is_secure:
+                # Determine severity based on security level
+                if result.security_level == "insecure":
+                    severity = IssueSeverity.CRITICAL
+                elif result.security_level == "warning":
+                    severity = IssueSeverity.HIGH
+                else:
+                    severity = IssueSeverity.MEDIUM
+
+                # Add certificate expiry warnings
+                recommendations = []
+                if result.certificate_info:
+                    cert = result.certificate_info
+                    if cert.days_until_expiry < 30:
+                        recommendations.append(
+                            f"Certificate expires in {cert.days_until_expiry} days - renew soon"
+                        )
+                    if cert.is_self_signed:
+                        recommendations.append("Consider using a proper CA-signed certificate")
+                    if not cert.is_valid_key_size:
+                        recommendations.append(
+                            f"Upgrade key size from {cert.key_size} to at least 2048 bits"
+                        )
+
+                self.issue_tracker.add_issue(
+                    component=f"tls_{result.component}",
+                    message=result.message,
+                    severity=severity,
+                    category=IssueCategory.SECURITY,
+                    details=result.details,
+                    recommendations=recommendations,
+                    affects_deployment=severity == IssueSeverity.CRITICAL,
                 )
 
     def export_json_report(self, result: TestSuiteResult, filename: str | None = None) -> str:

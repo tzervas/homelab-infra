@@ -45,7 +45,7 @@ PRIVATE_CONFIG_DIR=config
 Run the sync script to set up the private configuration:
 
 ```bash
-./scripts/sync-private-config.sh sync
+./scripts/maintenance/sync-private-config.sh sync
 ```
 
 This will:
@@ -193,7 +193,7 @@ The deployment script automatically handles private configuration:
 # 2. Load .env.private variables
 # 3. Use private configurations during deployment
 
-./scripts/deploy-homelab.sh vm-test
+./scripts/deployment/deploy-homelab.sh vm-test
 ```
 
 ## Management Commands

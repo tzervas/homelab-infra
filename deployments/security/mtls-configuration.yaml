@@ -1,0 +1,360 @@
+# mTLS Configuration for Service-to-Service Communication
+# This file defines mutual TLS configurations for secure service mesh communication
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mtls-configuration
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: mtls-config
+    app.kubernetes.io/managed-by: homelab-security
+data:
+  mtls-policy.yaml: |
+    # Global mTLS policy configuration
+    global:
+      meshPolicy:
+        mode: STRICT
+
+    # Namespace-specific policies
+    namespaces:
+      kube-system:
+        mode: PERMISSIVE  # Allow non-TLS for system components
+      metallb-system:
+        mode: PERMISSIVE  # MetalLB needs special handling
+      cert-manager:
+        mode: STRICT
+      monitoring:
+        mode: STRICT
+      gitlab:
+        mode: STRICT
+      keycloak:
+        mode: STRICT
+      longhorn-system:
+        mode: PERMISSIVE  # Storage system considerations
+
+    # Service-specific overrides
+    services:
+      kubernetes:
+        mode: STRICT
+        minTlsVersion: TLSV1_3
+      prometheus:
+        mode: STRICT
+        minTlsVersion: TLSV1_2
+      grafana:
+        mode: STRICT
+        minTlsVersion: TLSV1_2
+
+---
+# PeerAuthentication for strict mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default-strict-mtls
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: peer-auth
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Namespace-specific PeerAuthentication for system namespaces
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: kube-system-permissive
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: peer-auth
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  mtls:
+    mode: PERMISSIVE
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: metallb-permissive
+  namespace: metallb-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: peer-auth
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  mtls:
+    mode: PERMISSIVE
+
+---
+# DestinationRule for mTLS traffic policy
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: default-mtls
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: destination-rule
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+      minProtocolVersion: TLSV1_2
+      maxProtocolVersion: TLSV1_3
+      cipherSuites:
+        - ECDHE-RSA-AES128-GCM-SHA256
+        - ECDHE-RSA-AES256-GCM-SHA384
+        - ECDHE-RSA-CHACHA20-POLY1305
+      ecdhCurves:
+        - P-256
+        - P-384
+
+---
+# Service-specific DestinationRules with enhanced security
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: kubernetes-api-mtls
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: destination-rule
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  host: "kubernetes.default.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      minProtocolVersion: TLSV1_3
+      cipherSuites:
+        - TLS_AES_256_GCM_SHA384
+        - TLS_CHACHA20_POLY1305_SHA256
+        - TLS_AES_128_GCM_SHA256
+
+---
+# AuthorizationPolicy for service mesh access control
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mtls-service-authorization
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: authz-policy
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/metrics", "/health", "/ready"]
+    - from:
+        - source:
+            principals: ["cluster.local/ns/kube-system/sa/default"]
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+      to:
+        - operation:
+            methods: ["*"]
+
+---
+# Certificate configuration for mTLS
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-ca-certificate
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: istio-ca
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  secretName: istio-ca-secret
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  isCA: true
+  commonName: "Istio Root CA"
+  subject:
+    organizationalUnits:
+      - "Homelab Service Mesh"
+    organizations:
+      - "Tyler Zervas Homelab"
+    countries:
+      - "US"
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: homelab-internal-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Intermediate CA for service certificates
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-intermediate-ca
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: istio-intermediate-ca
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  secretName: istio-intermediate-ca-secret
+  duration: 4380h # 6 months
+  renewBefore: 360h # 15 days
+  isCA: true
+  commonName: "Istio Intermediate CA"
+  subject:
+    organizationalUnits:
+      - "Homelab Service Mesh Services"
+    organizations:
+      - "Tyler Zervas Homelab"
+    countries:
+      - "US"
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - digital signature
+    - key encipherment
+    - cert sign
+  issuerRef:
+    name: homelab-services-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# EnvoyFilter for enhanced TLS configuration
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: tls-security-enhancement
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: envoy-filter
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  configPatches:
+    - applyTo: HTTP_CONNECTION_MANAGER
+      match:
+        context: SIDECAR_INBOUND
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            common_http_protocol_options:
+              idle_timeout: 30s
+              max_connection_duration: 300s
+              max_headers_count: 100
+              max_stream_duration: 300s
+              headers_with_underscores_action: REJECT_REQUEST
+    - applyTo: NETWORK_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.network.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: local_rate_limiter
+              token_bucket:
+                max_tokens: 1000
+                tokens_per_fill: 1000
+                fill_interval: 1s
+              filter_enabled:
+                runtime_key: local_rate_limit_enabled
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              filter_enforced:
+                runtime_key: local_rate_limit_enforced
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+
+---
+# TLS verification configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mtls-verification-config
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/component: tls-config
+    app.kubernetes.io/managed-by: homelab-security
+type: Opaque
+data:
+  verification.yaml: |
+    # mTLS Verification Configuration
+    verification:
+      # Certificate chain validation
+      chain_verification:
+        enabled: true
+        max_chain_length: 3
+        require_leaf_certificate: true
+        verify_hostname: true
+
+      # Certificate validation rules
+      certificate_validation:
+        require_san: true
+        allow_self_signed: false
+        check_key_usage: true
+        verify_extended_key_usage: true
+        required_key_usages:
+          - digital_signature
+          - key_encipherment
+        required_extended_key_usages:
+          - server_auth
+          - client_auth
+
+      # Cipher suite preferences
+      cipher_suites:
+        tls_13:
+          - TLS_AES_256_GCM_SHA384
+          - TLS_CHACHA20_POLY1305_SHA256
+          - TLS_AES_128_GCM_SHA256
+        tls_12:
+          - ECDHE-RSA-AES256-GCM-SHA384
+          - ECDHE-RSA-CHACHA20-POLY1305
+          - ECDHE-RSA-AES128-GCM-SHA256
+
+      # Security parameters
+      security:
+        min_protocol_version: TLSv1.2
+        preferred_protocol_version: TLSv1.3
+        require_perfect_forward_secrecy: true
+        session_tickets_disabled: true
+        compression_disabled: true
+
+      # Monitoring and logging
+      monitoring:
+        log_failed_verifications: true
+        alert_on_certificate_expiry: true
+        metrics_enabled: true

@@ -1,0 +1,275 @@
+# TLS Certificate Management Workflows
+# This file defines comprehensive certificate management for the homelab infrastructure
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: cluster-issuer
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: tz-dev@vectorweight.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+            podTemplate:
+              spec:
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                  fsGroup: 65534
+                nodeSelector:
+                  kubernetes.io/os: linux
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: cluster-issuer
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: tz-dev@vectorweight.com
+    privateKeySecretRef:
+      name: letsencrypt-production-private-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+            podTemplate:
+              spec:
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                  fsGroup: 65534
+                nodeSelector:
+                  kubernetes.io/os: linux
+
+---
+# Internal CA for mTLS certificates
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: cluster-issuer
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  selfSigned: {}
+
+---
+# Root CA Certificate for internal services
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-root-ca
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: root-ca
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  isCA: true
+  commonName: "Homelab Root CA"
+  secretName: homelab-root-ca-secret
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  subject:
+    organizationalUnits:
+      - "Homelab Infrastructure"
+    organizations:
+      - "Tyler Zervas Homelab"
+    countries:
+      - "US"
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Internal CA Issuer for mTLS
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-internal-ca
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: cluster-issuer
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  ca:
+    secretName: homelab-root-ca-secret
+
+---
+# Intermediate CA for service-to-service communication
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-intermediate-ca
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: intermediate-ca
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  isCA: true
+  commonName: "Homelab Intermediate CA"
+  secretName: homelab-intermediate-ca-secret
+  duration: 4380h # 6 months
+  renewBefore: 360h # 15 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  subject:
+    organizationalUnits:
+      - "Homelab Services"
+    organizations:
+      - "Tyler Zervas Homelab"
+    countries:
+      - "US"
+  usages:
+    - digital signature
+    - key encipherment
+    - cert sign
+  issuerRef:
+    name: homelab-internal-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Intermediate CA Issuer for services
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-services-ca
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: cluster-issuer
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  ca:
+    secretName: homelab-intermediate-ca-secret
+
+---
+# Certificate template for web services
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-web-template
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: certificate-template
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    cert-manager.io/template: "true"
+spec:
+  secretName: homelab-web-tls
+  duration: 2160h # 90 days
+  renewBefore: 720h # 30 days
+  commonName: "*.homelab.local"
+  dnsNames:
+    - "homelab.local"
+    - "*.homelab.local"
+    - "*.apps.homelab.local"
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  issuerRef:
+    name: homelab-services-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Certificate for Kubernetes API server mTLS
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kube-apiserver-mtls
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: api-server-cert
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  secretName: kube-apiserver-mtls-secret
+  duration: 2160h # 90 days
+  renewBefore: 720h # 30 days
+  commonName: "kubernetes"
+  dnsNames:
+    - "kubernetes"
+    - "kubernetes.default"
+    - "kubernetes.default.svc"
+    - "kubernetes.default.svc.cluster.local"
+  ipAddresses:
+    - "10.43.0.1" # K3s default service IP
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+  issuerRef:
+    name: homelab-services-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Certificate rotation policy
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: certificate-rotation-policy
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: rotation-policy
+    app.kubernetes.io/managed-by: homelab-security
+data:
+  policy.yaml: |
+    certificateRotation:
+      # Renewal thresholds
+      renewalThresholds:
+        letsencrypt: "30d"  # Renew Let's Encrypt certs 30 days before expiry
+        internal: "15d"     # Renew internal certs 15 days before expiry
+        mtls: "7d"         # Renew mTLS certs 7 days before expiry
+
+      # Rotation schedule
+      schedule:
+        daily: "0 2 * * *"    # Daily check at 2 AM
+        weekly: "0 3 * * 0"   # Weekly rotation on Sunday at 3 AM
+        monthly: "0 4 1 * *"  # Monthly CA rotation on 1st at 4 AM
+
+      # Notification settings
+      notifications:
+        webhook: "https://homelab.local/hooks/cert-rotation"
+        email: "tz-dev@vectorweight.com"
+        slack: false
+
+      # Backup configuration
+      backup:
+        enabled: true
+        retention: "90d"
+        storage: "longhorn"

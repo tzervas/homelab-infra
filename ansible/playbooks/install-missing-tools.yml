@@ -1,0 +1,95 @@
+---
+- name: Install Missing Tools on Homelab Server
+  hosts: homelab-server
+  become: yes
+  tasks:
+    - name: Install Terraform
+      block:
+        - name: Install prerequisites for Terraform
+          apt:
+            name:
+              - wget
+              - gpg
+              - software-properties-common
+            state: present
+            update_cache: yes
+
+        - name: Add HashiCorp GPG key
+          get_url:
+            url: https://apt.releases.hashicorp.com/gpg
+            dest: /tmp/hashicorp.gpg
+
+        - name: Add HashiCorp GPG key to keyring
+          shell: |
+            cat /tmp/hashicorp.gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+        - name: Add HashiCorp repository
+          apt_repository:
+            repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+            state: present
+            filename: hashicorp
+
+        - name: Install Terraform
+          apt:
+            name: terraform
+            state: present
+            update_cache: yes
+
+    - name: Install k3s
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - {{ k3s_server_args | join(' ') }}
+      args:
+        creates: /usr/local/bin/k3s
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+
+    - name: Wait for k3s to be ready
+      wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        state: present
+        timeout: 60
+
+    - name: Create .kube directory for user
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Copy k3s config to user kubeconfig
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+        remote_src: yes
+
+    - name: Update kubeconfig server URL
+      replace:
+        path: "/home/{{ ansible_user }}/.kube/config"
+        regexp: 'https://127.0.0.1:6443'
+        replace: "https://{{ ansible_host }}:6443"
+
+    - name: Verify all tools are installed
+      become_user: "{{ ansible_user }}"
+      command: "{{ item }}"
+      loop:
+        - ansible --version
+        - terraform --version
+        - docker --version
+        - kubectl version
+        - helm version
+        - k3s --version
+      register: version_checks
+      changed_when: false
+
+    - name: Display installed versions
+      debug:
+        msg: "{{ item.stdout_lines[0] }}"
+      loop: "{{ version_checks.results }}"
+      loop_control:
+        label: "{{ item.cmd | join(' ') }}"

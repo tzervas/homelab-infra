@@ -49,29 +49,32 @@ deployments/gitops/
 ### Option 1: Deploy with ArgoCD
 
 1. **Install ArgoCD**:
+
    ```bash
    # Create namespace and install ArgoCD
    kubectl create namespace argocd
    kubectl apply -n argocd -f argocd/install.yaml
-   
+
    # Wait for ArgoCD to be ready
    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
    ```
 
 2. **Configure repositories**:
+
    ```bash
    # Apply repository configurations
    kubectl apply -n argocd -f argocd/repositories.yaml
-   
+
    # Deploy App-of-Apps pattern
    kubectl apply -n argocd -f argocd/app-of-apps.yaml
    ```
 
 3. **Access ArgoCD UI**:
+
    ```bash
    # Get admin password
    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-   
+
    # Port forward to access UI
    kubectl port-forward svc/argocd-server -n argocd 8080:443
    # Open https://localhost:8080
@@ -80,12 +83,14 @@ deployments/gitops/
 ### Option 2: Deploy with Flux
 
 1. **Install Flux CLI**:
+
    ```bash
    curl -s https://fluxcd.io/install.sh | sudo bash
    flux check --pre
    ```
 
 2. **Bootstrap Flux**:
+
    ```bash
    # Replace with your repository details
    flux bootstrap github \
@@ -97,6 +102,7 @@ deployments/gitops/
    ```
 
 3. **Verify installation**:
+
    ```bash
    flux get all
    flux get sources all
@@ -176,6 +182,7 @@ Each environment has dedicated IP ranges:
 ### GitHub Webhook Setup
 
 1. **Deploy webhook service**:
+
    ```bash
    kubectl apply -f webhooks/webhook-integration.yaml
    ```
@@ -187,6 +194,7 @@ Each environment has dedicated IP ranges:
    - Secret: Configure webhook secret in Kubernetes secret
 
 3. **Build and deploy webhook container**:
+
    ```bash
    cd webhooks/
    docker build -t webhook-service:latest .
@@ -276,31 +284,34 @@ Included dashboards for:
 ### Common Issues
 
 1. **Application sync failures**:
+
    ```bash
    # Check application status
    argocd app get <app-name>
-   
+
    # View sync errors
    argocd app sync <app-name> --dry-run
-   
+
    # Force sync if needed
    argocd app sync <app-name> --force --prune
    ```
 
 2. **Webhook not triggering**:
+
    ```bash
    # Check webhook service logs
    kubectl logs -n monitoring deployment/webhook-service
-   
+
    # Test webhook endpoint
    curl -X POST https://webhook-service.homelab.local/health
    ```
 
 3. **Policy violations**:
+
    ```bash
    # Check Gatekeeper constraints
    kubectl get constraints
-   
+
    # View violation details
    kubectl describe k8srequiredlabels must-have-environment
    ```

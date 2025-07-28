@@ -52,6 +52,7 @@ Each runbook follows a standard format:
 ## Runbook Standards
 
 ### Format Requirements
+
 - Use Markdown format
 - Include clear step-by-step procedures
 - Provide example commands with expected output
@@ -59,6 +60,7 @@ Each runbook follows a standard format:
 - Add escalation contacts and procedures
 
 ### Content Guidelines
+
 - Keep procedures concise but complete
 - Include safety checks before destructive operations
 - Provide rollback procedures where applicable
@@ -66,6 +68,7 @@ Each runbook follows a standard format:
 - Include troubleshooting for common variations
 
 ### Maintenance
+
 - Review and update runbooks quarterly
 - Test procedures during maintenance windows
 - Update contact information and tool references
@@ -74,12 +77,14 @@ Each runbook follows a standard format:
 ## Quick Reference
 
 ### Emergency Procedures
+
 - [Infrastructure Provisioning Stuck](infrastructure/provisioning-stuck.md)
 - [Certificate Expired](certificates/expired-certificates.md)
 - [Helm Release Failure](helm/release-failure.md)
 - [Security Policy Violation](security/policy-violations.md)
 
 ### Routine Maintenance
+
 - [Terraform State Management](terraform/state-recovery.md)
 - [Certificate Renewal](certificates/renewal.md)
 - [Helm Release Updates](helm/stale-releases.md)

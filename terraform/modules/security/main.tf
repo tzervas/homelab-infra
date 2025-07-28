@@ -23,25 +23,25 @@ terraform {
 # Cert-Manager for SSL certificate management
 resource "helm_release" "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
-  
+
   name       = "cert-manager"
   repository = "https://charts.jetstack.io"
   chart      = "cert-manager"
   version    = var.cert_manager_version
   namespace  = var.cert_manager_namespace
-  
+
   create_namespace = true
-  
+
   set {
     name  = "installCRDs"
     value = "true"
   }
-  
+
   set {
     name  = "global.leaderElection.namespace"
     value = var.cert_manager_namespace
   }
-  
+
   values = [
     templatefile("${path.module}/templates/cert-manager-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
@@ -53,7 +53,7 @@ resource "helm_release" "cert_manager" {
 # ClusterIssuer for Let's Encrypt
 resource "kubernetes_manifest" "letsencrypt_staging" {
   count = var.enable_cert_manager && var.enable_letsencrypt ? 1 : 0
-  
+
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -79,13 +79,13 @@ resource "kubernetes_manifest" "letsencrypt_staging" {
       }
     }
   }
-  
+
   depends_on = [helm_release.cert_manager]
 }
 
 resource "kubernetes_manifest" "letsencrypt_production" {
   count = var.enable_cert_manager && var.enable_letsencrypt ? 1 : 0
-  
+
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -111,22 +111,22 @@ resource "kubernetes_manifest" "letsencrypt_production" {
       }
     }
   }
-  
+
   depends_on = [helm_release.cert_manager]
 }
 
 # External Secrets Operator
 resource "helm_release" "external_secrets" {
   count = var.enable_external_secrets ? 1 : 0
-  
+
   name       = "external-secrets"
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
   version    = var.external_secrets_version
   namespace  = var.external_secrets_namespace
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/external-secrets-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
@@ -138,15 +138,15 @@ resource "helm_release" "external_secrets" {
 # Sealed Secrets Controller
 resource "helm_release" "sealed_secrets" {
   count = var.enable_sealed_secrets ? 1 : 0
-  
+
   name       = "sealed-secrets"
   repository = "https://bitnami-labs.github.io/sealed-secrets"
   chart      = "sealed-secrets"
   version    = var.sealed_secrets_version
   namespace  = var.sealed_secrets_namespace
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/sealed-secrets-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
@@ -157,7 +157,7 @@ resource "helm_release" "sealed_secrets" {
 # RBAC Configuration
 resource "kubernetes_cluster_role" "homelab_admin" {
   count = var.enable_rbac ? 1 : 0
-  
+
   metadata {
     name = "homelab:admin"
     labels = {
@@ -165,7 +165,7 @@ resource "kubernetes_cluster_role" "homelab_admin" {
       "app.kubernetes.io/managed-by" = "terraform"
     }
   }
-  
+
   rule {
     api_groups = ["*"]
     resources  = ["*"]
@@ -175,7 +175,7 @@ resource "kubernetes_cluster_role" "homelab_admin" {
 
 resource "kubernetes_cluster_role" "homelab_viewer" {
   count = var.enable_rbac ? 1 : 0
-  
+
   metadata {
     name = "homelab:viewer"
     labels = {
@@ -183,19 +183,19 @@ resource "kubernetes_cluster_role" "homelab_viewer" {
       "app.kubernetes.io/managed-by" = "terraform"
     }
   }
-  
+
   rule {
     api_groups = [""]
     resources  = ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
     verbs      = ["get", "list", "watch"]
   }
-  
+
   rule {
     api_groups = ["apps"]
     resources  = ["deployments", "daemonsets", "replicasets", "statefulsets"]
     verbs      = ["get", "list", "watch"]
   }
-  
+
   rule {
     api_groups = ["networking.k8s.io"]
     resources  = ["ingresses", "networkpolicies"]
@@ -206,7 +206,7 @@ resource "kubernetes_cluster_role" "homelab_viewer" {
 # Pod Security Standards
 resource "kubernetes_manifest" "pod_security_policy" {
   for_each = var.enable_pod_security ? var.pod_security_policies : {}
-  
+
   manifest = {
     apiVersion = "v1"
     kind       = "Namespace"
@@ -224,12 +224,12 @@ resource "kubernetes_manifest" "pod_security_policy" {
 # Network Policies
 resource "kubernetes_network_policy" "deny_all_ingress" {
   for_each = var.enable_network_policies ? toset(var.secured_namespaces) : []
-  
+
   metadata {
     name      = "deny-all-ingress"
     namespace = each.value
   }
-  
+
   spec {
     pod_selector {}
     policy_types = ["Ingress"]
@@ -238,16 +238,16 @@ resource "kubernetes_network_policy" "deny_all_ingress" {
 
 resource "kubernetes_network_policy" "allow_kube_system" {
   for_each = var.enable_network_policies ? toset(var.secured_namespaces) : []
-  
+
   metadata {
     name      = "allow-kube-system"
     namespace = each.value
   }
-  
+
   spec {
     pod_selector {}
     policy_types = ["Egress"]
-    
+
     egress {
       to {
         namespace_selector {
@@ -263,7 +263,7 @@ resource "kubernetes_network_policy" "allow_kube_system" {
 # Security Context Constraints (for OpenShift-like behavior)
 resource "kubernetes_manifest" "security_context_constraint" {
   for_each = var.enable_security_constraints ? var.security_constraints : {}
-  
+
   manifest = {
     apiVersion = "security.openshift.io/v1"
     kind       = "SecurityContextConstraints"
@@ -294,15 +294,15 @@ resource "kubernetes_manifest" "security_context_constraint" {
 # Falco Security Runtime
 resource "helm_release" "falco" {
   count = var.enable_falco ? 1 : 0
-  
+
   name       = "falco"
   repository = "https://falcosecurity.github.io/charts"
   chart      = "falco"
   version    = var.falco_version
   namespace  = var.falco_namespace
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/falco-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring

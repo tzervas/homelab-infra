@@ -7,10 +7,10 @@
   hosts: homelab
   gather_facts: yes
   become: yes
-  
+
   vars:
     networking_timestamp: "{{ ansible_date_time.iso8601 }}"
-    
+
   tasks:
     - name: Configure system firewall settings
       block:
@@ -18,7 +18,7 @@
           apt:
             name: ufw
             state: present
-            
+
         - name: Configure UFW default policies
           ufw:
             direction: "{{ item.direction }}"
@@ -26,56 +26,56 @@
           loop:
             - { direction: 'incoming', policy: 'deny' }
             - { direction: 'outgoing', policy: 'allow' }
-            
+
         - name: Allow SSH access
           ufw:
             rule: allow
             port: '22'
             proto: tcp
-            
+
         - name: Allow K3s API server
           ufw:
             rule: allow
             port: '6443'
             proto: tcp
-            
+
         - name: Allow K3s node communication
           ufw:
             rule: allow
             port: '10250'
             proto: tcp
-            
+
         - name: Enable UFW
           ufw:
             state: enabled
           register: ufw_enabled
-          
+
       tags: [firewall, security]
-      
+
     - name: Configure network interface settings
       block:
         - name: Ensure network interface is properly configured
           debug:
             msg: "Network interface configuration handled by system defaults"
           # Additional network interface configuration can be added here
-          
+
       tags: [interfaces, network]
-      
+
     - name: Create networking status file
       copy:
         content: |
           # System Networking Configuration Status
           # Generated: {{ networking_timestamp }}
-          
+
           NETWORKING_CONFIGURED=true
           NETWORKING_TIMESTAMP={{ networking_timestamp }}
           FIREWALL_ENABLED={{ ufw_enabled.changed | default(false) }}
-          
+
           # Network readiness
           READY_FOR_K3S_NETWORKING=true
         dest: /opt/homelab/networking-status.env
         mode: '0644'
-        
+
     - name: Log networking configuration completion
       lineinfile:
         path: /opt/homelab/logs/networking.log

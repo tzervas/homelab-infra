@@ -122,6 +122,6 @@ resource "local_file" "kubeconfig_template" {
 # Data source to check if K3s is running
 data "external" "k3s_status" {
   program = ["bash", "${path.module}/scripts/check-k3s-status.sh"]
-  
+
   depends_on = [local_file.k3s_install_script]
 }

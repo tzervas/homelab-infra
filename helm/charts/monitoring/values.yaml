@@ -331,22 +331,22 @@ structuredLogging:
 # Custom Grafana Dashboards
 customDashboards:
   enabled: true
-  
+
   # Infrastructure provisioning dashboard
   infrastructureProvisioning:
     enabled: true
     datasource: Prometheus
-    
-  # Deployment pipeline metrics dashboard  
+
+  # Deployment pipeline metrics dashboard
   deploymentPipeline:
     enabled: true
     datasource: Prometheus
-    
+
   # Security compliance dashboard
   securityCompliance:
     enabled: true
     datasource: Prometheus
-    
+
   # Cost tracking dashboard (if applicable)
   costTracking:
     enabled: false  # Enable if cost metrics are available

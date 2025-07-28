@@ -83,13 +83,13 @@ terraform/
 ```hcl
 module "k3s_cluster" {
   source = "./modules/k3s-cluster"
-  
+
   # Cluster Configuration
   cluster_name    = "homelab-k3s"
   cluster_domain  = "cluster.local"
   cluster_cidr    = "10.42.0.0/16"
   service_cidr    = "10.43.0.0/16"
-  
+
   # Node Configuration
   master_nodes = [
     {
@@ -98,7 +98,7 @@ module "k3s_cluster" {
       role = "server"
     }
   ]
-  
+
   worker_nodes = [
     {
       name = "worker-1"
@@ -106,18 +106,18 @@ module "k3s_cluster" {
       role = "agent"
     }
   ]
-  
+
   # Security Configuration
   enable_rootless     = true
   disable_traefik     = true
   disable_servicelb   = true
-  
+
   # Custom Configuration
   extra_server_args = [
     "--disable=metrics-server",
     "--kube-controller-manager-arg=terminated-pod-gc-threshold=10"
   ]
-  
+
   tags = {
     Environment = var.environment
     Terraform   = "true"
@@ -163,7 +163,7 @@ output "cluster_ca_certificate" {
 ```hcl
 module "networking" {
   source = "./modules/networking"
-  
+
   # MetalLB Configuration
   enable_metallb = true
   metallb_ip_pools = {
@@ -176,23 +176,23 @@ module "networking" {
       addresses = ["192.168.25.240-192.168.25.250"]
     }
   }
-  
+
   # Ingress Configuration
   enable_ingress_nginx = true
   ingress_class        = "nginx"
   enable_ssl_passthrough = true
-  
+
   # DNS Configuration
   enable_custom_dns = true
   dns_entries = {
     "homelab.local" = "192.168.25.240"
     "*.apps.homelab.local" = "192.168.25.241"
   }
-  
+
   # Network Policies
   enable_network_policies = true
   default_deny_all       = true
-  
+
   environment = var.environment
 }
 ```
@@ -203,7 +203,7 @@ module "networking" {
 # Service Mesh Integration
 module "networking" {
   # ... base configuration ...
-  
+
   # Istio Service Mesh
   enable_istio = true
   istio_config = {
@@ -212,7 +212,7 @@ module "networking" {
     enable_tracing    = true
     enable_telemetry  = true
   }
-  
+
   # VLAN Support with Multus
   enable_multus = true
   vlan_configs = [
@@ -242,7 +242,7 @@ module "networking" {
 ```hcl
 module "security" {
   source = "./modules/security"
-  
+
   # Certificate Management
   enable_cert_manager = true
   cert_manager_config = {
@@ -250,7 +250,7 @@ module "security" {
     enable_webhook = true
     enable_acme    = true
   }
-  
+
   # Let's Encrypt Configuration
   enable_letsencrypt = true
   letsencrypt_config = {
@@ -258,14 +258,14 @@ module "security" {
     server = "https://acme-v02.api.letsencrypt.org/directory"
     staging_server = "https://acme-staging-v02.api.letsencrypt.org/directory"
   }
-  
+
   # External Secrets
   enable_external_secrets = true
   external_secrets_config = {
     version = "0.9.0"
     backends = ["kubernetes", "vault"]
   }
-  
+
   # Security Policies
   enable_pod_security_standards = true
   pod_security_config = {
@@ -273,7 +273,7 @@ module "security" {
     audit   = "restricted"
     warn    = "restricted"
   }
-  
+
   # RBAC Configuration
   rbac_roles = [
     {
@@ -287,7 +287,7 @@ module "security" {
       ]
     }
   ]
-  
+
   environment = var.environment
 }
 ```
@@ -298,7 +298,7 @@ module "security" {
 # Runtime Security with Falco
 module "security" {
   # ... base configuration ...
-  
+
   enable_falco = true
   falco_config = {
     version = "0.36.0"
@@ -314,7 +314,7 @@ module "security" {
       json_output = true
     }
   }
-  
+
   # Network Security
   enable_network_policies = true
   network_policy_templates = [
@@ -341,14 +341,14 @@ module "security" {
 ```hcl
 module "storage" {
   source = "./modules/storage"
-  
+
   # Local Path Provisioner
   enable_local_path_provisioner = true
   local_path_config = {
     path         = "/opt/local-path-provisioner"
     helper_image = "busybox:latest"
   }
-  
+
   # Storage Classes
   storage_classes = [
     {
@@ -366,7 +366,7 @@ module "storage" {
       is_default         = true
     }
   ]
-  
+
   # NFS Configuration
   enable_nfs_provisioner = true
   nfs_config = {
@@ -374,7 +374,7 @@ module "storage" {
     path   = "/mnt/nfs-storage"
     storage_class = "nfs"
   }
-  
+
   environment = var.environment
 }
 ```
@@ -388,7 +388,7 @@ module "storage" {
 ```hcl
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -399,7 +399,7 @@ terraform {
       version = "~> 2.11"
     }
   }
-  
+
   backend "local" {
     path = "terraform.tfstate"
   }
@@ -419,10 +419,10 @@ provider "helm" {
 # Development-specific configuration
 module "k3s_cluster" {
   source = "../../modules/k3s-cluster"
-  
+
   cluster_name = "homelab-dev"
   environment  = "development"
-  
+
   # Minimal resources for development
   master_nodes = [
     {
@@ -430,7 +430,7 @@ module "k3s_cluster" {
       ip   = "192.168.16.26"
     }
   ]
-  
+
   # Development-specific settings
   disable_traefik   = true
   disable_servicelb = true
@@ -439,30 +439,30 @@ module "k3s_cluster" {
 
 module "networking" {
   source = "../../modules/networking"
-  
+
   environment = "development"
-  
+
   metallb_ip_pools = {
     development = {
       addresses = ["192.168.25.200-192.168.25.210"]
     }
   }
-  
+
   # Relaxed policies for development
   enable_network_policies = false
 }
 
 module "security" {
   source = "../../modules/security"
-  
+
   environment = "development"
-  
+
   # Use staging Let's Encrypt for development
   letsencrypt_config = {
     email  = "tz-dev@vectorweight.com"
     server = "https://acme-staging-v02.api.letsencrypt.org/directory"
   }
-  
+
   # Permissive security for development
   pod_security_config = {
     enforce = "baseline"
@@ -473,9 +473,9 @@ module "security" {
 
 module "storage" {
   source = "../../modules/storage"
-  
+
   environment = "development"
-  
+
   # Single storage class for development
   storage_classes = [
     {
@@ -493,7 +493,7 @@ module "storage" {
 ```hcl
 terraform {
   required_version = ">= 1.0"
-  
+
   backend "s3" {
     bucket         = "homelab-terraform-state"
     key            = "production/terraform.tfstate"
@@ -506,10 +506,10 @@ terraform {
 # Production-specific configuration
 module "k3s_cluster" {
   source = "../../modules/k3s-cluster"
-  
+
   cluster_name = "homelab-prod"
   environment  = "production"
-  
+
   # High availability configuration
   master_nodes = [
     {
@@ -525,7 +525,7 @@ module "k3s_cluster" {
       ip   = "192.168.16.28"
     }
   ]
-  
+
   # Production hardening
   enable_rootless = true
   extra_server_args = [
@@ -537,19 +537,19 @@ module "k3s_cluster" {
 
 module "networking" {
   source = "../../modules/networking"
-  
+
   environment = "production"
-  
+
   metallb_ip_pools = {
     production = {
       addresses = ["192.168.25.240-192.168.25.250"]
     }
   }
-  
+
   # Strict network policies
   enable_network_policies = true
   default_deny_all       = true
-  
+
   # Service mesh for production
   enable_istio = true
   istio_config = {
@@ -559,31 +559,31 @@ module "networking" {
 
 module "security" {
   source = "../../modules/security"
-  
+
   environment = "production"
-  
+
   # Production Let's Encrypt
   letsencrypt_config = {
     email  = "tz-dev@vectorweight.com"
     server = "https://acme-v02.api.letsencrypt.org/directory"
   }
-  
+
   # Strict security policies
   pod_security_config = {
     enforce = "restricted"
     audit   = "restricted"
     warn    = "restricted"
   }
-  
+
   # Runtime security monitoring
   enable_falco = true
 }
 
 module "storage" {
   source = "../../modules/storage"
-  
+
   environment = "production"
-  
+
   # Multiple storage tiers
   storage_classes = [
     {
@@ -635,11 +635,11 @@ resource "helm_release" "prometheus" {
   chart      = "kube-prometheus-stack"
   version    = "55.0.0"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
-  
+
   values = [
     file("${path.module}/templates/prometheus-values.yaml")
   ]
-  
+
   depends_on = [
     kubernetes_namespace.monitoring
   ]
@@ -658,9 +658,9 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
   version    = "5.51.0"
   namespace  = "argocd"
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/argocd-values.yaml", {
       hostname = "argocd.${var.domain}"
@@ -696,7 +696,7 @@ resource "kubernetes_manifest" "infrastructure_app" {
       }
     }
   }
-  
+
   depends_on = [helm_release.argocd]
 }
 ```
@@ -714,7 +714,7 @@ terraform {
     encrypt        = true
     versioning     = true
     dynamodb_table = "terraform-state-locks"
-    
+
     # Optional: KMS encryption key
     kms_key_id = "arn:aws:kms:us-west-2:123456789012:key/12345678-1234-1234-1234-123456789012"
   }
@@ -784,7 +784,7 @@ locals {
       instance_size  = "large"
     }
   }
-  
+
   current_config = local.environment_config[terraform.workspace]
 }
 ```
@@ -796,7 +796,7 @@ module "k3s_cluster" {
   source  = "git::https://github.com/tzervas/terraform-k3s-module.git?ref=v2.1.0"
   # or
   source  = "./modules/k3s-cluster"
-  
+
   # Version constraints for remote modules
   version = "~> 2.1"
 }
@@ -819,27 +819,27 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.6.0
-    
+
     - name: Terraform Format
       run: terraform fmt -check -recursive
-    
+
     - name: Terraform Init
       run: terraform init
-    
+
     - name: Terraform Validate
       run: terraform validate
-    
+
     - name: Terraform Plan
       run: terraform plan -no-color
-      
+
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main'
       run: terraform apply -auto-approve
@@ -932,7 +932,7 @@ resource "kubernetes_config_map" "terraform_metrics" {
     name      = "terraform-metrics"
     namespace = "monitoring"
   }
-  
+
   data = {
     "terraform-exporter.yml" = yamlencode({
       terraform_state_files = [
@@ -961,12 +961,12 @@ if [ $exit_code -eq 1 ]; then
     exit 1
 elif [ $exit_code -eq 2 ]; then
     echo "WARNING: Configuration drift detected"
-    
+
     # Send alert
     curl -X POST "$SLACK_WEBHOOK_URL" \
          -H 'Content-type: application/json' \
          --data '{"text":"🚨 Terraform configuration drift detected in '"$ENVIRONMENT"'"}'
-    
+
     # Optionally auto-remediate
     if [ "$AUTO_REMEDIATE" = "true" ]; then
         terraform apply -auto-approve
@@ -992,12 +992,12 @@ resource "kubernetes_secret" "database" {
     name      = "database-credentials"
     namespace = "default"
   }
-  
+
   data = {
     username = "admin"
     password = var.database_password
   }
-  
+
   type = "Opaque"
 }
 ```
@@ -1017,13 +1017,13 @@ resource "kubernetes_cluster_role" "terraform" {
   metadata {
     name = "terraform"
   }
-  
+
   rule {
     api_groups = [""]
     resources  = ["namespaces", "configmaps", "secrets"]
     verbs      = ["get", "list", "create", "update", "patch", "delete"]
   }
-  
+
   rule {
     api_groups = ["apps"]
     resources  = ["deployments", "daemonsets", "statefulsets"]
@@ -1035,13 +1035,13 @@ resource "kubernetes_cluster_role_binding" "terraform" {
   metadata {
     name = "terraform"
   }
-  
+
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
     name      = kubernetes_cluster_role.terraform.metadata[0].name
   }
-  
+
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account.terraform.metadata[0].name
@@ -1162,7 +1162,7 @@ resource "null_resource" "ansible_provisioning" {
     command = "ansible-playbook -i ${local_file.ansible_inventory.filename} site.yml"
     working_dir = "${path.root}/ansible"
   }
-  
+
   depends_on = [
     module.k3s_cluster,
     local_file.ansible_inventory
@@ -1177,7 +1177,7 @@ resource "null_resource" "ansible_provisioning" {
 # GitOps manages applications
 resource "kubernetes_manifest" "gitops_applications" {
   for_each = var.gitops_applications
-  
+
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -1187,7 +1187,7 @@ resource "kubernetes_manifest" "gitops_applications" {
     }
     spec = each.value
   }
-  
+
   depends_on = [helm_release.argocd]
 }
 ```
@@ -1210,4 +1210,4 @@ The modular approach allows for gradual adoption and customization based on spec
 **Last Updated:** December 2024  
 **Next Review:** Quarterly  
 **Maintainer:** Infrastructure Team  
-**Contact:** tz-dev@vectorweight.com
+**Contact:** <tz-dev@vectorweight.com>

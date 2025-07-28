@@ -62,18 +62,18 @@ except ImportError:
 
             def format_summary_report(self) -> str:
                 return "Issue tracking not available"
-        
+
         class TerraformStateValidator:
             def __init__(self, *args, **kwargs) -> None:
                 pass
-            
+
             def run_comprehensive_validation(self) -> list:
                 return []
-        
+
         class TLSSecurityValidator:
             def __init__(self, *args, **kwargs) -> None:
                 pass
-            
+
             def run_comprehensive_tls_validation(self) -> list:
                 return []
 
@@ -239,7 +239,7 @@ class HomelabTestReporter:
         except Exception as e:
             self.logger.exception(f"Integration tests failed: {e}")
             return None
-    
+
     def run_terraform_validation(self) -> list | None:
         """Run Terraform state validation."""
         if not self.terraform_validator:
@@ -252,7 +252,7 @@ class HomelabTestReporter:
         except Exception as e:
             self.logger.exception(f"Terraform validation failed: {e}")
             return None
-    
+
     def run_tls_validation(self) -> list | None:
         """Run TLS/mTLS security validation."""
         if not self.tls_validator:
@@ -656,7 +656,7 @@ class HomelabTestReporter:
                     category=IssueCategory.CONNECTIVITY,
                     details=test_result.details,
                 )
-    
+
     def _process_terraform_issues(self, terraform_results: list | None) -> None:
         """Process Terraform validation results and add to issue tracker."""
         if not terraform_results:
@@ -683,7 +683,7 @@ class HomelabTestReporter:
                     details=result.details,
                     affects_deployment=severity in [IssueSeverity.CRITICAL, IssueSeverity.HIGH],
                 )
-    
+
     def _process_tls_issues(self, tls_results: list | None) -> None:
         """Process TLS validation results and add to issue tracker."""
         if not tls_results:
@@ -704,11 +704,15 @@ class HomelabTestReporter:
                 if result.certificate_info:
                     cert = result.certificate_info
                     if cert.days_until_expiry < 30:
-                        recommendations.append(f"Certificate expires in {cert.days_until_expiry} days - renew soon")
+                        recommendations.append(
+                            f"Certificate expires in {cert.days_until_expiry} days - renew soon"
+                        )
                     if cert.is_self_signed:
                         recommendations.append("Consider using a proper CA-signed certificate")
                     if not cert.is_valid_key_size:
-                        recommendations.append(f"Upgrade key size from {cert.key_size} to at least 2048 bits")
+                        recommendations.append(
+                            f"Upgrade key size from {cert.key_size} to at least 2048 bits"
+                        )
 
                 self.issue_tracker.add_issue(
                     component=f"tls_{result.component}",

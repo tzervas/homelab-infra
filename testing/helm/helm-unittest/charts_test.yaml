@@ -336,7 +336,7 @@ tests:
 
 ---
 suite: Storage Chart Tests
-templates:  
+templates:
   - ../charts/storage/templates/*.yaml
 tests:
   - it: should create storage class with proper configuration

@@ -19,29 +19,29 @@ terraform {
 # MetalLB Load Balancer configuration
 resource "helm_release" "metallb" {
   count = var.enable_metallb ? 1 : 0
-  
+
   name       = "metallb"
   repository = "https://metallb.github.io/metallb"
   chart      = "metallb"
   version    = var.metallb_version
   namespace  = var.metallb_namespace
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/metallb-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
       log_level            = var.log_level
     })
   ]
-  
+
   depends_on = [kubernetes_namespace.metallb_namespace]
 }
 
 # MetalLB namespace
 resource "kubernetes_namespace" "metallb_namespace" {
   count = var.enable_metallb ? 1 : 0
-  
+
   metadata {
     name = var.metallb_namespace
     labels = {
@@ -57,7 +57,7 @@ resource "kubernetes_namespace" "metallb_namespace" {
 # MetalLB IP Address Pool
 resource "kubernetes_manifest" "metallb_ipaddresspool" {
   for_each = var.enable_metallb ? var.ip_pools : {}
-  
+
   manifest = {
     apiVersion = "metallb.io/v1beta1"
     kind       = "IPAddressPool"
@@ -71,14 +71,14 @@ resource "kubernetes_manifest" "metallb_ipaddresspool" {
       avoidBuggyIPs = lookup(each.value, "avoid_buggy_ips", false)
     }
   }
-  
+
   depends_on = [helm_release.metallb]
 }
 
 # MetalLB L2 Advertisement
 resource "kubernetes_manifest" "metallb_l2advertisement" {
   for_each = var.enable_metallb ? var.l2_advertisements : {}
-  
+
   manifest = {
     apiVersion = "metallb.io/v1beta1"
     kind       = "L2Advertisement"
@@ -92,19 +92,19 @@ resource "kubernetes_manifest" "metallb_l2advertisement" {
       interfaces     = lookup(each.value, "interfaces", [])
     }
   }
-  
+
   depends_on = [kubernetes_manifest.metallb_ipaddresspool]
 }
 
 # Network Policies
 resource "kubernetes_network_policy" "default_deny_all" {
   count = var.enable_network_policies ? 1 : 0
-  
+
   metadata {
     name      = "default-deny-all"
     namespace = "default"
   }
-  
+
   spec {
     pod_selector {}
     policy_types = ["Ingress", "Egress"]
@@ -113,16 +113,16 @@ resource "kubernetes_network_policy" "default_deny_all" {
 
 resource "kubernetes_network_policy" "allow_dns" {
   count = var.enable_network_policies ? 1 : 0
-  
+
   metadata {
     name      = "allow-dns"
     namespace = "default"
   }
-  
+
   spec {
     pod_selector {}
     policy_types = ["Egress"]
-    
+
     egress {
       to {
         namespace_selector {
@@ -151,12 +151,12 @@ resource "kubernetes_network_policy" "allow_dns" {
 # CoreDNS configuration
 resource "kubernetes_config_map" "coredns_custom" {
   count = var.enable_custom_dns ? 1 : 0
-  
+
   metadata {
     name      = "coredns-custom"
     namespace = "kube-system"
   }
-  
+
   data = {
     "custom.server" = templatefile("${path.module}/templates/coredns-custom.conf.tpl", {
       custom_dns_entries = var.custom_dns_entries
@@ -168,15 +168,15 @@ resource "kubernetes_config_map" "coredns_custom" {
 # Ingress Controller (Nginx)
 resource "helm_release" "nginx_ingress" {
   count = var.enable_nginx_ingress ? 1 : 0
-  
+
   name       = "nginx-ingress"
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
   version    = var.nginx_ingress_version
   namespace  = var.nginx_ingress_namespace
-  
+
   create_namespace = true
-  
+
   values = [
     templatefile("${path.module}/templates/nginx-ingress-values.yaml.tpl", {
       service_type              = var.nginx_service_type
@@ -186,14 +186,14 @@ resource "helm_release" "nginx_ingress" {
       enable_metrics          = var.prometheus_monitoring
     })
   ]
-  
+
   depends_on = [helm_release.metallb]
 }
 
 # Multus CNI for additional network interfaces
 resource "kubernetes_manifest" "multus_cni" {
   count = var.enable_multus ? 1 : 0
-  
+
   manifest = {
     apiVersion = "apiextensions.k8s.io/v1"
     kind       = "CustomResourceDefinition"

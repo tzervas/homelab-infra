@@ -48,27 +48,27 @@ check_root() {
 # Check system requirements
 check_requirements() {
     log "Checking system requirements..."
-    
+
     # Check if curl is installed
     if ! command -v curl &> /dev/null; then
         error "curl is required but not installed"
         exit 1
     fi
-    
+
     # Check available memory (minimum 512MB)
     local mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
     local mem_mb=$((mem_kb / 1024))
     if [[ $mem_mb -lt 512 ]]; then
         warn "System has less than 512MB RAM ($${mem_mb}MB). K3s may not run properly."
     fi
-    
+
     # Check available disk space (minimum 1GB)
     local available_space=$(df / | awk 'NR==2 {print $4}')
     local available_gb=$((available_space / 1024 / 1024))
     if [[ $available_gb -lt 1 ]]; then
         warn "System has less than 1GB available disk space ($${available_gb}GB)."
     fi
-    
+
     success "System requirements check completed"
 }
 
@@ -79,7 +79,7 @@ stop_existing_k3s() {
         sudo systemctl stop k3s
         sudo systemctl disable k3s
     fi
-    
+
     if pgrep -f k3s > /dev/null; then
         log "Killing existing K3s processes..."
         sudo pkill -f k3s || true
@@ -89,32 +89,32 @@ stop_existing_k3s() {
 # Install K3s
 install_k3s() {
     log "Installing K3s version $${K3S_VERSION}..."
-    
+
     # Prepare installation command
     local install_cmd="curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=$${K3S_VERSION}"
-    
+
     # Add server arguments
     local server_args=""
-    
+
     if [[ -n "$${CLUSTER_CIDR}" ]]; then
         server_args="$${server_args} --cluster-cidr=$${CLUSTER_CIDR}"
     fi
-    
+
     if [[ -n "$${SERVICE_CIDR}" ]]; then
         server_args="$${server_args} --service-cidr=$${SERVICE_CIDR}"
     fi
-    
+
     if [[ -n "$${CLUSTER_DNS}" ]]; then
         server_args="$${server_args} --cluster-dns=$${CLUSTER_DNS}"
     fi
-    
+
     if [[ -n "$${DISABLE_COMPONENTS}" ]]; then
         IFS=',' read -ra DISABLED <<< "$${DISABLE_COMPONENTS}"
         for component in "$${DISABLED[@]}"; do
             server_args="$${server_args} --disable=$${component}"
         done
     fi
-    
+
     if [[ -n "$${NODE_TAINTS}" ]]; then
         IFS=',' read -ra TAINTS <<< "$${NODE_TAINTS}"
         for taint in "$${TAINTS[@]}"; do
@@ -123,7 +123,7 @@ install_k3s() {
             fi
         done
     fi
-    
+
     if [[ -n "$${NODE_LABELS}" ]]; then
         IFS=',' read -ra LABELS <<< "$${NODE_LABELS}"
         for label in "$${LABELS[@]}"; do
@@ -132,42 +132,42 @@ install_k3s() {
             fi
         done
     fi
-    
+
     if [[ -n "$${EXTRA_ARGS}" ]]; then
         server_args="$${server_args} $${EXTRA_ARGS}"
     fi
-    
+
     # Execute installation
     export INSTALL_K3S_EXEC="server $${server_args}"
     eval "$${install_cmd}" sh -
-    
+
     success "K3s installation completed"
 }
 
 # Verify installation
 verify_installation() {
     log "Verifying K3s installation..."
-    
+
     # Wait for K3s to be ready
     local max_attempts=30
     local attempt=1
-    
+
     while [[ $attempt -le $max_attempts ]]; do
         if sudo k3s kubectl get nodes &> /dev/null; then
             success "K3s is running and responding"
             break
         fi
-        
+
         log "Waiting for K3s to be ready (attempt $${attempt}/$${max_attempts})..."
         sleep 5
         ((attempt++))
     done
-    
+
     if [[ $attempt -gt $max_attempts ]]; then
         error "K3s failed to start properly"
         return 1
     fi
-    
+
     # Display cluster info
     log "Cluster information:"
     sudo k3s kubectl get nodes -o wide
@@ -177,35 +177,35 @@ verify_installation() {
 # Configure kubeconfig access
 configure_kubeconfig() {
     log "Configuring kubeconfig access..."
-    
+
     local kubeconfig_dir="$${HOME}/.kube"
     local kubeconfig_file="$${kubeconfig_dir}/config"
-    
+
     # Create .kube directory if it doesn't exist
     mkdir -p "$${kubeconfig_dir}"
-    
+
     # Copy kubeconfig with proper permissions
     sudo cp /etc/rancher/k3s/k3s.yaml "$${kubeconfig_file}"
     sudo chown "$${USER}:$${USER}" "$${kubeconfig_file}"
     chmod 600 "$${kubeconfig_file}"
-    
+
     # Update server URL to use localhost
     sed -i 's/127.0.0.1/localhost/g' "$${kubeconfig_file}"
-    
+
     success "Kubeconfig configured at $${kubeconfig_file}"
 }
 
 # Main installation process
 main() {
     log "Starting K3s installation for cluster: $${CLUSTER_NAME}"
-    
+
     check_root
     check_requirements
     stop_existing_k3s
     install_k3s
     verify_installation
     configure_kubeconfig
-    
+
     success "K3s installation completed successfully!"
     log "You can now use kubectl to interact with your cluster"
     log "Try: kubectl get nodes"

@@ -45,7 +45,7 @@
         autoclean: yes
       when: "'bootstrap' in system_tasks"
       register: package_update
-      
+
     - name: Log package update results
       debug:
         msg: "System packages updated: {{ package_update.changed | default(false) }}"
@@ -114,13 +114,13 @@
           # Homelab System Status
           # Generated: {{ deployment_timestamp }}
           # Host: {{ inventory_hostname }}
-          
+
           SYSTEM_PHASE={{ phase | default('bootstrap') }}
           SYSTEM_TASKS={{ system_tasks | join(',') }}
           PROVISIONING_COMPLETE=true
           K3S_READY={{ 'true' if 'k3s' in system_tasks else 'false' }}
           HELM_READY={{ 'true' if 'k3s' in system_tasks else 'false' }}
-          
+
           # Next Steps:
           # 1. Deploy applications using Helm charts in ../helm/
           # 2. Configure ingress and networking via Helm

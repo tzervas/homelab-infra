@@ -211,7 +211,6 @@ spec:
 
 Integrating TLS and mTLS into the homelab provides a robust security layer. Automating certificate management with cert-manager and implementing mTLS with Istio can vastly improve the security posture of your infrastructure.
 
-**Contact:** tz-dev@vectorweight.com  
+**Contact:** <tz-dev@vectorweight.com>  
 **Last Updated:** December 2024  
 **Next Review:** Bi-annually
-

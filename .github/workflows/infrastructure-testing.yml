@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 'releases/**'
+      - "releases/**"
   pull_request:
     branches:
       - main
@@ -21,93 +21,93 @@ jobs:
         tool: [terratest, helm-unittest, pytest]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Go
-      if: matrix.tool == 'terratest'
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.21
+      - name: Set up Go
+        if: matrix.tool == 'terratest'
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
 
-    - name: Cache Go modules
-      if: matrix.tool == 'terratest'
-      uses: actions/cache@v2
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache Go modules
+        if: matrix.tool == 'terratest'
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Install Go dependencies
-      if: matrix.tool == 'terratest'
-      run: go mod download
+      - name: Install Go dependencies
+        if: matrix.tool == 'terratest'
+        run: go mod download
 
-    - name: Run Terratest
-      if: matrix.tool == 'terratest'
-      env:
-        KUBECONFIG: ${{ secrets.KUBECONFIG }}
-      run: go test -v -timeout 60m github.com/tzervas/homelab-infra/testing/terraform/terratest
+      - name: Run Terratest
+        if: matrix.tool == 'terratest'
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: go test -v -timeout 60m github.com/tzervas/homelab-infra/testing/terraform/terratest
 
-    - name: Set up Python
-      if: matrix.tool == 'pytest'
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
+      - name: Set up Python
+        if: matrix.tool == 'pytest'
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
-    - name: Install Python dependencies
-      if: matrix.tool == 'pytest'
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install Python dependencies
+        if: matrix.tool == 'pytest'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run Pytest
-      if: matrix.tool == 'pytest'
-      run: pytest --cov=.
+      - name: Run Pytest
+        if: matrix.tool == 'pytest'
+        run: pytest --cov=.
 
-    - name: Set up Node.js
-      if: matrix.tool == 'helm-unittest'
-      uses: actions/setup-node@v2
-      with:
-        node-version: 14
+      - name: Set up Node.js
+        if: matrix.tool == 'helm-unittest'
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
 
-    - name: Install Helm
-      if: matrix.tool == 'helm-unittest'
-      run: |
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - name: Install Helm
+        if: matrix.tool == 'helm-unittest'
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-    - name: Run Helm unittest
-      if: matrix.tool == 'helm-unittest'
-      run: helm unittest ${GITHUB_WORKSPACE}/helm/charts  -3
+      - name: Run Helm unittest
+        if: matrix.tool == 'helm-unittest'
+        run: helm unittest ${GITHUB_WORKSPACE}/helm/charts  -3
 
   performance:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install kubernetes psutil
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install kubernetes psutil
 
-    - name: Run Performance Benchmarks
-      env:
-        KUBECONFIG: ${{ secrets.KUBECONFIG }}
-      run: |
-        python testing/performance/benchmarks.py \
-          --endpoints https://gitlab.homelab.local/api/v4/projects https://prometheus.homelab.local/api/v1/status/config https://grafana.homelab.local/api/health \
-          --load-test https://gitlab.homelab.local \
-          --output benchmark-results.json 
+      - name: Run Performance Benchmarks
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          python testing/performance/benchmarks.py \
+            --endpoints https://gitlab.homelab.local/api/v4/projects https://prometheus.homelab.local/api/v1/status/config https://grafana.homelab.local/api/health \
+            --load-test https://gitlab.homelab.local \
+            --output benchmark-results.json
 
-    - name: Upload performance results
-      uses: actions/upload-artifact@v2
-      with:
-        name: benchmark-results
-        path: benchmark-results.json
+      - name: Upload performance results
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: benchmark-results.json

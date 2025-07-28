@@ -32,7 +32,7 @@ helm/
 │   │   │       ├── pre-deployment-validation.yaml
 │   │   │       ├── post-deployment-health.yaml
 │   │   │       └── cert-rotation.yaml
-│   │   
+│   │  
 │   ├── core-infrastructure/      # Core K8s components
 │   ├── monitoring/               # Observability stack
 │   └── storage/                  # Storage solutions
@@ -50,11 +50,13 @@ helm/
 ## 🔒 Security Baseline Features
 
 ### Pod Security Standards
+
 - **Baseline enforcement** for most workloads
 - **Restricted enforcement** for sensitive components
 - **Privileged exceptions** only for system components that require it
 
 ### Security Context Templates
+
 ```yaml
 # Restricted (most secure)
 securityContexts.restricted:
@@ -88,12 +90,14 @@ securityContexts.networking:
 ```
 
 ### Network Policies
+
 - **Default Deny**: All ingress/egress traffic blocked by default
 - **DNS Allow**: Permit DNS resolution
 - **Kube API Allow**: Access to Kubernetes API server
 - **Custom Policies**: Application-specific network rules
 
 ### RBAC Configuration
+
 - **Service Accounts**: Dedicated accounts with minimal privileges
 - **Role-based Access**: Granular permissions per component
 - **No Token Automount**: Security-first approach to service account tokens
@@ -101,7 +105,9 @@ securityContexts.networking:
 ## 🚀 Deployment Hooks
 
 ### Pre-deployment Validation
+
 Runs before each deployment to verify:
+
 - Kubernetes cluster connectivity
 - Required CRDs existence
 - Network policy support
@@ -110,7 +116,9 @@ Runs before each deployment to verify:
 - Environment-specific requirements
 
 ### Post-deployment Health Checks
+
 Validates after deployment:
+
 - Pod security contexts
 - Network policy enforcement
 - RBAC configuration
@@ -119,7 +127,9 @@ Validates after deployment:
 - Monitoring endpoints
 
 ### Certificate Rotation
+
 Automated certificate management:
+
 - **Daily checks** at 2 AM for certificate expiry
 - **30-day threshold** for automatic rotation
 - **Atomic replacement** with zero-downtime
@@ -129,10 +139,11 @@ Automated certificate management:
 ## 🌍 Environment Configuration
 
 ### Development
+
 ```yaml
 podSecurityStandards:
   enforce: "baseline"
-  audit: "restricted" 
+  audit: "restricted"
   warn: "restricted"
 
 resources:
@@ -145,6 +156,7 @@ resources:
 ```
 
 ### Production
+
 ```yaml
 podSecurityStandards:
   enforce: "restricted"
@@ -165,12 +177,14 @@ resources:
 ### Initial Setup
 
 1. **Copy secret templates**:
+
 ```bash
 cp environments/secrets-dev.yaml.template environments/secrets-dev.yaml
 cp environments/secrets-prod.yaml.template environments/secrets-prod.yaml
 ```
 
 2. **Populate secrets** (use sealed-secrets for production):
+
 ```bash
 # Development (basic secrets)
 vi environments/secrets-dev.yaml
@@ -183,6 +197,7 @@ kubectl create secret generic app-secret \
 ```
 
 3. **Validate configuration**:
+
 ```bash
 helmfile -e development lint
 helmfile -e production lint
@@ -191,6 +206,7 @@ helmfile -e production lint
 ### Deployment
 
 #### Development Environment
+
 ```bash
 # Deploy with validation hooks
 helmfile -e development sync
@@ -203,6 +219,7 @@ helmfile -e development logs
 ```
 
 #### Production Environment
+
 ```bash
 # Plan deployment (dry-run)
 helmfile -e production diff
@@ -218,6 +235,7 @@ kubectl get podsecuritypolicies -A
 ### Monitoring and Maintenance
 
 #### Certificate Management
+
 ```bash
 # Check certificate expiry
 kubectl get certificates -A
@@ -229,6 +247,7 @@ kubectl create job --from=cronjob/security-baseline-cert-rotation \
 ```
 
 #### Security Validation
+
 ```bash
 # Run security baseline validation
 kubectl create job --from=cronjob/security-baseline-pre-validation \
@@ -239,6 +258,7 @@ kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.s
 ```
 
 #### Network Policy Testing
+
 ```bash
 # List all network policies
 kubectl get networkpolicies -A
@@ -252,6 +272,7 @@ kubectl run test-pod --image=nicolaka/netshoot -it --rm -- /bin/bash
 The security baseline provides helper templates for consistent configuration:
 
 ### Security Contexts
+
 ```yaml
 # Use in your templates
 securityContext:
@@ -263,6 +284,7 @@ securityContext:
 ```
 
 ### Resource Limits
+
 ```yaml
 resources:
   {{- include "security-baseline.resources" (dict "Values" .Values "profile" "standard") | nindent 2 }}
@@ -271,6 +293,7 @@ resources:
 ```
 
 ### Health Checks
+
 ```yaml
 livenessProbe:
   {{- include "security-baseline.livenessProbe" . | nindent 2 }}
@@ -282,24 +305,28 @@ readinessProbe:
 ## 🚨 Security Best Practices
 
 ### Secret Management
+
 - **Never commit secrets** to version control
 - **Use sealed-secrets** or external secret operators in production
 - **Rotate secrets regularly** (automated via hooks)
 - **Minimal secret scope** (namespace-level when possible)
 
 ### Network Security
+
 - **Default deny policies** for all namespaces
 - **Explicit allow rules** only for required communication
 - **Regular policy audits** via monitoring hooks
 - **Egress filtering** to external services
 
 ### Container Security
+
 - **Non-root containers** wherever possible
 - **Read-only root filesystems** for enhanced security
 - **Dropped capabilities** (ALL by default)
 - **Resource limits** to prevent resource exhaustion
 
 ### RBAC
+
 - **Principle of least privilege** for all service accounts
 - **No wildcard permissions** in production
 - **Regular access reviews** via automation hooks
@@ -310,18 +337,21 @@ readinessProbe:
 ### Common Issues
 
 1. **Pod Security Policy Violations**:
+
 ```bash
 kubectl get events --field-selector reason=FailedCreate
 kubectl describe pod <failing-pod>
 ```
 
 2. **Network Policy Blocking Traffic**:
+
 ```bash
 kubectl get networkpolicies -n <namespace>
 kubectl describe networkpolicy <policy-name> -n <namespace>
 ```
 
 3. **Certificate Issues**:
+
 ```bash
 kubectl get certificates -A
 kubectl describe certificate <cert-name> -n <namespace>
@@ -329,13 +359,16 @@ kubectl logs -n cert-manager deployment/cert-manager
 ```
 
 4. **RBAC Permission Denied**:
+
 ```bash
 kubectl auth can-i <verb> <resource> --as=system:serviceaccount:<namespace>:<sa-name>
 kubectl describe role <role-name> -n <namespace>
 ```
 
 ### Debug Mode
+
 Enable debug logging for troubleshooting:
+
 ```bash
 HELM_DEBUG=true helmfile -e development sync
 ```

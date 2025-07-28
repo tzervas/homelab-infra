@@ -17,17 +17,17 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-staging-private-key
     solvers:
-    - http01:
-        ingress:
-          class: nginx
-          podTemplate:
-            spec:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                fsGroup: 65534
-              nodeSelector:
-                kubernetes.io/os: linux
+      - http01:
+          ingress:
+            class: nginx
+            podTemplate:
+              spec:
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                  fsGroup: 65534
+                nodeSelector:
+                  kubernetes.io/os: linux
 
 ---
 apiVersion: cert-manager.io/v1
@@ -45,17 +45,17 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-production-private-key
     solvers:
-    - http01:
-        ingress:
-          class: nginx
-          podTemplate:
-            spec:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                fsGroup: 65534
-              nodeSelector:
-                kubernetes.io/os: linux
+      - http01:
+          ingress:
+            class: nginx
+            podTemplate:
+              spec:
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 65534
+                  fsGroup: 65534
+                nodeSelector:
+                  kubernetes.io/os: linux
 
 ---
 # Internal CA for mTLS certificates
@@ -222,7 +222,7 @@ spec:
     - "kubernetes.default.svc"
     - "kubernetes.default.svc.cluster.local"
   ipAddresses:
-    - "10.43.0.1"  # K3s default service IP
+    - "10.43.0.1" # K3s default service IP
   privateKey:
     algorithm: ECDSA
     size: 256
@@ -255,19 +255,19 @@ data:
         letsencrypt: "30d"  # Renew Let's Encrypt certs 30 days before expiry
         internal: "15d"     # Renew internal certs 15 days before expiry
         mtls: "7d"         # Renew mTLS certs 7 days before expiry
-      
+
       # Rotation schedule
       schedule:
         daily: "0 2 * * *"    # Daily check at 2 AM
         weekly: "0 3 * * 0"   # Weekly rotation on Sunday at 3 AM
         monthly: "0 4 1 * *"  # Monthly CA rotation on 1st at 4 AM
-      
+
       # Notification settings
       notifications:
         webhook: "https://homelab.local/hooks/cert-rotation"
         email: "tz-dev@vectorweight.com"
         slack: false
-      
+
       # Backup configuration
       backup:
         enabled: true

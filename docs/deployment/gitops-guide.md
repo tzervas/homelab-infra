@@ -72,34 +72,37 @@ GitOps is a declarative approach to infrastructure and application management wh
 ### Option 1: ArgoCD Installation
 
 1. **Install ArgoCD**:
+
    ```bash
    # Create namespace
    kubectl create namespace argocd
-   
+
    # Install ArgoCD
    kubectl apply -n argocd -f deployments/gitops/argocd/install.yaml
-   
+
    # Configure repositories
    kubectl apply -n argocd -f deployments/gitops/argocd/repositories.yaml
-   
+
    # Deploy App of Apps
    kubectl apply -n argocd -f deployments/gitops/argocd/app-of-apps.yaml
    ```
 
 2. **Access ArgoCD UI**:
+
    ```bash
    # Get initial password
    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-   
+
    # Port forward (or use ingress)
    kubectl port-forward svc/argocd-server -n argocd 8080:443
    ```
 
 3. **Configure CLI**:
+
    ```bash
    # Login
    argocd login localhost:8080 --username admin --password <password>
-   
+
    # List applications
    argocd app list
    ```
@@ -107,15 +110,17 @@ GitOps is a declarative approach to infrastructure and application management wh
 ### Option 2: Flux Installation
 
 1. **Install Flux CLI**:
+
    ```bash
    # Install flux CLI
    curl -s https://fluxcd.io/install.sh | sudo bash
-   
+
    # Check prerequisites
    flux check --pre
    ```
 
 2. **Bootstrap Flux**:
+
    ```bash
    # Bootstrap with GitHub
    flux bootstrap github \
@@ -127,10 +132,11 @@ GitOps is a declarative approach to infrastructure and application management wh
    ```
 
 3. **Verify Installation**:
+
    ```bash
    # Check flux components
    flux get all
-   
+
    # Check sources
    flux get sources all
    ```
@@ -138,13 +144,14 @@ GitOps is a declarative approach to infrastructure and application management wh
 ### Repository Configuration
 
 1. **SSH Key Setup** (for private repositories):
+
    ```bash
    # Generate SSH key for ArgoCD/Flux
    ssh-keygen -t ed25519 -C "gitops@homelab" -f ~/.ssh/gitops_ed25519
-   
+
    # Add public key to repository deploy keys
    cat ~/.ssh/gitops_ed25519.pub
-   
+
    # Create Kubernetes secret
    kubectl create secret generic private-repo-secret \
      --from-file=sshPrivateKey=~/.ssh/gitops_ed25519 \
@@ -152,10 +159,11 @@ GitOps is a declarative approach to infrastructure and application management wh
    ```
 
 2. **Webhook Configuration**:
+
    ```bash
    # Deploy webhook service
    kubectl apply -f deployments/gitops/webhooks/webhook-integration.yaml
-   
+
    # Configure GitHub webhook
    # URL: https://webhook-service.homelab.local/webhook/github
    # Content type: application/json
@@ -352,6 +360,7 @@ spec:
 ### Policy Violations
 
 When policies are violated:
+
 1. **Admission Control**: Resources are rejected at creation
 2. **Audit Mode**: Violations are logged for review
 3. **Compliance Reporting**: Violations tracked in monitoring
@@ -412,7 +421,7 @@ Webhook service maps changed files to affected applications:
 
 ```python
 app_mappings = {
-    'deployments/gitops/applications/infrastructure.yaml': 
+    'deployments/gitops/applications/infrastructure.yaml':
         ['metallb', 'cert-manager', 'ingress-nginx', 'longhorn'],
     'helm/': ['homelab-apps'],
     'kubernetes/': ['homelab-apps']

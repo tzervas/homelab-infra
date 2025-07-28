@@ -33,16 +33,16 @@ spec:
         app: webhook-service
     spec:
       containers:
-      - name: webhook-service
-        image: webhook-service:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: AUTH_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: webhook-secret
-              key: token
+        - name: webhook-service
+          image: webhook-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: webhook-secret
+                  key: token
 ---
 apiVersion: v1
 kind: Ingress
@@ -56,17 +56,17 @@ metadata:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   rules:
-  - host: webhook-service.homelab.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: webhook-service
-            port:
-              number: 8080
+    - host: webhook-service.homelab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webhook-service
+                port:
+                  number: 8080
   tls:
-  - hosts:
-    - webhook-service.homelab.local
-    secretName: webhook-service-tls
+    - hosts:
+        - webhook-service.homelab.local
+      secretName: webhook-service-tls

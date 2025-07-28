@@ -4,7 +4,7 @@
 # Controller configuration
 controller:
   logLevel: ${log_level}
-  
+
   # Resource requirements
   resources:
     limits:
@@ -13,17 +13,17 @@ controller:
     requests:
       cpu: 100m
       memory: 100Mi
-  
+
   # Security context
   securityContext:
     runAsNonRoot: true
     runAsUser: 65534
     fsGroup: 65534
-  
+
   # Node selector
   nodeSelector:
     kubernetes.io/os: linux
-  
+
   # Tolerations
   tolerations:
     - key: node-role.kubernetes.io/master
@@ -36,7 +36,7 @@ controller:
 # Speaker configuration
 speaker:
   logLevel: ${log_level}
-  
+
   # Resource requirements
   resources:
     limits:
@@ -45,7 +45,7 @@ speaker:
     requests:
       cpu: 100m
       memory: 100Mi
-  
+
   # Security context
   securityContext:
     allowPrivilegeEscalation: false
@@ -55,11 +55,11 @@ speaker:
         - ALL
       add:
         - NET_RAW
-  
+
   # Node selector
   nodeSelector:
     kubernetes.io/os: linux
-  
+
   # Tolerations
   tolerations:
     - key: node-role.kubernetes.io/master
@@ -68,11 +68,11 @@ speaker:
     - key: node-role.kubernetes.io/control-plane
       operator: Equal
       effect: NoSchedule
-  
+
   # FRR configuration
   frr:
     enabled: false
-    
+
   # Member list
   memberlist:
     enabled: true

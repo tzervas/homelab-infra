@@ -168,14 +168,14 @@
           # Ansible Authentication Test Results
           Generated: {{ ansible_date_time.iso8601 }}
           Host: {{ inventory_hostname }}
-          
+
           ## Test Results:
           {% for result in test_results %}
           ### {{ result.test }}: {{ result.status }}
           {{ result.details }}
-          
+
           {% endfor %}
-          
+
           ## Overall Status: {% if all_tests_passed %}PASS{% else %}FAIL{% endif %}
 
         dest: "/tmp/ansible-auth-test-results.md"

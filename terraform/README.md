@@ -23,6 +23,7 @@ terraform/
 ## Features
 
 ### K3s Cluster Module
+
 - Automated K3s installation and configuration
 - Configurable cluster networking (CIDR, DNS)
 - Node labeling and tainting support
@@ -32,6 +33,7 @@ terraform/
 - Cluster status monitoring
 
 ### Networking Module
+
 - MetalLB load balancer with configurable IP pools
 - L2 advertisement configuration
 - NGINX Ingress Controller with SSL passthrough
@@ -41,6 +43,7 @@ terraform/
 - VLAN support with Multus CNI
 
 ### Security Module
+
 - Cert-Manager for SSL certificate management
 - Let's Encrypt integration (staging and production)
 - External Secrets Operator integration
@@ -51,6 +54,7 @@ terraform/
 - Falco runtime security monitoring
 
 ### Storage Module
+
 - Local Path Provisioner for local storage
 - Multiple storage classes (standard, fast-SSD)
 - NFS provisioner support
@@ -69,30 +73,34 @@ terraform/
 ### Quick Start
 
 1. **Initialize Terraform**:
+
    ```bash
    cd terraform
    terraform init
    ```
 
 2. **Plan the deployment**:
+
    ```bash
    # For development environment (default)
    terraform plan
-   
+
    # For specific environment
    terraform plan -var="environment=staging"
    ```
 
 3. **Apply the configuration**:
+
    ```bash
    # Deploy development environment
    terraform apply
-   
+
    # Deploy specific environment
    terraform apply -var="environment=staging"
    ```
 
 4. **Verify the deployment**:
+
    ```bash
    kubectl get nodes
    kubectl get pods -A
@@ -101,6 +109,7 @@ terraform/
 ### Environment-Specific Deployment
 
 #### Development Environment
+
 ```bash
 cd terraform/environments/development
 terraform init
@@ -109,6 +118,7 @@ terraform apply
 ```
 
 #### Production Environment
+
 ```bash
 cd terraform/environments/production
 terraform init
@@ -119,6 +129,7 @@ terraform apply
 ### Configuration
 
 #### MetalLB IP Pools
+
 Configure IP pools in the environment variables:
 
 ```hcl
@@ -133,6 +144,7 @@ metallb_ip_pools = {
 ```
 
 #### SSL Certificates
+
 Enable cert-manager and Let's Encrypt:
 
 ```hcl
@@ -142,6 +154,7 @@ letsencrypt_email = "admin@yourdomain.com"
 ```
 
 #### Storage Configuration
+
 Configure storage classes and provisioners:
 
 ```hcl
@@ -173,12 +186,14 @@ graph TB
 ## Security Considerations
 
 ### Development Environment
+
 - Minimal security policies
 - Network policies disabled for easier debugging
 - No runtime security monitoring
 - Self-signed certificates
 
 ### Production Environment
+
 - Full security policy enforcement
 - Network isolation with policies
 - Runtime security with Falco
@@ -188,12 +203,14 @@ graph TB
 ## Customization
 
 ### Adding New Modules
+
 1. Create module directory under `modules/`
 2. Define variables, resources, and outputs
 3. Add module to environment configurations
 4. Update documentation
 
 ### Environment Customization
+
 1. Modify variables in `environments/{env}/variables.tf`
 2. Override module configurations as needed
 3. Add environment-specific resources
@@ -204,15 +221,17 @@ graph TB
 ### Common Issues
 
 1. **K3s Installation Fails**:
+
    ```bash
    # Check installation script
    cat terraform/modules/k3s-cluster/k3s-install.sh
-   
+
    # Run manually for debugging
    bash terraform/modules/k3s-cluster/k3s-install.sh
    ```
 
 2. **MetalLB Not Getting IPs**:
+
    ```bash
    # Check IP pool configuration
    kubectl get ipaddresspool -n metallb-system
@@ -220,6 +239,7 @@ graph TB
    ```
 
 3. **Ingress Not Working**:
+
    ```bash
    # Check ingress controller
    kubectl get pods -n ingress-nginx

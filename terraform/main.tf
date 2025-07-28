@@ -32,7 +32,7 @@ variable "environment" {
   description = "Environment to deploy (development, staging, production)"
   type        = string
   default     = "development"
-  
+
   validation {
     condition     = contains(["development", "staging", "production"], var.environment)
     error_message = "Environment must be one of: development, staging, production."
@@ -78,17 +78,17 @@ locals {
       resource_limits  = "full"
     }
   }
-  
+
   current_config = local.environment_configs[var.environment]
 }
 
 # Environment-specific module instantiation
 module "homelab_infrastructure" {
   source = "./environments/${var.environment}"
-  
+
   # Pass common variables
   kubeconfig_path = var.kubeconfig_path
-  
+
   # Environment-specific overrides can be added here
   cluster_name = local.current_config.cluster_name
 }

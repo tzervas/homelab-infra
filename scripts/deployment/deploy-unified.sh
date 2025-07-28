@@ -192,7 +192,7 @@ validate_prerequisites() {
 validate_terraform_state() {
   log "INFO" "Validating Terraform state..."
   cd "$PROJECT_ROOT/terraform"
-  
+
   if terraform show > /dev/null 2>&1; then
     log "INFO" "Terraform state is valid"
   else
@@ -209,26 +209,26 @@ run_terraform() {
 
   log "INFO" "Running Terraform for environment: $ENVIRONMENT"
   cd "$PROJECT_ROOT/terraform"
-  
+
   # Initialize Terraform
   log "INFO" "Initializing Terraform..."
   terraform init
-  
+
   # Run terraform plan with environment-specific variables
   log "INFO" "Creating Terraform plan..."
   if [[ $DRY_RUN == true ]]; then
     terraform plan -var="environment=$ENVIRONMENT"
   else
     terraform plan -var="environment=$ENVIRONMENT" -out=tfplan
-    
+
     # Apply the plan
     log "INFO" "Applying Terraform plan..."
     terraform apply "tfplan"
-    
+
     # Validate the state after apply
     validate_terraform_state
   fi
-  
+
   log "INFO" "Terraform provisioning completed"
 }
 
@@ -241,14 +241,14 @@ sync_helmfile() {
 
   log "INFO" "Running Helmfile sync for environment: $ENVIRONMENT"
   cd "$PROJECT_ROOT/helm"
-  
+
   # Validate Helmfile configuration
   log "INFO" "Validating Helmfile configuration..."
   if ! helmfile --environment "$ENVIRONMENT" list > /dev/null 2>&1; then
     log "ERROR" "Helmfile configuration validation failed"
     return 1
   fi
-  
+
   if [[ $DRY_RUN == true ]]; then
     log "INFO" "Performing Helmfile diff (dry run)..."
     helmfile --environment "$ENVIRONMENT" diff
@@ -256,7 +256,7 @@ sync_helmfile() {
     log "INFO" "Syncing Helmfile releases..."
     helmfile --environment "$ENVIRONMENT" sync --wait --timeout 600
   fi
-  
+
   log "INFO" "Helmfile sync completed"
 }
 
@@ -273,15 +273,15 @@ post_deployment_tests() {
   fi
 
   log "INFO" "Running comprehensive post-deployment tests..."
-  
+
   # Run the comprehensive test suite with enhanced security testing
   local test_args=("--log-level" "INFO")
-  
+
   # Add environment-specific test configuration if available
   if [[ -f "$PROJECT_ROOT/config/test-$ENVIRONMENT.yaml" ]]; then
     test_args+=("--config" "$PROJECT_ROOT/config/test-$ENVIRONMENT.yaml")
   fi
-  
+
   # Run all test modules including security validation
   if python3 "$PROJECT_ROOT/scripts/testing/test_reporter.py" "${test_args[@]}"; then
     log "INFO" "All post-deployment tests passed"
@@ -294,7 +294,7 @@ post_deployment_tests() {
 # Deployment smoke tests
 run_deployment_smoke_tests() {
   log "INFO" "Running deployment smoke tests..."
-  
+
   # Use the Python smoke test module for comprehensive testing
   if python3 "$PROJECT_ROOT/scripts/testing/deployment_smoke_tests.py" --log-level INFO; then
     log "INFO" "All deployment smoke tests passed"
@@ -308,43 +308,43 @@ run_deployment_smoke_tests() {
 # Main deployment function
 main() {
   local start_time=$(date +%s)
-  
+
   log "INFO" "🚀 Starting unified homelab deployment..."
   log "INFO" "Environment: $ENVIRONMENT"
   log "INFO" "Dry run: $DRY_RUN"
-  
+
   # Parse command line arguments
   parse_arguments "$@"
-  
+
   # Validate prerequisites
   validate_prerequisites
-  
+
   # Run deployment phases
   if ! run_terraform; then
     log "ERROR" "Terraform deployment failed"
     exit 1
   fi
-  
+
   if ! run_deployment_smoke_tests; then
     log "ERROR" "Deployment smoke tests failed"
     exit 1
   fi
-  
+
   if ! sync_helmfile; then
     log "ERROR" "Helmfile deployment failed"
     exit 1
   fi
-  
+
   if ! post_deployment_tests; then
     log "ERROR" "Post-deployment tests failed"
     exit 1
   fi
-  
+
   local end_time=$(date +%s)
   local duration=$((end_time - start_time))
-  
+
   log "INFO" "✅ Unified deployment completed successfully in ${duration}s"
-  
+
   # Show deployment summary
   log "INFO" "📊 Deployment Summary:"
   log "INFO" "  Environment: $ENVIRONMENT"
@@ -356,4 +356,3 @@ main() {
 
 # Execute main function with all arguments
 main "$@"
-

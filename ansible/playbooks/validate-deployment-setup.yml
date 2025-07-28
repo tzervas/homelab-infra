@@ -12,17 +12,17 @@
     deployment_home: "/home/{{ deployment_user }}"
     test_timestamp: "{{ ansible_date_time.iso8601 }}"
     validation_report_path: "/tmp/homelab-deployment-validation-{{ ansible_date_time.epoch }}.json"
-    
+
     # Test configuration
     test_packages:
       - curl
       - wget
       - git
-    
+
     test_services:
       - ssh
       - systemd-resolved
-    
+
     required_dirs:
       - /tmp/homelab-test
       - /var/log/homelab
@@ -36,11 +36,11 @@
         - name: Verify SSH connection without password
           ping:
           register: ssh_ping_result
-          
+
         - name: Check SSH connection type
           debug:
             msg: "SSH key authentication working - connection established"
-            
+
         - name: Record SSH authentication success
           set_fact:
             validation_results: "{{ validation_results + [{
@@ -51,7 +51,7 @@
               'timestamp': test_timestamp,
               'remediation': None
             }] }}"
-            
+
       rescue:
         - name: Record SSH authentication failure
           set_fact:
@@ -63,7 +63,7 @@
               'timestamp': test_timestamp,
               'remediation': 'Verify SSH key is properly configured and added to authorized_keys'
             }] }}"
-      
+
       tags: [ssh, authentication]
 
     # ==========================================
@@ -75,7 +75,7 @@
           command: whoami
           register: current_user_result
           changed_when: false
-          
+
         - name: Record current user test
           set_fact:
             validation_results: "{{ validation_results + [{
@@ -145,7 +145,7 @@
               'timestamp': test_timestamp,
               'remediation': 'Check user permissions and sudo configuration'
             }] }}"
-      
+
       tags: [user, sudo, authentication]
 
     # ==========================================
@@ -263,7 +263,7 @@
               'timestamp': test_timestamp,
               'remediation': 'Manually create deployment user and configure sudo access'
             }] }}"
-      
+
       tags: [deployment_user, user_management]
 
     # ==========================================
@@ -377,7 +377,7 @@
               'timestamp': test_timestamp,
               'remediation': 'Check sudo permissions and module availability'
             }] }}"
-      
+
       tags: [modules, testing]
 
     # ==========================================
@@ -462,7 +462,7 @@
               'timestamp': test_timestamp,
               'remediation': 'Check system requirements and network connectivity'
             }] }}"
-      
+
       tags: [readiness, deployment]
 
   # ==========================================
@@ -486,15 +486,15 @@
           ================================================================
           Timestamp: {{ test_timestamp }}
           Host: {{ inventory_hostname }} ({{ ansible_host }})
-          
+
           📊 Test Statistics:
           • Total Tests: {{ test_summary.total_tests }}
           • Passed: {{ test_summary.passed_tests }} ✅
           • Failed: {{ test_summary.failed_tests }} ❌
           • Warnings: {{ test_summary.warning_tests }} ⚠️
-          
+
           🎯 Overall Status: {{ test_summary.overall_status }}
-          
+
           {% if test_summary.overall_status == 'PASS' %}
           🎉 ALL CRITICAL TESTS PASSED!
           Your homelab deployment setup is ready for automated deployments.
@@ -510,7 +510,7 @@
           📋 DETAILED TEST RESULTS:
           ========================
           {% for result in validation_results %}
-          
+
           {{ loop.index }}. {{ result.phase }} - {{ result.test }}
              Status: {{ result.status }} {% if result.status == 'PASS' %}✅{% elif result.status == 'FAIL' %}❌{% else %}⚠️{% endif %}
              Details: {{ result.details }}
@@ -523,13 +523,13 @@
       copy:
         content: |
           # Homelab Deployment Validation Report
-          
-          **Generated:** {{ test_timestamp }}  
-          **Host:** {{ inventory_hostname }} ({{ ansible_host }})  
-          **Ansible User:** {{ ansible_user }}  
-          
+
+          **Generated:** {{ test_timestamp }}
+          **Host:** {{ inventory_hostname }} ({{ ansible_host }})
+          **Ansible User:** {{ ansible_user }}
+
           ## Executive Summary
-          
+
           | Metric | Count |
           |--------|-------|
           | Total Tests | {{ test_summary.total_tests }} |
@@ -537,41 +537,41 @@
           | Failed | {{ test_summary.failed_tests }} |
           | Warnings | {{ test_summary.warning_tests }} |
           | **Overall Status** | **{{ test_summary.overall_status }}** |
-          
+
           {% if test_summary.overall_status == 'PASS' %}
           ## ✅ Status: READY FOR DEPLOYMENT
-          
-          All critical authentication and deployment readiness tests have passed. 
+
+          All critical authentication and deployment readiness tests have passed.
           Your homelab infrastructure is ready for automated deployments.
           {% else %}
           ## ❌ Status: REQUIRES ATTENTION
-          
-          Some tests have failed. Please review the remediation steps below 
+
+          Some tests have failed. Please review the remediation steps below
           before proceeding with automated deployments.
           {% endif %}
-          
+
           ## Detailed Test Results
-          
+
           {% for result in validation_results %}
           ### {{ result.phase }}: {{ result.test }}
-          
+
           - **Status:** {{ result.status }}
           - **Details:** {{ result.details }}
           {% if result.remediation and result.status != 'PASS' %}
           - **Remediation:** {{ result.remediation }}
           {% endif %}
           - **Timestamp:** {{ result.timestamp }}
-          
+
           {% endfor %}
-          
+
           ## System Information
-          
+
           - **Operating System:** {{ ansible_distribution }} {{ ansible_distribution_version }}
           - **Python Version:** {{ ansible_python_version }}
           - **Ansible Version:** {{ ansible_version.full }}
           - **Available Memory:** {{ ansible_memtotal_mb }} MB
           - **Available Disk (/):** {{ root_space_gb | default('Unknown') }} GB
-          
+
           ---
           *Report generated by Homelab Deployment Validation Playbook*
         dest: "{{ validation_report_path }}"
@@ -609,7 +609,7 @@
           📄 Validation reports saved:
           • Human-readable: {{ validation_report_path }}
           • Machine-readable: {{ validation_report_path | regex_replace('\\.json$', '') }}.json
-          
+
           💡 Use these reports to track validation history and automate deployment decisions.
 
     - name: Cleanup test files
@@ -623,11 +623,11 @@
       fail:
         msg: |
           ❌ VALIDATION FAILED!
-          
+
           {{ test_summary.failed_tests }} out of {{ test_summary.total_tests }} tests failed.
           Please review the detailed results above and apply the suggested remediations
           before proceeding with automated deployments.
-          
+
           Report saved to: {{ validation_report_path }}
       when: test_summary.overall_status == 'FAIL'
 
@@ -635,10 +635,10 @@
       debug:
         msg: |
           🎉 VALIDATION SUCCESSFUL!
-          
+
           All {{ test_summary.total_tests }} critical tests passed.
           Your homelab deployment setup is ready for automated operations.
-          
+
           Next steps:
           1. Review the detailed report at: {{ validation_report_path }}
           2. Proceed with your homelab deployments

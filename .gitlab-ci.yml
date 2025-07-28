@@ -292,8 +292,7 @@ test:integration:
     - pip install --upgrade pip
     - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
   script:
-    - python scripts/testing/test_reporter.py --environment test --output-format junit >
-      integration-test-report.xml
+    - python scripts/testing/test_reporter.py --environment test --output-format junit > integration-test-report.xml
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -316,13 +315,11 @@ deploy:staging:
     url: https://staging.homelab.local
   before_script:
     - apk add --no-cache bash curl kubectl
-    - curl -LO
-      "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+    - curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
     - unzip terraform_*.zip && mv terraform /usr/local/bin/
     - curl -LO "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
     - tar -xzf helm-*.tar.gz && mv linux-amd64/helm /usr/local/bin/
-    - curl -LO
-      "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
     - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
     - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
@@ -354,8 +351,7 @@ integration-test:staging:
     - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
   script:
-    - python scripts/testing/test_reporter.py --environment staging --output-format junit >
-      staging-integration-report.xml
+    - python scripts/testing/test_reporter.py --environment staging --output-format junit > staging-integration-report.xml
     - bash scripts/testing/validate-enhanced-monitoring.sh
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop" && $AUTO_DEPLOY_STAGING == "true"'
@@ -379,13 +375,11 @@ deploy:production:
     url: https://homelab.local
   before_script:
     - apk add --no-cache bash curl kubectl
-    - curl -LO
-      "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+    - curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
     - unzip terraform_*.zip && mv terraform /usr/local/bin/
     - curl -LO "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
     - tar -xzf helm-*.tar.gz && mv linux-amd64/helm /usr/local/bin/
-    - curl -LO
-      "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
     - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
     - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
@@ -417,8 +411,7 @@ verify:production:
     - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
   script:
-    - python scripts/testing/test_reporter.py --environment production --output-format junit >
-      production-verification-report.xml
+    - python scripts/testing/test_reporter.py --environment production --output-format junit > production-verification-report.xml
     - bash scripts/testing/validate-enhanced-monitoring.sh
     - python scripts/testing/production_health_check.py
   rules:

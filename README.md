@@ -7,12 +7,14 @@ Modern Infrastructure as Code (IaC) for managing homelab k3s environment with Te
 This repository contains a modernized infrastructure configuration for a homelab environment, featuring a unified deployment strategy with comprehensive security and automation:
 
 ### Core Technologies
+
 - **Terraform** - Infrastructure provisioning and lifecycle management
 - **k3s** - Lightweight Kubernetes distribution
 - **Helm/Helmfile** - Declarative application deployment
 - **GitOps** - ArgoCD/Flux for continuous deployment
 
 ### Infrastructure Components
+
 - **MetalLB** - Bare metal load balancer with automated IP management
 - **Longhorn** - Distributed block storage with backup integration
 - **Prometheus Stack** - Comprehensive monitoring and alerting
@@ -20,6 +22,7 @@ This repository contains a modernized infrastructure configuration for a homelab
 - **Ingress-Nginx** - Ingress controller with SSL termination
 
 ### Security & Automation
+
 - **mTLS** - Service-to-service mutual authentication
 - **Sealed Secrets** - Encrypted secret management
 - **Network Policies** - Microsegmentation and traffic control

@@ -26,14 +26,14 @@ graph TD
         A1 --> A3[Direct K8s Resources]
         A1 --> A4[Static Configurations]
     end
-    
+
     subgraph "Modern Architecture"
         B1[Terraform] --> B2[Automated Infrastructure]
         B3[Helm/Helmfile] --> B4[Declarative Applications]
         B5[GitOps] --> B6[Continuous Deployment]
         B7[Unified Scripts] --> B8[Integrated Testing]
     end
-    
+
     A1 -.->|Migration| B1
     A1 -.->|Migration| B3
     A4 -.->|Migration| B5
@@ -549,6 +549,7 @@ kubectl apply -f monitoring/helmfile-alerts.yaml
 
 **Symptoms:** Resource already exists errors
 **Solution:**
+
 ```bash
 # Import existing resource
 terraform import kubernetes_namespace.example default
@@ -561,6 +562,7 @@ terraform state rm kubernetes_namespace.example
 
 **Symptoms:** Release already exists errors
 **Solution:**
+
 ```bash
 # Check existing releases
 helm list -A
@@ -577,6 +579,7 @@ helmfile --environment development sync
 
 **Symptoms:** Certificate not being issued
 **Solution:**
+
 ```bash
 # Check cert-manager status
 kubectl describe certificate problem-cert
@@ -590,6 +593,7 @@ kubectl annotate certificate problem-cert cert-manager.io/force-renew=true
 
 **Symptoms:** Services cannot communicate
 **Solution:**
+
 ```bash
 # Temporarily disable policies for debugging
 kubectl label namespace target-namespace network-policy=disabled
@@ -602,6 +606,7 @@ kubectl describe networkpolicy -n target-namespace
 
 **Symptoms:** Applications not syncing
 **Solution:**
+
 ```bash
 # Force sync in ArgoCD
 argocd app sync app-name --force
@@ -739,6 +744,7 @@ kubectl get certificates -A
 This migration guide provides a comprehensive roadmap for modernizing your homelab infrastructure. The phased approach minimizes risk while maximizing the benefits of modern infrastructure management practices.
 
 **Key Benefits Achieved:**
+
 - Enhanced security with automated certificate management and mTLS
 - Improved reliability through Infrastructure as Code
 - Increased automation reducing manual operations
@@ -746,6 +752,7 @@ This migration guide provides a comprehensive roadmap for modernizing your homel
 - Scalable architecture for future growth
 
 **Next Steps:**
+
 1. Review and approve migration plan
 2. Prepare test environment
 3. Begin Phase 1 implementation
@@ -757,5 +764,4 @@ This migration guide provides a comprehensive roadmap for modernizing your homel
 **Migration Guide Version:** 2.0  
 **Last Updated:** December 2024  
 **Next Review:** Post-implementation  
-**Contact:** tz-dev@vectorweight.com
-
+**Contact:** <tz-dev@vectorweight.com>

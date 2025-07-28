@@ -2,7 +2,7 @@ global:
   domain: "homelab.local"
   storageClass: "longhorn"
   timezone: "UTC"
-  
+
   # Enable TLS by default
   tls:
     enabled: true
@@ -24,11 +24,11 @@ global:
 # Enable security baseline for all components
 security-baseline:
   enabled: true
-  
+
   # Override global settings for core infrastructure
   global:
     environment: "development"  # Will be overridden by environment-specific values
-    
+
   # Enable network policies for core infrastructure
   networkPolicies:
     defaultDeny:
@@ -37,7 +37,7 @@ security-baseline:
       enabled: true
     allowKubeAPI:
       enabled: true
-      
+
   # RBAC configuration
   rbac:
     create: true

@@ -8,6 +8,14 @@ This directory contains deployment manifests, scripts, and Infrastructure as Cod
 deployments/
 ├── README.md                     # This documentation
 ├── k3s/                         # K3s cluster deployment files
+├── gitops/                      # GitOps-ready configuration management
+│   ├── argocd/                  # ArgoCD configuration templates
+│   ├── flux/                    # Flux configuration templates
+│   ├── applications/            # Application manifests for GitOps
+│   ├── overlays/                # Environment-specific overlays
+│   ├── policies/                # Policy-as-code configurations
+│   └── webhooks/                # Webhook integrations
+├── security/                    # Security configurations and policies
 ├── applications/                # Application deployment manifests (future)
 ├── infrastructure/              # Infrastructure as Code (future)
 └── helm-charts/                 # Custom Helm charts (future)

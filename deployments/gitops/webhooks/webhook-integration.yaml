@@ -1,0 +1,72 @@
+# Webhook Integrations for Automated Deployments
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: monitoring
+  labels:
+    app: webhook-service
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: webhook-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-service
+  namespace: monitoring
+  labels:
+    app: webhook-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-service
+  template:
+    metadata:
+      labels:
+        app: webhook-service
+    spec:
+      containers:
+      - name: webhook-service
+        image: webhook-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: webhook-secret
+              key: token
+---
+apiVersion: v1
+kind: Ingress
+metadata:
+  name: webhook-ingress
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: webhook-service.homelab.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: webhook-service
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    - webhook-service.homelab.local
+    secretName: webhook-service-tls

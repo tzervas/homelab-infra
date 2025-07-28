@@ -236,6 +236,30 @@ grafana:
           editable: true
           options:
             path: /var/lib/grafana/dashboards/default
+        - name: 'infrastructure'
+          orgId: 1
+          folder: 'Infrastructure'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/infrastructure
+        - name: 'security'
+          orgId: 1
+          folder: 'Security'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/security
+        - name: 'deployment'
+          orgId: 1
+          folder: 'Deployment'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/deployment
 
   ingress:
     enabled: true
@@ -246,3 +270,84 @@ grafana:
       - secretName: grafana-tls
         hosts:
           - grafana.homelab.local
+
+# Enhanced Monitoring Features
+helmReleaseMonitoring:
+  enabled: true
+  image:
+    repository: ghcr.io/helm/helm-release-monitor
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  checkInterval: "300s"
+  namespaceSelector: "*"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+terraformStateMonitoring:
+  enabled: true
+  image:
+    repository: homelab/terraform-state-monitor
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  checkInterval: "300s"
+  environments:
+    - development
+    - staging
+    - production
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+certificateMonitoring:
+  enabled: true
+  checkInterval: "3600s"  # 1 hour
+  warningThreshold: "168h"  # 7 days
+  criticalThreshold: "24h"   # 1 day
+
+securityPolicyMonitoring:
+  enabled: true
+  podSecurityPolicies: true
+  networkPolicies: true
+  rbacPolicies: true
+  falcoIntegration: true
+
+structuredLogging:
+  enabled: true
+  logLevel: "info"
+  format: "json"
+  additionalFields:
+    cluster: "homelab"
+    environment: "{{ .Values.global.environment | default \"development\" }}"
+
+# Custom Grafana Dashboards
+customDashboards:
+  enabled: true
+  
+  # Infrastructure provisioning dashboard
+  infrastructureProvisioning:
+    enabled: true
+    datasource: Prometheus
+    
+  # Deployment pipeline metrics dashboard  
+  deploymentPipeline:
+    enabled: true
+    datasource: Prometheus
+    
+  # Security compliance dashboard
+  securityCompliance:
+    enabled: true
+    datasource: Prometheus
+    
+  # Cost tracking dashboard (if applicable)
+  costTracking:
+    enabled: false  # Enable if cost metrics are available
+    datasource: Prometheus

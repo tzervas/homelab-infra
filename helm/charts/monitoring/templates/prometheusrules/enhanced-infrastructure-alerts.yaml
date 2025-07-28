@@ -1,0 +1,214 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "monitoring.fullname" . }}-enhanced-infrastructure-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "monitoring.labels" . | nindent 4 }}
+    component: enhanced-alerts
+spec:
+  groups:
+  # Terraform State Monitoring Alerts
+  - name: terraform.state
+    rules:
+    - alert: TerraformStateDriftDetected
+      expr: terraform_state_drift_detected > 0
+      for: 5m
+      labels:
+        severity: warning
+        category: infrastructure
+      annotations:
+        summary: "Terraform state drift detected"
+        description: "Configuration drift detected in {{ $labels.environment }}/{{ $labels.workspace }} for resource type {{ $labels.resource_type }}"
+        runbook_url: "https://runbooks.homelab.local/terraform/drift-resolution"
+    
+    - alert: TerraformStateStale
+      expr: time() - terraform_state_last_modified_timestamp > 86400
+      for: 10m
+      labels:
+        severity: warning
+        category: infrastructure
+      annotations:
+        summary: "Terraform state is stale"
+        description: "Terraform state for {{ $labels.environment }}/{{ $labels.workspace }} hasn't been updated in over 24 hours"
+        runbook_url: "https://runbooks.homelab.local/terraform/stale-state"
+    
+    - alert: TerraformApplyFailed
+      expr: increase(terraform_apply_duration_seconds_count{status="failed"}[1h]) > 0
+      for: 0m
+      labels:
+        severity: critical
+        category: infrastructure
+      annotations:
+        summary: "Terraform apply operation failed"
+        description: "Terraform apply failed for {{ $labels.environment }}/{{ $labels.workspace }}"
+        runbook_url: "https://runbooks.homelab.local/terraform/apply-failure"
+
+  # Helm Release Monitoring Alerts  
+  - name: helm.releases
+    rules:
+    - alert: HelmReleaseFailed
+      expr: helm_release_status{status!~"deployed|superseded"} == 1
+      for: 5m
+      labels:
+        severity: critical
+        category: deployment
+      annotations:
+        summary: "Helm release in failed state"
+        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} is in {{ $labels.status }} state"
+        runbook_url: "https://runbooks.homelab.local/helm/release-failure"
+    
+    - alert: HelmReleaseStale
+      expr: time() - helm_release_last_deployed_timestamp > 86400*7
+      for: 10m
+      labels:
+        severity: warning
+        category: deployment
+      annotations:
+        summary: "Helm release hasn't been updated recently"
+        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} hasn't been updated in over 7 days"
+        runbook_url: "https://runbooks.homelab.local/helm/stale-releases"
+    
+    - alert: HelmReleaseRevisionRollback
+      expr: increase(helm_release_revision_rollbacks_total[1h]) > 0
+      for: 0m
+      labels:
+        severity: warning
+        category: deployment
+      annotations:
+        summary: "Helm release rolled back"
+        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} was rolled back"
+        runbook_url: "https://runbooks.homelab.local/helm/rollback-investigation"
+
+  # Certificate Expiry Alerts
+  - name: certificates.expiry
+    rules:
+    - alert: CertificateExpiringSoon
+      expr: cert_manager_certificate_expiration_timestamp_seconds - time() < 86400*7
+      for: 1h
+      labels:
+        severity: warning
+        category: security
+      annotations:
+        summary: "Certificate expiring soon"
+        description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires in less than 7 days"
+        runbook_url: "https://runbooks.homelab.local/certificates/renewal"
+    
+    - alert: CertificateExpired
+      expr: cert_manager_certificate_expiration_timestamp_seconds - time() < 0
+      for: 0m
+      labels:
+        severity: critical
+        category: security
+      annotations:
+        summary: "Certificate has expired"
+        description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} has expired"
+        runbook_url: "https://runbooks.homelab.local/certificates/expired"
+    
+    - alert: CertificateRenewalFailed
+      expr: increase(cert_manager_certificate_renewal_failures_total[1h]) > 0
+      for: 0m
+      labels:
+        severity: critical
+        category: security
+      annotations:
+        summary: "Certificate renewal failed"
+        description: "Certificate renewal failed for {{ $labels.name }} in namespace {{ $labels.namespace }}"
+        runbook_url: "https://runbooks.homelab.local/certificates/renewal-failure"
+
+  # Security Policy Violation Alerts
+  - name: security.policies
+    rules:
+    - alert: PodSecurityPolicyViolation
+      expr: increase(pod_security_policy_violations_total[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+        category: security
+      annotations:
+        summary: "Pod Security Policy violation detected"
+        description: "Pod Security Policy violated by {{ $labels.pod }} in namespace {{ $labels.namespace }}: {{ $labels.violation_type }}"
+        runbook_url: "https://runbooks.homelab.local/security/policy-violations"
+    
+    - alert: NetworkPolicyViolation
+      expr: increase(network_policy_violations_total[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+        category: security
+      annotations:
+        summary: "Network Policy violation detected"
+        description: "Network policy violation from {{ $labels.source_pod }} to {{ $labels.destination_pod }}"
+        runbook_url: "https://runbooks.homelab.local/security/network-violations"
+    
+    - alert: RBACPolicyViolation
+      expr: increase(rbac_policy_violations_total[5m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+        category: security
+      annotations:
+        summary: "RBAC Policy violation detected"
+        description: "RBAC violation by {{ $labels.user }} attempting {{ $labels.verb }} on {{ $labels.resource }}"
+        runbook_url: "https://runbooks.homelab.local/security/rbac-violations"
+
+  # Infrastructure Health Alerts
+  - name: infrastructure.health
+    rules:
+    - alert: InfrastructureProvisioningStuck
+      expr: infrastructure_provisioning_duration_seconds > 1800
+      for: 5m
+      labels:
+        severity: critical
+        category: infrastructure
+      annotations:
+        summary: "Infrastructure provisioning taking too long"
+        description: "Infrastructure provisioning for {{ $labels.component }} has been running for over 30 minutes"
+        runbook_url: "https://runbooks.homelab.local/infrastructure/provisioning-stuck"
+    
+    - alert: DeploymentPipelineFailure
+      expr: increase(deployment_pipeline_failures_total[1h]) > 0
+      for: 0m
+      labels:
+        severity: critical
+        category: deployment
+      annotations:
+        summary: "Deployment pipeline failed"
+        description: "Deployment pipeline {{ $labels.pipeline }} failed at stage {{ $labels.stage }}"
+        runbook_url: "https://runbooks.homelab.local/deployment/pipeline-failure"
+    
+    - alert: SecurityComplianceScoreLow
+      expr: security_compliance_score < 80
+      for: 15m
+      labels:
+        severity: warning
+        category: security
+      annotations:
+        summary: "Security compliance score below threshold"
+        description: "Security compliance score is {{ $value }}%, below the 80% threshold"
+        runbook_url: "https://runbooks.homelab.local/security/compliance-improvement"
+
+  # Cost and Resource Optimization Alerts
+  - name: cost.optimization
+    rules:
+    - alert: ResourceUtilizationLow
+      expr: avg_over_time(node_cpu_utilization_percent[24h]) < 20
+      for: 1h
+      labels:
+        severity: info
+        category: optimization
+      annotations:
+        summary: "Low resource utilization detected"
+        description: "Node {{ $labels.instance }} has low CPU utilization ({{ $value }}%) over the last 24 hours"
+        runbook_url: "https://runbooks.homelab.local/optimization/resource-scaling"
+    
+    - alert: StorageGrowthRateHigh
+      expr: predict_linear(node_filesystem_free_bytes[1h], 86400*7) < 0
+      for: 30m
+      labels:
+        severity: warning
+        category: storage
+      annotations:
+        summary: "Storage will be full within 7 days"
+        description: "Storage on {{ $labels.instance }} {{ $labels.mountpoint }} will be full within 7 days at current growth rate"
+        runbook_url: "https://runbooks.homelab.local/storage/capacity-planning"

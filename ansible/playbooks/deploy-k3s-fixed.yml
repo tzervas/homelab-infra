@@ -1,12 +1,13 @@
 ---
-# K3s Kubernetes Cluster Deployment
-# Installs and configures K3s with required settings for homelab
+# K3s Kubernetes Cluster System-Level Setup
+# Installs and configures K3s with system-focused tasks for homelab
+# Ensures idempotency and readiness for application deployments via Helm
 
-- name: Deploy K3s to homelab
-  hosts: test-vm
+- name: System-Level K3s Deployment and Configuration
+  hosts: homelab
   become: yes
   vars:
-    k3s_version: "v1.27.4+k3s1"
+    k3s_version: "v1.28.5+k3s1"
     k3s_server_args:
       - "--disable=traefik"
       - "--disable=servicelb"
@@ -16,13 +17,15 @@
       - "--kube-scheduler-arg=bind-address=0.0.0.0"
 
   tasks:
-    - name: Create /opt/homelab directory
+    - name: Ensure /opt/homelab directory exists (idempotent)
       file:
         path: /opt/homelab
         state: directory
         mode: '0755'
+        owner: root
+        group: root
 
-    - name: Check if K3s is already installed
+    - name: Check if K3s is already installed (idempotent)
       command: k3s --version
       register: k3s_check
       changed_when: false

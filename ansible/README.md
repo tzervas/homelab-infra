@@ -4,21 +4,23 @@ This directory contains Ansible configurations and playbooks for the homelab inf
 
 ## Current Status
 
-⚠️ **Note**: This project has migrated from Ansible-based deployment to a Helm/Helmfile approach. The Ansible directory is maintained for:
-- Legacy compatibility
-- Specific system-level configurations not handled by Kubernetes
-- Infrastructure bootstrapping tasks
+⚠️ **Note**: This project maintains Ansible playbooks for system-level configuration and provisioning tasks only. All application deployments have transitioned to Helm-based management. The Ansible directory is now focused on:
+- Initial server provisioning playbooks
+- System-level configuration (network, storage, kernel parameters)
+- Bootstrap tasks for Terraform/Helm prerequisites
+- Infrastructure validation and health checks
 
 ## Structure
 
 ```
 ansible/
 ├── README.md                    # This documentation
-├── ansible.cfg                 # Ansible configuration
-├── inventory/                  # Inventory files
-│   ├── hosts.yml              # Host definitions  
-│   └── group_vars/            # Group variable definitions
-└── playbooks/                 # Ansible playbooks (legacy)
+├── ansible.cfg                  # Ansible configuration
+├── inventory/                   # Inventory files
+│   ├── hosts.yml               # Host definitions
+│   └── group_vars/             # Group variable definitions
+├── playbooks/                   # System configuration and provisioning playbooks
+└── legacy-migration/           # Archived application deployment references
 ```
 
 ## Migration Status
@@ -34,10 +36,12 @@ The following functionality has been successfully migrated to Helm-based deploym
 ### 🔄 Current Ansible Usage
 Ansible is now used for:
 
-- **System Bootstrapping**: Initial server setup and configuration
-- **SSH Key Management**: Automated SSH key distribution
-- **System-level Configuration**: OS-level settings not managed by Kubernetes
-- **Infrastructure Validation**: Pre-deployment system checks
+- **System Bootstrapping**: Initial server setup and system package installation
+- **System Configuration**: Network, storage, and kernel parameter configuration
+- **K3s Installation**: Kubernetes cluster bootstrap (system-level only)
+- **User Management**: SSH key distribution and deployment user setup
+- **Infrastructure Validation**: System readiness and health checks
+- **Bootstrap Prerequisites**: Terraform and Helm tooling installation
 
 ## Integration with New Structure
 
@@ -53,22 +57,46 @@ Ansible is now used for:
 
 ## Usage
 
-### System Bootstrap
+### Complete System Provisioning
 ```bash
-# Bootstrap homelab server
-ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml
+# Run complete system provisioning (recommended)
+ansible-playbook -i inventory/hosts.yml site.yml
 
-# Configure SSH access
-ansible-playbook -i inventory/hosts.yml playbooks/setup-ssh.yml
+# Run with specific system components
+ansible-playbook -i inventory/hosts.yml site.yml -e "system_components=['bootstrap','k3s']"
 ```
 
-### Validation
+### Individual System Tasks
 ```bash
-# Validate system readiness
-ansible-playbook -i inventory/hosts.yml playbooks/validate-system.yml
+# Bootstrap system prerequisites
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml
+
+# Deploy K3s cluster
+ansible-playbook -i inventory/hosts.yml playbooks/deploy-k3s-fixed.yml
+
+# Configure system networking
+ansible-playbook -i inventory/hosts.yml playbooks/configure-networking.yml
+
+# Set up deployment user
+ansible-playbook -i inventory/hosts.yml playbooks/setup-deployment-user.yml
+```
+
+### System Validation
+```bash
+# Validate complete deployment setup
+ansible-playbook -i inventory/hosts.yml playbooks/validate-deployment-setup.yml
+
+# Test authentication
+ansible-playbook -i inventory/hosts.yml playbooks/test-authentication.yml
 
 # Check connectivity
 ansible all -i inventory/hosts.yml -m ping
+```
+
+### System Cleanup
+```bash
+# Clean system for fresh deployment
+ansible-playbook -i inventory/hosts.yml site.yml -e "phase=cleanup-bare-metal"
 ```
 
 ## Future Direction

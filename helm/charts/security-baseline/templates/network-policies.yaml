@@ -1,0 +1,103 @@
+{{- if .Values.networkPolicies.defaultDeny.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-default-deny
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    network-policy.homelab.local/type: "default-deny"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  # No ingress or egress rules means deny all traffic
+{{- end }}
+
+{{- if .Values.networkPolicies.allowDNS.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-allow-dns
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    network-policy.homelab.local/type: "allow-dns"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS resolution via kube-dns/CoreDNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow DNS resolution via system DNS
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+{{- end }}
+
+{{- if .Values.networkPolicies.allowKubeAPI.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-allow-kube-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    network-policy.homelab.local/type: "allow-kube-api"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  # Allow access to Kubernetes API server
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6443
+{{- end }}
+
+{{- range .Values.networkPolicies.custom }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "security-baseline.fullname" $ }}-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" $ | nindent 4 }}
+    network-policy.homelab.local/type: "custom"
+    network-policy.homelab.local/name: {{ .name | quote }}
+spec:
+  podSelector:
+    {{- toYaml .podSelector | nindent 4 }}
+  policyTypes:
+    {{- toYaml .policyTypes | nindent 4 }}
+  {{- if .ingress }}
+  ingress:
+    {{- toYaml .ingress | nindent 4 }}
+  {{- end }}
+  {{- if .egress }}
+  egress:
+    {{- toYaml .egress | nindent 4 }}
+  {{- end }}
+{{- end }}

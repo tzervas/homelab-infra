@@ -1,0 +1,377 @@
+# Security-focused CI/CD pipeline components
+# Provides comprehensive security scanning, vulnerability assessment,
+# and compliance validation for homelab infrastructure
+
+# ============================================================================
+# SECURITY SCANNING JOBS
+# ============================================================================
+
+security:dependency-scan:
+  stage: security
+  image: owasp/dependency-check:latest
+  script:
+    - |
+      /usr/share/dependency-check/bin/dependency-check.sh \
+        --project "Homelab Infrastructure" \
+        --scan . \
+        --format JSON \
+        --format JUNIT \
+        --out dependency-check-report \
+        --suppression suppression.xml || true
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+  artifacts:
+    reports:
+      junit: dependency-check-report/dependency-check-junit.xml
+    paths:
+      - dependency-check-report/
+    expire_in: 1 week
+  tags:
+    - homelab
+
+security:license-scan:
+  stage: security
+  image: licensefinder/license_finder:latest
+  script:
+    - license_finder --format json --save license-report.json
+    - license_finder --format junit --save license-report-junit.xml
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+  allow_failure: true
+  artifacts:
+    reports:
+      junit: license-report-junit.xml
+    paths:
+      - license-report.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+security:container-scan:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - |
+      # Scan Dockerfile if present
+      if [ -f Dockerfile ]; then
+        trivy config Dockerfile --format json --output dockerfile-security.json
+        trivy config Dockerfile --format junit --output dockerfile-security-junit.xml
+      fi
+
+      # Scan any container images referenced in Helm charts
+      find helm/ -name "*.yaml" -o -name "*.yml" | xargs grep -h "image:" | \
+        sed 's/.*image: *//g' | sed 's/[" ].*//g' | sort -u | \
+        while read -r image; do
+          if [ -n "$image" ] && [ "$image" != "{{" ]; then
+            echo "Scanning image: $image"
+            trivy image --format json --output "image-scan-$(echo $image | tr '/:' '--').json" "$image" || true
+          fi
+        done
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+    - changes:
+        - helm/**/*
+        - Dockerfile
+  allow_failure: true
+  artifacts:
+    paths:
+      - "*-security*.json"
+      - "*-security*.xml"
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# COMPLIANCE VALIDATION
+# ============================================================================
+
+compliance:cis-benchmark:
+  stage: security
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl kubectl bash
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      # Download and run kube-bench for CIS Kubernetes benchmark
+      curl -L https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_linux_amd64.tar.gz | tar xz
+      ./kube-bench --json > cis-benchmark-report.json
+      ./kube-bench --junit > cis-benchmark-junit.xml
+  rules:
+    - if: '$ENABLE_COMPLIANCE_CHECK == "true"'
+  allow_failure: true
+  artifacts:
+    reports:
+      junit: cis-benchmark-junit.xml
+    paths:
+      - cis-benchmark-report.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+compliance:pod-security:
+  stage: security
+  image: aquasec/polaris:latest
+  before_script:
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      # Validate Pod Security Standards compliance
+      polaris audit --format json --output-file polaris-report.json
+      polaris audit --format junit --output-file polaris-junit.xml
+  rules:
+    - if: '$ENABLE_COMPLIANCE_CHECK == "true"'
+    - changes:
+        - helm/**/*
+  allow_failure: true
+  artifacts:
+    reports:
+      junit: polaris-junit.xml
+    paths:
+      - polaris-report.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+compliance:network-policy:
+  stage: security
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache kubectl bash
+    - pip install --upgrade pip
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      # Validate network policies are properly configured
+      python3 << 'EOF'
+      import subprocess
+      import json
+      import sys
+
+      def check_network_policies():
+          try:
+              # Get all namespaces
+              result = subprocess.run(['kubectl', 'get', 'namespaces', '-o', 'json'],
+                                    capture_output=True, text=True)
+              namespaces = json.loads(result.stdout)
+
+              issues = []
+              for ns in namespaces['items']:
+                  ns_name = ns['metadata']['name']
+                  if ns_name in ['kube-system', 'kube-public', 'kube-node-lease']:
+                      continue
+
+                  # Check if namespace has network policies
+                  result = subprocess.run(['kubectl', 'get', 'networkpolicy', '-n', ns_name, '-o', 'json'],
+                                        capture_output=True, text=True)
+                  policies = json.loads(result.stdout)
+
+                  if len(policies['items']) == 0:
+                      issues.append(f"Namespace {ns_name} has no NetworkPolicies")
+
+              if issues:
+                  print("NetworkPolicy validation issues found:")
+                  for issue in issues:
+                      print(f"  - {issue}")
+                  sys.exit(1)
+              else:
+                  print("All namespaces have appropriate NetworkPolicies")
+          except Exception as e:
+              print(f"Error checking network policies: {e}")
+              sys.exit(1)
+
+      check_network_policies()
+      EOF
+  rules:
+    - if: '$ENABLE_COMPLIANCE_CHECK == "true"'
+  allow_failure: true
+  tags:
+    - homelab
+
+# ============================================================================
+# SECURITY POLICY VALIDATION
+# ============================================================================
+
+security:rbac-validation:
+  stage: security
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache kubectl bash
+    - pip install --upgrade pip
+    - pip install pyyaml
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      python3 << 'EOF'
+      import subprocess
+      import json
+      import yaml
+      import sys
+
+      def validate_rbac():
+          try:
+              # Check for overly permissive ClusterRoleBindings
+              result = subprocess.run(['kubectl', 'get', 'clusterrolebindings', '-o', 'json'],
+                                    capture_output=True, text=True)
+              bindings = json.loads(result.stdout)
+
+              dangerous_roles = ['cluster-admin', 'admin']
+              issues = []
+
+              for binding in bindings['items']:
+                  binding_name = binding['metadata']['name']
+                  role_ref = binding.get('roleRef', {})
+
+                  if role_ref.get('name') in dangerous_roles:
+                      subjects = binding.get('subjects', [])
+                      for subject in subjects:
+                          if subject.get('kind') == 'ServiceAccount':
+                              sa_name = subject.get('name')
+                              sa_namespace = subject.get('namespace', 'default')
+                              issues.append(f"ServiceAccount {sa_namespace}/{sa_name} has {role_ref['name']} permissions via {binding_name}")
+
+              if issues:
+                  print("RBAC validation issues found:")
+                  for issue in issues:
+                      print(f"  - {issue}")
+                  # Don't fail the pipeline, just warn
+                  print("Consider reviewing these permissions for security compliance")
+              else:
+                  print("RBAC validation passed - no overly permissive bindings found")
+          except Exception as e:
+              print(f"Error validating RBAC: {e}")
+
+      validate_rbac()
+      EOF
+  rules:
+    - if: '$ENABLE_COMPLIANCE_CHECK == "true"'
+  allow_failure: true
+  tags:
+    - homelab
+
+security:tls-validation:
+  stage: security
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache kubectl bash openssl
+    - pip install --upgrade pip
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - python scripts/testing/tls_validator.py --environment staging --output-format junit >
+      tls-validation-junit.xml
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+  artifacts:
+    reports:
+      junit: tls-validation-junit.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# SECURITY REPORTING
+# ============================================================================
+
+security:generate-report:
+  stage: security
+  image: python:3.11-alpine
+  needs:
+    - security:terraform-scan
+    - security:helm-scan
+    - security:secrets-scan
+    - security:dependency-scan
+  before_script:
+    - apk add --no-cache bash
+    - pip install --upgrade pip
+    - pip install jinja2 markdown
+  script:
+    - |
+      python3 << 'EOF'
+      import json
+      import os
+      import datetime
+      from pathlib import Path
+
+      def generate_security_report():
+          report_data = {
+              'timestamp': datetime.datetime.now().isoformat(),
+              'pipeline_id': os.getenv('CI_PIPELINE_ID', 'unknown'),
+              'commit_sha': os.getenv('CI_COMMIT_SHA', 'unknown'),
+              'branch': os.getenv('CI_COMMIT_REF_NAME', 'unknown'),
+              'scans': {}
+          }
+
+          # Collect scan results
+          scan_files = [
+              ('terraform', 'terraform-security.json'),
+              ('helm', 'helm-security.json'),
+              ('k8s', 'k8s-security.json'),
+              ('secrets', 'secrets-scan.json'),
+              ('dependencies', 'dependency-check-report/dependency-check-report.json')
+          ]
+
+          for scan_type, file_path in scan_files:
+              if Path(file_path).exists():
+                  try:
+                      with open(file_path, 'r') as f:
+                          report_data['scans'][scan_type] = json.load(f)
+                  except Exception as e:
+                      print(f"Error reading {file_path}: {e}")
+
+          # Generate summary
+          total_issues = 0
+          critical_issues = 0
+
+          for scan_type, scan_data in report_data['scans'].items():
+              if isinstance(scan_data, dict):
+                  if 'Results' in scan_data:  # Trivy format
+                      for result in scan_data.get('Results', []):
+                          vulnerabilities = result.get('Vulnerabilities', [])
+                          total_issues += len(vulnerabilities)
+                          critical_issues += len([v for v in vulnerabilities if v.get('Severity') == 'CRITICAL'])
+
+          report_data['summary'] = {
+              'total_issues': total_issues,
+              'critical_issues': critical_issues,
+              'scan_types': list(report_data['scans'].keys())
+          }
+
+          # Write consolidated report
+          with open('security-report-consolidated.json', 'w') as f:
+              json.dump(report_data, f, indent=2)
+
+          # Generate markdown summary
+          with open('security-report-summary.md', 'w') as f:
+              f.write(f"# Security Scan Report\n\n")
+              f.write(f"**Pipeline:** {report_data['pipeline_id']}\n")
+              f.write(f"**Commit:** {report_data['commit_sha'][:8]}\n")
+              f.write(f"**Branch:** {report_data['branch']}\n")
+              f.write(f"**Timestamp:** {report_data['timestamp']}\n\n")
+              f.write(f"## Summary\n\n")
+              f.write(f"- **Total Issues:** {total_issues}\n")
+              f.write(f"- **Critical Issues:** {critical_issues}\n")
+              f.write(f"- **Scans Performed:** {', '.join(report_data['scans'].keys())}\n\n")
+
+              if critical_issues > 0:
+                  f.write("⚠️ **Critical security issues found - review required**\n\n")
+              else:
+                  f.write("✅ **No critical security issues found**\n\n")
+
+          print(f"Security report generated: {total_issues} total issues, {critical_issues} critical")
+
+      generate_security_report()
+      EOF
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+  artifacts:
+    paths:
+      - security-report-consolidated.json
+      - security-report-summary.md
+    expire_in: 30 days
+  tags:
+    - homelab

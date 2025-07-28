@@ -3,9 +3,40 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.4.0] - 2025-07-28
+
+### Highlights
+
+- Complete teardown and successful redeployment of homelab infrastructure
+- Validation and full success of network and service connectivity
+- Full migration to self-signed CA for HTTPS services
+
+### Added
+
+- New "final-clean-deployment-test.sh": Comprehensive validation script
+- New "clean-deployment-success.md": Documentation of successful deployment
+- Enhanced production-ready Grafana instance
+- Updated network-validation and deployment-status documentation
+
+### Fixed
+
+- Longhorn and Prometheus readiness errors in deployment scripts
+- Grafana HTTPS configuration and access
+- MetalLB IP range and network configuration errors
+
+### Changed
+
+- Updated main README.md to reflect current deployment state
+- Updated CHANGELOG.md and configuration details across documentation
+- Improved deployment consistency and DNS setup instructions
+
+### Removed
+
+- Duplicate Grafana pod configuration
 
 ## [0.3.0] - 2025-07-27
 

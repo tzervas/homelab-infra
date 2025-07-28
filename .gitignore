@@ -245,3 +245,9 @@ code-quality-output.txt
 
 # Cache files
 .cache/
+
+# Validation and test reports (not version controlled)
+reports/
+*.report
+**/validation-results/
+**/test-results/

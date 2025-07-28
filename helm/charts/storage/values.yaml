@@ -65,15 +65,21 @@ longhorn:
 
   longhornManager:
     securityContext:
+      # SECURITY JUSTIFICATION: Root privileges required for Longhorn manager
+      # - Volume lifecycle management (create, delete, resize persistent volumes)
+      # - Direct block device access and manipulation
+      # - Host filesystem operations for volume storage paths
+      # - Device mapper operations for snapshot and backup functionality
+      # Mitigation: Capabilities restricted to minimum required (SYS_ADMIN, DAC_OVERRIDE, MKNOD)
       runAsNonRoot: false  # Longhorn manager needs root for volume operations
       runAsUser: 0
       capabilities:
         drop:
           - ALL
         add:
-          - SYS_ADMIN
-          - DAC_OVERRIDE
-          - MKNOD
+          - SYS_ADMIN  # Required for mount operations and device management
+          - DAC_OVERRIDE  # Required for filesystem access across different ownership
+          - MKNOD  # Required for creating device nodes
       seccompProfile:
         type: RuntimeDefault
     resources:
@@ -86,17 +92,25 @@ longhorn:
 
   longhornDriver:
     securityContext:
+      # SECURITY JUSTIFICATION: Privileged access required for CSI driver operations
+      # - Host volume mounting and unmounting operations
+      # - Direct block device manipulation and formatting
+      # - iSCSI target creation and management
+      # - Host networking access for distributed storage
+      # - Kernel module loading for storage protocols
+      # This is the minimum privilege level required for CSI driver functionality
+      # Alternative: Non-privileged CSI drivers don't support all Longhorn features
       runAsNonRoot: false  # Longhorn driver needs root for storage operations
       runAsUser: 0
-      privileged: true  # Required for volume mounting
+      privileged: true  # Required for volume mounting and block device access
       capabilities:
         drop:
           - ALL
         add:
-          - SYS_ADMIN
-          - DAC_OVERRIDE
-          - MKNOD
-          - SYS_RESOURCE
+          - SYS_ADMIN  # Required for mount/unmount and device operations
+          - DAC_OVERRIDE  # Required for filesystem access permissions
+          - MKNOD  # Required for creating block device nodes
+          - SYS_RESOURCE  # Required for resource allocation and limits
       seccompProfile:
         type: RuntimeDefault
     resources:

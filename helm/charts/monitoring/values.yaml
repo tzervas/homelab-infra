@@ -112,27 +112,94 @@ kube-prometheus-stack:
 
 loki:
   enabled: true
-  deploymentMode: SingleBinary
 
-  loki:
-    commonConfig:
-      replication_factor: 1
-    storage:
-      type: 'filesystem'
-    schemaConfig:
-      configs:
-        - from: 2024-04-01
-          store: tsdb
-          object_store: filesystem
-          schema: v13
-          index:
-            prefix: loki_index_
-            period: 24h
+  # Use simple filesystem storage for single binary mode
+  storage:
+    type: filesystem
 
+  # Configure schema for filesystem storage
+  schemaConfig:
+    configs:
+      - from: 2024-04-01
+        store: boltdb-shipper
+        object_store: filesystem
+        schema: v12
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  # Use structured config to override defaults
+  structuredConfig:
     auth_enabled: false
+    
     server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
       grpc_server_max_recv_msg_size: 8388608
       grpc_server_max_send_msg_size: 8388608
+
+    ingester:
+      lifecycler:
+        address: 127.0.0.1
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+        final_sleep: 0s
+      chunk_idle_period: 1h
+      max_chunk_age: 1h
+      chunk_target_size: 1048576
+      chunk_retain_period: 30s
+
+    limits_config:
+      retention_period: 744h
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      ingestion_rate_mb: 10
+      ingestion_burst_size_mb: 20
+      per_stream_rate_limit: 3MB
+      per_stream_rate_limit_burst: 15MB
+
+    compactor:
+      working_directory: /var/loki/boltdb-shipper-compactor
+      shared_store: filesystem
+      compaction_interval: 10m
+      retention_enabled: true
+      retention_delete_delay: 2h
+      retention_delete_worker_count: 150
+
+    ruler:
+      storage:
+        type: local
+        local:
+          directory: /var/loki/rules
+      rule_path: /var/loki/rules-temp
+      alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+      ring:
+        kvstore:
+          store: inmemory
+
+  # Additional storage config for filesystem
+  storage_config:
+    boltdb_shipper:
+      active_index_directory: /var/loki/boltdb-shipper-active
+      cache_location: /var/loki/boltdb-shipper-cache
+      cache_ttl: 24h
+      shared_store: filesystem
+    filesystem:
+      directory: /var/loki/chunks
+
+  # Single binary deployment
+  replicas: 1
+
+# Disable scalable targets for single binary mode
+write:
+  replicas: 0
+read:
+  replicas: 0
+backend:
+  replicas: 0
 
   singleBinary:
     securityContext:
@@ -160,14 +227,21 @@ loki:
 promtail:
   enabled: true
   securityContext:
-    runAsNonRoot: true
-    runAsUser: 0  # Promtail needs root to read log files
+    # SECURITY JUSTIFICATION: Root access required for log collection
+    # - Reading system and application logs from /var/log/*
+    # - Accessing logs owned by different system users (root, syslog, etc.)
+    # - Host filesystem access for comprehensive log collection
+    # - Container runtime log access (Docker/containerd logs)
+    # Mitigation: Capabilities restricted to read operations only (DAC_READ_SEARCH)
+    # Alternative: Non-root log collection would miss critical system logs
+    runAsNonRoot: false  # Promtail needs root to read protected log files
+    runAsUser: 0
     runAsGroup: 0
     capabilities:
       drop:
         - ALL
       add:
-        - DAC_READ_SEARCH
+        - DAC_READ_SEARCH  # Required for reading logs across different ownership
     seccompProfile:
       type: RuntimeDefault
   config:

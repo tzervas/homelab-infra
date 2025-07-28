@@ -19,7 +19,7 @@ spec:
         category: infrastructure
       annotations:
         summary: "Terraform state drift detected"
-        description: "Configuration drift detected in {{ $labels.environment }}/{{ $labels.workspace }} for resource type {{ $labels.resource_type }}"
+        description: "Configuration drift detected in {{ `{{ $labels.environment }}` }}/{{ `{{ $labels.workspace }}` }} for resource type {{ `{{ $labels.resource_type }}` }}"
         runbook_url: "https://runbooks.homelab.local/terraform/drift-resolution"
 
     - alert: TerraformStateStale
@@ -30,7 +30,7 @@ spec:
         category: infrastructure
       annotations:
         summary: "Terraform state is stale"
-        description: "Terraform state for {{ $labels.environment }}/{{ $labels.workspace }} hasn't been updated in over 24 hours"
+        description: "Terraform state for {{ `{{ $labels.environment }}` }}/{{ `{{ $labels.workspace }}` }} hasn't been updated in over 24 hours"
         runbook_url: "https://runbooks.homelab.local/terraform/stale-state"
 
     - alert: TerraformApplyFailed
@@ -41,7 +41,7 @@ spec:
         category: infrastructure
       annotations:
         summary: "Terraform apply operation failed"
-        description: "Terraform apply failed for {{ $labels.environment }}/{{ $labels.workspace }}"
+        description: "Terraform apply failed for {{ `{{ $labels.environment }}` }}/{{ `{{ $labels.workspace }}` }}"
         runbook_url: "https://runbooks.homelab.local/terraform/apply-failure"
 
   # Helm Release Monitoring Alerts
@@ -55,7 +55,7 @@ spec:
         category: deployment
       annotations:
         summary: "Helm release in failed state"
-        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} is in {{ $labels.status }} state"
+        description: "Helm release {{ `{{ $labels.release }}` }} in namespace {{ `{{ $labels.namespace }}` }} is in {{ `{{ $labels.status }}` }} state"
         runbook_url: "https://runbooks.homelab.local/helm/release-failure"
 
     - alert: HelmReleaseStale
@@ -66,7 +66,7 @@ spec:
         category: deployment
       annotations:
         summary: "Helm release hasn't been updated recently"
-        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} hasn't been updated in over 7 days"
+        description: "Helm release {{ `{{ $labels.release }}` }} in namespace {{ `{{ $labels.namespace }}` }} hasn't been updated in over 7 days"
         runbook_url: "https://runbooks.homelab.local/helm/stale-releases"
 
     - alert: HelmReleaseRevisionRollback
@@ -77,7 +77,7 @@ spec:
         category: deployment
       annotations:
         summary: "Helm release rolled back"
-        description: "Helm release {{ $labels.release }} in namespace {{ $labels.namespace }} was rolled back"
+        description: "Helm release {{ `{{ $labels.release }}` }} in namespace {{ `{{ $labels.namespace }}` }} was rolled back"
         runbook_url: "https://runbooks.homelab.local/helm/rollback-investigation"
 
   # Certificate Expiry Alerts
@@ -91,7 +91,7 @@ spec:
         category: security
       annotations:
         summary: "Certificate expiring soon"
-        description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} expires in less than 7 days"
+        description: "Certificate {{ `{{ $labels.name }}` }} in namespace {{ `{{ $labels.namespace }}` }} expires in less than 7 days"
         runbook_url: "https://runbooks.homelab.local/certificates/renewal"
 
     - alert: CertificateExpired
@@ -102,7 +102,7 @@ spec:
         category: security
       annotations:
         summary: "Certificate has expired"
-        description: "Certificate {{ $labels.name }} in namespace {{ $labels.namespace }} has expired"
+        description: "Certificate {{ `{{ $labels.name }}` }} in namespace {{ `{{ $labels.namespace }}` }} has expired"
         runbook_url: "https://runbooks.homelab.local/certificates/expired"
 
     - alert: CertificateRenewalFailed
@@ -113,7 +113,7 @@ spec:
         category: security
       annotations:
         summary: "Certificate renewal failed"
-        description: "Certificate renewal failed for {{ $labels.name }} in namespace {{ $labels.namespace }}"
+        description: "Certificate renewal failed for {{ `{{ $labels.name }}` }} in namespace {{ `{{ $labels.namespace }}` }}"
         runbook_url: "https://runbooks.homelab.local/certificates/renewal-failure"
 
   # Security Policy Violation Alerts
@@ -127,7 +127,7 @@ spec:
         category: security
       annotations:
         summary: "Pod Security Policy violation detected"
-        description: "Pod Security Policy violated by {{ $labels.pod }} in namespace {{ $labels.namespace }}: {{ $labels.violation_type }}"
+        description: "Pod Security Policy violated by {{ `{{ $labels.pod }}` }} in namespace {{ `{{ $labels.namespace }}` }}: {{ `{{ $labels.violation_type }}` }}"
         runbook_url: "https://runbooks.homelab.local/security/policy-violations"
 
     - alert: NetworkPolicyViolation
@@ -138,7 +138,7 @@ spec:
         category: security
       annotations:
         summary: "Network Policy violation detected"
-        description: "Network policy violation from {{ $labels.source_pod }} to {{ $labels.destination_pod }}"
+        description: "Network policy violation from {{ `{{ $labels.source_pod }}` }} to {{ `{{ $labels.destination_pod }}` }}"
         runbook_url: "https://runbooks.homelab.local/security/network-violations"
 
     - alert: RBACPolicyViolation
@@ -149,7 +149,7 @@ spec:
         category: security
       annotations:
         summary: "RBAC Policy violation detected"
-        description: "RBAC violation by {{ $labels.user }} attempting {{ $labels.verb }} on {{ $labels.resource }}"
+        description: "RBAC violation by {{ `{{ $labels.user }}` }} attempting {{ `{{ $labels.verb }}` }} on {{ `{{ $labels.resource }}` }}"
         runbook_url: "https://runbooks.homelab.local/security/rbac-violations"
 
   # Infrastructure Health Alerts
@@ -163,7 +163,7 @@ spec:
         category: infrastructure
       annotations:
         summary: "Infrastructure provisioning taking too long"
-        description: "Infrastructure provisioning for {{ $labels.component }} has been running for over 30 minutes"
+        description: "Infrastructure provisioning for {{ `{{ $labels.component }}` }} has been running for over 30 minutes"
         runbook_url: "https://runbooks.homelab.local/infrastructure/provisioning-stuck"
 
     - alert: DeploymentPipelineFailure
@@ -174,7 +174,7 @@ spec:
         category: deployment
       annotations:
         summary: "Deployment pipeline failed"
-        description: "Deployment pipeline {{ $labels.pipeline }} failed at stage {{ $labels.stage }}"
+        description: "Deployment pipeline {{ `{{ $labels.pipeline }}` }} failed at stage {{ `{{ $labels.stage }}` }}"
         runbook_url: "https://runbooks.homelab.local/deployment/pipeline-failure"
 
     - alert: SecurityComplianceScoreLow
@@ -185,7 +185,7 @@ spec:
         category: security
       annotations:
         summary: "Security compliance score below threshold"
-        description: "Security compliance score is {{ $value }}%, below the 80% threshold"
+        description: "Security compliance score is {{ `{{ $value }}` }}%, below the 80% threshold"
         runbook_url: "https://runbooks.homelab.local/security/compliance-improvement"
 
   # Cost and Resource Optimization Alerts
@@ -199,7 +199,7 @@ spec:
         category: optimization
       annotations:
         summary: "Low resource utilization detected"
-        description: "Node {{ $labels.instance }} has low CPU utilization ({{ $value }}%) over the last 24 hours"
+        description: "Node {{ `{{ $labels.instance }}` }} has low CPU utilization ({{ `{{ $value }}` }}%) over the last 24 hours"
         runbook_url: "https://runbooks.homelab.local/optimization/resource-scaling"
 
     - alert: StorageGrowthRateHigh
@@ -210,5 +210,5 @@ spec:
         category: storage
       annotations:
         summary: "Storage will be full within 7 days"
-        description: "Storage on {{ $labels.instance }} {{ $labels.mountpoint }} will be full within 7 days at current growth rate"
+        description: "Storage on {{ `{{ $labels.instance }}` }} {{ `{{ $labels.mountpoint }}` }} will be full within 7 days at current growth rate"
         runbook_url: "https://runbooks.homelab.local/storage/capacity-planning"

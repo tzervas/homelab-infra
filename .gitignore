@@ -243,3 +243,9 @@ code-quality-output.txt
 *-summary.md
 *-output.txt
 .cache/
+
+# Validation and test reports (not version controlled)
+reports/
+*.report
+**/validation-results/
+**/test-results/

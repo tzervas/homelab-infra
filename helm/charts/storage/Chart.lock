@@ -1,0 +1,9 @@
+dependencies:
+- name: security-baseline
+  repository: file://../security-baseline
+  version: 0.1.0
+- name: longhorn
+  repository: https://charts.longhorn.io
+  version: 1.7.1
+digest: sha256:ff234c7af3eef8f2810ef20d5d19b155caa75ecbbe2449955ba600a0b40f9cad
+generated: "2025-07-28T14:53:45.680767116-04:00"

@@ -46,7 +46,7 @@ show_usage() {
     echo ""
     echo -e "${BOLD}Commands:${NC}"
     echo "  ${GREEN}deploy${NC}         Complete infrastructure deployment"
-    echo "  ${RED}teardown${NC}       Complete infrastructure teardown"  
+    echo "  ${RED}teardown${NC}       Complete infrastructure teardown"
     echo "  ${BLUE}setup-local${NC}    Configure local workstation access"
     echo "  ${YELLOW}status${NC}         Show deployment status"
     echo "  ${BLUE}backup${NC}         Backup current deployment"
@@ -96,44 +96,44 @@ confirm_action() {
 
 check_prerequisites() {
     log "Checking prerequisites..."
-    
+
     # Check required tools
     tools=("kubectl" "ansible" "helm" "openssl" "curl")
     missing_tools=()
-    
+
     for tool in "${tools[@]}"; do
         if ! command -v "$tool" &> /dev/null; then
             missing_tools+=("$tool")
         fi
     done
-    
+
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         error "Missing required tools: ${missing_tools[*]}"
     fi
-    
+
     # Check ansible inventory
     if [[ ! -f "$ANSIBLE_INVENTORY" ]]; then
         error "Ansible inventory not found: $ANSIBLE_INVENTORY"
     fi
-    
+
     # Check network connectivity
     if ! ping -c 1 -W 3 "$HOMELAB_SERVER" &>/dev/null; then
         error "Cannot reach homelab server: $HOMELAB_SERVER"
     fi
-    
+
     success "Prerequisites check passed"
 }
 
 create_backup() {
     log "Creating deployment backup..."
-    
+
     local backup_dir="$BACKUP_BASE_DIR/backup-$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$backup_dir"
-    
+
     # Backup Kubernetes resources
     if kubectl get nodes &>/dev/null; then
         log "Backing up Kubernetes resources..."
-        
+
         # Create namespace-specific backups
         namespaces=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || echo ""))
         for ns in "${namespaces[@]}"; do
@@ -144,22 +144,22 @@ create_backup() {
                 kubectl get configmaps -n "$ns" -o yaml > "$backup_dir/namespaces/$ns/configmaps.yaml" 2>/dev/null || true
             fi
         done
-        
+
         # Backup cluster-wide resources
         kubectl get clusterissuers -o yaml > "$backup_dir/clusterissuers.yaml" 2>/dev/null || true
         kubectl get storageclass -o yaml > "$backup_dir/storageclasses.yaml" 2>/dev/null || true
         kubectl get pv -o yaml > "$backup_dir/persistentvolumes.yaml" 2>/dev/null || true
-        
+
         # Backup certificates
         kubectl get secret homelab-ca-secret -n cert-manager -o yaml > "$backup_dir/ca-secret.yaml" 2>/dev/null || true
         kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > "$backup_dir/homelab-ca.crt" 2>/dev/null || true
     fi
-    
+
     # Backup configuration files
     cp -r "$SCRIPT_DIR/kubernetes" "$backup_dir/" 2>/dev/null || true
     cp -r "$SCRIPT_DIR/ansible" "$backup_dir/" 2>/dev/null || true
     cp -r "$SCRIPT_DIR/helm" "$backup_dir/" 2>/dev/null || true
-    
+
     # Create backup summary
     cat > "$backup_dir/backup-info.md" << EOF
 # Homelab Backup Summary
@@ -190,28 +190,28 @@ To restore this backup, use:
 $0 restore $backup_dir
 \`\`\`
 EOF
-    
+
     success "Backup created: $backup_dir"
     echo "$backup_dir"
 }
 
 complete_teardown() {
     log "Starting complete teardown..."
-    
+
     confirm_action "This will completely destroy the homelab infrastructure!"
-    
+
     # Create backup if requested
     if [[ "$BACKUP_FIRST" == "true" ]]; then
         create_backup
     fi
-    
+
     # Delete all custom resources
     log "Removing custom resources..."
     kubectl delete certificates --all --all-namespaces --timeout=60s 2>/dev/null || true
     kubectl delete clusterissuers --all --timeout=60s 2>/dev/null || true
     kubectl delete ingress --all --all-namespaces --timeout=60s 2>/dev/null || true
     kubectl delete pvc --all --all-namespaces --timeout=60s 2>/dev/null || true
-    
+
     # Delete application namespaces
     log "Removing application namespaces..."
     namespaces=("monitoring" "longhorn-system" "cert-manager" "metallb-system" "ingress-nginx")
@@ -219,17 +219,17 @@ complete_teardown() {
         log "Deleting namespace: $ns"
         kubectl delete namespace "$ns" --timeout=120s 2>/dev/null || true
     done
-    
+
     # Uninstall K3s
     log "Uninstalling K3s from remote server..."
     ansible homelab-server -i "$ANSIBLE_INVENTORY" -m shell -a "sudo systemctl stop k3s" 2>/dev/null || true
     ansible homelab-server -i "$ANSIBLE_INVENTORY" -m shell -a "sudo /usr/local/bin/k3s-uninstall.sh" 2>/dev/null || true
-    
+
     # Clean local kubectl config
     log "Cleaning local configuration..."
     cp ~/.kube/config ~/.kube/config.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
     kubectl config delete-context default 2>/dev/null || true
-    
+
     # Clean local hosts file
     log "Cleaning local /etc/hosts entries..."
     if sudo -n true 2>/dev/null; then
@@ -239,42 +239,42 @@ complete_teardown() {
         warning "Could not clean /etc/hosts (sudo required)"
         echo "Manual cleanup needed: sudo sed -i '/homelab.local/d' /etc/hosts"
     fi
-    
+
     success "Complete teardown finished"
 }
 
 deploy_infrastructure() {
     log "Starting complete infrastructure deployment..."
-    
+
     confirm_action "This will deploy the complete homelab infrastructure."
-    
+
     # Step 1: Deploy K3s
     log "Deploying K3s cluster..."
     ansible-playbook -i "$ANSIBLE_INVENTORY" ansible/playbooks/install-missing-tools.yml
-    
+
     # Get kubeconfig
     log "Configuring kubectl access..."
     ansible homelab-server -i "$ANSIBLE_INVENTORY" -m fetch -a "src=/home/kang/.kube/config dest=/tmp/k3s-config flat=yes"
     cp /tmp/k3s-config ~/.kube/config
-    
+
     # Verify cluster
     kubectl get nodes || error "Failed to connect to K3s cluster"
     success "K3s cluster deployed and accessible"
-    
+
     # Step 2: Install dependencies
     log "Installing system dependencies..."
     ansible-playbook -i "$ANSIBLE_INVENTORY" ansible/playbooks/install-longhorn-requirements.yml
     success "System dependencies installed"
-    
+
     # Step 3: Deploy infrastructure components
     log "Deploying infrastructure components..."
-    
+
     # Deploy MetalLB
     if ! kubectl get namespace metallb-system &>/dev/null; then
         log "Installing MetalLB..."
         helm repo add metallb https://metallb.github.io/metallb --force-update 2>/dev/null || true
         helm repo update
-        
+
         # Try helm install, fallback to kubectl if it fails
         if ! helm install metallb metallb/metallb --namespace metallb-system --create-namespace --wait --timeout=300s; then
             warning "Helm install failed, trying direct kubectl apply..."
@@ -283,12 +283,12 @@ deploy_infrastructure() {
         fi
         success "MetalLB installed"
     fi
-    
+
     # Configure MetalLB
     log "Configuring MetalLB..."
     kubectl apply -f kubernetes/base/metallb-config.yaml
     success "MetalLB configured"
-    
+
     # Deploy cert-manager
     if ! kubectl get namespace cert-manager &>/dev/null; then
         log "Installing cert-manager..."
@@ -297,7 +297,7 @@ deploy_infrastructure() {
         helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true --wait --timeout=300s
         success "cert-manager installed"
     fi
-    
+
     # Deploy nginx-ingress
     if ! kubectl get namespace ingress-nginx &>/dev/null; then
         log "Installing nginx-ingress..."
@@ -305,10 +305,10 @@ deploy_infrastructure() {
         kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=300s
         success "nginx-ingress installed"
     fi
-    
+
     # Step 4: Configure certificates
     log "Configuring certificate infrastructure..."
-    
+
     # Create CA issuer configuration if it doesn't exist
     if [[ ! -f "/tmp/homelab-ca-issuer.yaml" ]]; then
         cat > /tmp/homelab-ca-issuer.yaml << 'EOF'
@@ -357,17 +357,17 @@ spec:
       - "Lab"
 EOF
     fi
-    
+
     kubectl apply -f /tmp/homelab-ca-issuer.yaml
-    
+
     # Wait for CA certificate
     log "Waiting for CA certificate generation..."
     kubectl wait --for=condition=ready certificate homelab-ca-cert -n cert-manager --timeout=300s
     success "CA certificate ready"
-    
+
     # Step 5: Deploy minimal services
     log "Deploying application services..."
-    
+
     # Create minimal Grafana if not exists
     if [[ ! -f "/tmp/minimal-grafana.yaml" ]]; then
         cat > /tmp/minimal-grafana.yaml << 'EOF'
@@ -419,9 +419,9 @@ spec:
     app: grafana
 EOF
     fi
-    
+
     kubectl apply -f /tmp/minimal-grafana.yaml
-    
+
     # Create HTTPS ingress if not exists
     if [[ ! -f "/tmp/minimal-https-ingress.yaml" ]]; then
         cat > /tmp/minimal-https-ingress.yaml << 'EOF'
@@ -453,20 +453,20 @@ spec:
               number: 80
 EOF
     fi
-    
+
     kubectl apply -f /tmp/minimal-https-ingress.yaml
-    
+
     # Wait for service certificate
     log "Waiting for service certificates..."
     kubectl wait --for=condition=ready certificate grafana-tls-cert -n monitoring --timeout=300s
     success "Service certificates ready"
-    
+
     # Step 6: Verify MetalLB IP assignment
     log "Verifying MetalLB configuration..."
     local max_attempts=30
     local attempt=1
     local external_ip=""
-    
+
     while [[ $attempt -le $max_attempts ]]; do
         external_ip=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
         if [[ "$external_ip" == "$METALLB_IP" ]]; then
@@ -478,13 +478,13 @@ EOF
             ((attempt++))
         fi
     done
-    
+
     if [[ "$external_ip" != "$METALLB_IP" ]]; then
         warning "MetalLB IP assignment issue. Expected: $METALLB_IP, Got: $external_ip"
     fi
-    
+
     success "Infrastructure deployment complete"
-    
+
     # Automatically configure local access unless skipped
     if [[ "$SKIP_LOCAL" != "true" ]]; then
         setup_local_access
@@ -496,7 +496,7 @@ EOF
 
 setup_local_access() {
     log "Configuring local workstation for homelab access..."
-    
+
     # Extract CA certificate
     log "Extracting CA certificate..."
     kubectl get secret homelab-ca-secret -n cert-manager -o jsonpath='{.data.tls\.crt}' | base64 -d > "$CA_CERT_PATH"
@@ -505,10 +505,10 @@ setup_local_access() {
     else
         error "Failed to extract CA certificate"
     fi
-    
+
     # Update /etc/hosts
     log "Configuring DNS resolution..."
-    
+
     # Create hosts entries file
     cat > /tmp/homelab-hosts-entries.txt << EOF
 # Homelab Services (via MetalLB LoadBalancer)
@@ -516,29 +516,29 @@ EOF
     for service in "${SERVICES[@]}"; do
         echo "$METALLB_IP ${service}.homelab.local" >> /tmp/homelab-hosts-entries.txt
     done
-    
+
     # Try to update hosts file
     if sudo -n true 2>/dev/null; then
         # Backup existing hosts file
         sudo cp /etc/hosts /etc/hosts.backup.$(date +%Y%m%d_%H%M%S)
-        
+
         # Remove existing homelab entries
         sudo sed -i '/homelab.local/d' /etc/hosts 2>/dev/null || true
-        
+
         # Add new entries
         echo "" | sudo tee -a /etc/hosts > /dev/null
         cat /tmp/homelab-hosts-entries.txt | sudo tee -a /etc/hosts > /dev/null
-        
+
         success "DNS resolution configured"
     else
         warning "Cannot update /etc/hosts automatically (sudo required)"
         show_manual_setup_instructions
         return
     fi
-    
+
     # Install CA certificate system-wide
     log "Installing CA certificate system-wide..."
-    
+
     if [[ -f /etc/debian_version ]] && sudo -n true 2>/dev/null; then
         sudo cp "$CA_CERT_PATH" /usr/local/share/ca-certificates/homelab-ca.crt
         sudo update-ca-certificates > /dev/null
@@ -552,17 +552,17 @@ EOF
         show_manual_setup_instructions
         return
     fi
-    
+
     # Test configuration
     test_local_configuration
-    
+
     success "Local workstation configuration complete"
     show_access_information
 }
 
 test_local_configuration() {
     log "Testing local configuration..."
-    
+
     # Test DNS resolution
     local dns_failures=0
     for service in "${SERVICES[@]}"; do
@@ -574,20 +574,20 @@ test_local_configuration() {
             ((dns_failures++))
         fi
     done
-    
+
     # Test connectivity
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/80" 2>/dev/null; then
         success "HTTP connectivity to $METALLB_IP"
     else
         warning "Cannot reach $METALLB_IP:80"
     fi
-    
+
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/443" 2>/dev/null; then
         success "HTTPS connectivity to $METALLB_IP"
     else
         warning "Cannot reach $METALLB_IP:443"
     fi
-    
+
     # Test HTTPS certificate
     local cert_test=$(echo | openssl s_client -servername grafana.homelab.local -connect $METALLB_IP:443 2>/dev/null | openssl x509 -noout -issuer 2>/dev/null || echo "")
     if echo "$cert_test" | grep -q "Homelab CA"; then
@@ -595,7 +595,7 @@ test_local_configuration() {
     else
         warning "HTTPS certificate validation failed"
     fi
-    
+
     if [[ $dns_failures -eq 0 ]]; then
         success "All DNS resolution tests passed"
     else
@@ -628,18 +628,18 @@ show_manual_setup_instructions() {
 show_status() {
     log "Checking homelab deployment status..."
     echo ""
-    
+
     # Check cluster connectivity
     if kubectl get nodes &>/dev/null; then
         success "Kubernetes cluster: Connected"
-        
+
         # Show cluster info
         local nodes=$(kubectl get nodes --no-headers | wc -l)
         local pods=$(kubectl get pods --all-namespaces --no-headers | grep Running | wc -l)
         local services=$(kubectl get services --all-namespaces --no-headers | wc -l)
-        
+
         echo "   📊 Cluster: $nodes nodes, $pods running pods, $services services"
-        
+
         # Show namespace status
         local namespaces=("kube-system" "metallb-system" "cert-manager" "ingress-nginx" "monitoring" "longhorn-system")
         for ns in "${namespaces[@]}"; do
@@ -648,7 +648,7 @@ show_status() {
                 echo "   📦 $ns: $pod_count running pods"
             fi
         done
-        
+
         # Check MetalLB status
         local external_ip=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "None")
         if [[ "$external_ip" == "$METALLB_IP" ]]; then
@@ -656,20 +656,20 @@ show_status() {
         else
             warning "MetalLB LoadBalancer: $external_ip (expected: $METALLB_IP)"
         fi
-        
+
         # Check certificates
         local cert_count=$(kubectl get certificates --all-namespaces --no-headers 2>/dev/null | grep True | wc -l)
         echo "   🔐 Ready certificates: $cert_count"
-        
+
     else
         warning "Kubernetes cluster: Not connected"
         echo "   Use '$0 deploy' to deploy the cluster"
     fi
-    
+
     # Check local configuration
     echo ""
     log "Checking local workstation configuration..."
-    
+
     # Check DNS resolution
     local dns_ok=0
     for service in "${SERVICES[@]}"; do
@@ -681,26 +681,26 @@ show_status() {
             warning "${service}.homelab.local → Not resolved"
         fi
     done
-    
+
     if [[ $dns_ok -eq ${#SERVICES[@]} ]]; then
         success "DNS configuration: All services resolve correctly"
     else
         warning "DNS configuration: $((${#SERVICES[@]} - dns_ok)) services not resolving"
     fi
-    
+
     # Check connectivity
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/80" 2>/dev/null; then
         success "Network connectivity: HTTP reachable"
     else
         warning "Network connectivity: Cannot reach HTTP port"
     fi
-    
+
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/443" 2>/dev/null; then
         success "Network connectivity: HTTPS reachable"
     else
         warning "Network connectivity: Cannot reach HTTPS port"
     fi
-    
+
     # Check CA certificate
     if [[ -f "$CA_CERT_PATH" ]]; then
         success "CA certificate: Available at $CA_CERT_PATH"
@@ -714,34 +714,34 @@ show_status() {
 run_connectivity_tests() {
     log "Running comprehensive connectivity tests..."
     echo ""
-    
+
     # Basic network tests
     echo -e "${BLUE}🌐 Network Connectivity Tests${NC}"
     echo "=============================="
-    
+
     if ping -c 1 -W 3 "$HOMELAB_SERVER" &>/dev/null; then
         success "Homelab server ($HOMELAB_SERVER) reachable"
     else
         error "Cannot reach homelab server ($HOMELAB_SERVER)"
     fi
-    
+
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/80" 2>/dev/null; then
         success "MetalLB HTTP port accessible"
     else
         warning "MetalLB HTTP port not accessible"
     fi
-    
+
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/443" 2>/dev/null; then
         success "MetalLB HTTPS port accessible"
     else
         warning "MetalLB HTTPS port not accessible"
     fi
-    
+
     # DNS resolution tests
     echo ""
     echo -e "${BLUE}🔍 DNS Resolution Tests${NC}"
     echo "======================="
-    
+
     for service in "${SERVICES[@]}"; do
         local resolved_ip=$(getent hosts ${service}.homelab.local | awk '{print $1}' 2>/dev/null || echo "")
         if [[ "$resolved_ip" == "$METALLB_IP" ]]; then
@@ -750,12 +750,12 @@ run_connectivity_tests() {
             warning "${service}.homelab.local → Failed to resolve"
         fi
     done
-    
+
     # HTTPS certificate tests
     echo ""
     echo -e "${BLUE}🔐 HTTPS Certificate Tests${NC}"
     echo "=========================="
-    
+
     for service in "${SERVICES[@]}"; do
         local cert_info=$(echo | openssl s_client -servername ${service}.homelab.local -connect $METALLB_IP:443 2>/dev/null | openssl x509 -noout -issuer 2>/dev/null || echo "")
         if echo "$cert_info" | grep -q "Homelab CA"; then
@@ -763,7 +763,7 @@ run_connectivity_tests() {
         else
             warning "${service}.homelab.local certificate validation failed"
         fi
-        
+
         local https_code=$(curl -k -s -w "%{http_code}" -o /dev/null https://${service}.homelab.local/ 2>/dev/null || echo "000")
         if [[ "$https_code" =~ ^[23] ]]; then
             success "${service}.homelab.local HTTPS responding (HTTP $https_code)"
@@ -773,7 +773,7 @@ run_connectivity_tests() {
             warning "${service}.homelab.local HTTPS issue (HTTP $https_code)"
         fi
     done
-    
+
     echo ""
     success "Connectivity tests completed"
 }
@@ -790,7 +790,7 @@ show_access_information() {
             status="✅"
         else
             status="🔹"
-        fi  
+        fi
         echo "   $status $(echo ${service^}): https://${service}.homelab.local"
     done
     echo ""

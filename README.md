@@ -223,6 +223,7 @@ This migration simplifies deployment by:
 ### MetalLB IP Pool (Deployed)
 
 **Active Configuration**:
+
 - **IP Pool**: 192.168.16.100-192.168.16.110
 - **Advertisement**: L2 mode on eno2 interface  
 - **Status**: ✅ Operational - External IP assigned to ingress-nginx-controller
@@ -412,31 +413,34 @@ helmfile --environment production apply --selector name=prometheus
 
 ### ✅ Currently Available Services
 
-- **Grafana**: https://grafana.homelab.local ✅ **Operational**
+- **Grafana**: <https://grafana.homelab.local> ✅ **Operational**
   - Status: Running with self-signed TLS certificate
   - Access: Add `192.168.16.100 grafana.homelab.local` to `/etc/hosts`
   - Authentication: Default Grafana login
 
 ### 🚧 Ready for Deployment (Infrastructure Prepared)
 
-- **Longhorn**: https://longhorn.homelab.local (Storage system ready)
-- **Prometheus**: https://prometheus.homelab.local (Monitoring infrastructure ready)
-- **AlertManager**: https://alertmanager.homelab.local (Alerting system ready)
+- **Longhorn**: <https://longhorn.homelab.local> (Storage system ready)
+- **Prometheus**: <https://prometheus.homelab.local> (Monitoring infrastructure ready)
+- **AlertManager**: <https://alertmanager.homelab.local> (Alerting system ready)
 
 ### 🔧 Access Setup Instructions
 
 1. **Add DNS entries to your local machine**:
+
    ```bash
    sudo bash -c 'echo "192.168.16.100 grafana.homelab.local" >> /etc/hosts'
    ```
 
 2. **Install CA certificate for trusted HTTPS** (optional):
+
    ```bash
    sudo cp /tmp/homelab-ca.crt /usr/local/share/ca-certificates/homelab-ca.crt
    sudo update-ca-certificates
    ```
 
 3. **Test connectivity:**
+
    ```bash
    curl -k -I https://grafana.homelab.local
    # Expected: HTTP/2 302 (redirect to login)

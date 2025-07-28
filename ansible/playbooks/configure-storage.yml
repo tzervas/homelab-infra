@@ -7,10 +7,10 @@
   hosts: homelab
   gather_facts: yes
   become: yes
-  
+
   vars:
     storage_timestamp: "{{ ansible_date_time.iso8601 }}"
-    
+
   tasks:
     - name: Create required storage directories
       file:
@@ -24,25 +24,25 @@
         - /opt/homelab/backups
         - /var/lib/homelab
         - /var/log/homelab
-        
+
     - name: Configure system disk usage monitoring
       block:
         - name: Check current disk usage
           shell: df -h /
           register: disk_usage
           changed_when: false
-          
+
         - name: Display disk usage information
           debug:
             msg: "Current disk usage: {{ disk_usage.stdout_lines }}"
-            
+
         - name: Warn if low disk space
           debug:
             msg: "⚠️  WARNING: Low disk space detected!"
           when: "ansible_mounts | selectattr('mount', 'equalto', '/') | first | json_query('size_available') < (10 * 1024**3)"
-          
+
       tags: [monitoring, disk]
-      
+
     - name: Configure system log rotation
       copy:
         content: |
@@ -56,27 +56,27 @@
           }
         dest: /etc/logrotate.d/homelab
         mode: '0644'
-        
+
     - name: Create storage status file
       copy:
         content: |
           # System Storage Configuration Status
           # Generated: {{ storage_timestamp }}
-          
+
           STORAGE_CONFIGURED=true
           STORAGE_TIMESTAMP={{ storage_timestamp }}
-          
+
           # Storage directories created
           STORAGE_DIRS_READY=true
-          
+
           # Log rotation configured
           LOG_ROTATION_CONFIGURED=true
-          
+
           # Ready for application storage
           READY_FOR_K3S_STORAGE=true
         dest: /opt/homelab/storage-status.env
         mode: '0644'
-        
+
     - name: Log storage configuration completion
       lineinfile:
         path: /opt/homelab/logs/storage.log

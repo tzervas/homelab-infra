@@ -17,7 +17,7 @@ data:
     global:
       meshPolicy:
         mode: STRICT
-        
+
     # Namespace-specific policies
     namespaces:
       kube-system:
@@ -34,7 +34,7 @@ data:
         mode: STRICT
       longhorn-system:
         mode: PERMISSIVE  # Storage system considerations
-        
+
     # Service-specific overrides
     services:
       kubernetes:
@@ -152,25 +152,25 @@ metadata:
     app.kubernetes.io/managed-by: homelab-security
 spec:
   rules:
-  - from:
-    - source:
-        principals: ["cluster.local/ns/monitoring/sa/prometheus"]
-    to:
-    - operation:
-        methods: ["GET"]
-        paths: ["/metrics", "/health", "/ready"]
-  - from:
-    - source:
-        principals: ["cluster.local/ns/kube-system/sa/default"]
-    to:
-    - operation:
-        methods: ["GET", "POST"]
-  - from:
-    - source:
-        namespaces: ["istio-system"]
-    to:
-    - operation:
-        methods: ["*"]
+    - from:
+        - source:
+            principals: ["cluster.local/ns/monitoring/sa/prometheus"]
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/metrics", "/health", "/ready"]
+    - from:
+        - source:
+            principals: ["cluster.local/ns/kube-system/sa/default"]
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+      to:
+        - operation:
+            methods: ["*"]
 
 ---
 # Certificate configuration for mTLS
@@ -253,50 +253,50 @@ metadata:
     app.kubernetes.io/managed-by: homelab-security
 spec:
   configPatches:
-  - applyTo: HTTP_CONNECTION_MANAGER
-    match:
-      context: SIDECAR_INBOUND
-    patch:
-      operation: MERGE
-      value:
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          common_http_protocol_options:
-            idle_timeout: 30s
-            max_connection_duration: 300s
-            max_headers_count: 100
-            max_stream_duration: 300s
-            headers_with_underscores_action: REJECT_REQUEST
-  - applyTo: NETWORK_FILTER
-    match:
-      context: SIDECAR_INBOUND
-      listener:
-        filterChain:
-          filter:
-            name: "envoy.filters.network.http_connection_manager"
-    patch:
-      operation: INSERT_BEFORE
-      value:
-        name: envoy.filters.network.local_ratelimit
-        typed_config:
-          "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-          type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
-          value:
-            stat_prefix: local_rate_limiter
-            token_bucket:
-              max_tokens: 1000
-              tokens_per_fill: 1000
-              fill_interval: 1s
-            filter_enabled:
-              runtime_key: local_rate_limit_enabled
-              default_value:
-                numerator: 100
-                denominator: HUNDRED
-            filter_enforced:
-              runtime_key: local_rate_limit_enforced
-              default_value:
-                numerator: 100
-                denominator: HUNDRED
+    - applyTo: HTTP_CONNECTION_MANAGER
+      match:
+        context: SIDECAR_INBOUND
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            common_http_protocol_options:
+              idle_timeout: 30s
+              max_connection_duration: 300s
+              max_headers_count: 100
+              max_stream_duration: 300s
+              headers_with_underscores_action: REJECT_REQUEST
+    - applyTo: NETWORK_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.network.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: local_rate_limiter
+              token_bucket:
+                max_tokens: 1000
+                tokens_per_fill: 1000
+                fill_interval: 1s
+              filter_enabled:
+                runtime_key: local_rate_limit_enabled
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              filter_enforced:
+                runtime_key: local_rate_limit_enforced
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
 
 ---
 # TLS verification configuration
@@ -320,7 +320,7 @@ data:
         max_chain_length: 3
         require_leaf_certificate: true
         verify_hostname: true
-        
+
       # Certificate validation rules
       certificate_validation:
         require_san: true
@@ -333,7 +333,7 @@ data:
         required_extended_key_usages:
           - server_auth
           - client_auth
-          
+
       # Cipher suite preferences
       cipher_suites:
         tls_13:
@@ -344,7 +344,7 @@ data:
           - ECDHE-RSA-AES256-GCM-SHA384
           - ECDHE-RSA-CHACHA20-POLY1305
           - ECDHE-RSA-AES128-GCM-SHA256
-          
+
       # Security parameters
       security:
         min_protocol_version: TLSv1.2
@@ -352,7 +352,7 @@ data:
         require_perfect_forward_secrecy: true
         session_tickets_disabled: true
         compression_disabled: true
-        
+
       # Monitoring and logging
       monitoring:
         log_failed_verifications: true

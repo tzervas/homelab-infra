@@ -1,11 +1,13 @@
 # Ansible Refactoring Summary
 
 ## Overview
+
 This document summarizes the changes made to minimize Ansible to system-level tasks only, migrating all application deployments to Helm-based management.
 
 ## Changes Made
 
 ### 1. Created Legacy Migration Directory
+
 - **Location**: `ansible/legacy-migration/`
 - **Purpose**: Archive application deployment references and provide migration context
 - **Contents**:
@@ -14,6 +16,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
   - `REFACTORING_SUMMARY.md` - This summary document
 
 ### 2. Refactored Main Site Playbook
+
 - **File**: `ansible/site.yml`
 - **Changes**:
   - Removed all application deployment include_tasks
@@ -23,6 +26,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
   - Added system status tracking and logging
 
 ### 3. Updated Existing Playbooks for Idempotency
+
 - **Modified Files**:
   - `playbooks/deploy-k3s-fixed.yml` - Enhanced for system-level focus
   - `playbooks/install-tools.yml` - Improved idempotency
@@ -32,6 +36,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
   - Enhanced error handling and status reporting
 
 ### 4. Created New System-Level Playbooks
+
 - **`playbooks/bootstrap-system.yml`**:
   - System package installation and updates
   - Hostname and timezone configuration
@@ -60,6 +65,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
   - Status file reset for fresh deployments
 
 ### 5. Updated Inventory Configuration
+
 - **File**: `ansible/inventory/hosts.yml`
 - **Changes**:
   - Replaced `deploy_components` with `system_components`
@@ -67,6 +73,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
   - Maintained network configuration for reference
 
 ### 6. Comprehensive README Update
+
 - **File**: `ansible/README.md`
 - **Changes**:
   - Updated current status to reflect minimal scope
@@ -78,7 +85,9 @@ This document summarizes the changes made to minimize Ansible to system-level ta
 ## Scope Definition
 
 ### What Ansible Now Handles
+
 ✅ **System-Level Tasks**:
+
 - Initial server provisioning and bootstrapping
 - OS package installation and updates
 - System configuration (network, storage, kernel)
@@ -88,7 +97,9 @@ This document summarizes the changes made to minimize Ansible to system-level ta
 - Bootstrap prerequisites for Terraform/Helm
 
 ### What Has Been Migrated to Helm
+
 🔄 **Application Deployments**:
+
 - GitLab → Helm chart in `helm/charts/gitlab/`
 - Keycloak → Helm chart in `helm/charts/keycloak/`
 - cert-manager → Helm chart in `helm/charts/cert-manager/`
@@ -99,23 +110,27 @@ This document summarizes the changes made to minimize Ansible to system-level ta
 ## Benefits Achieved
 
 ### 1. Clear Separation of Concerns
+
 - **Ansible**: System and infrastructure provisioning
 - **Helm**: Kubernetes application management
 - **Terraform**: Infrastructure as Code
 
 ### 2. Improved Maintainability
+
 - All Ansible tasks are now idempotent
 - Better documentation and error handling
 - Modular system component structure
 - Comprehensive status tracking
 
 ### 3. Enhanced Reliability
+
 - System-level tasks are more stable
 - Application deployments use Kubernetes-native tooling
 - Better rollback and upgrade capabilities for applications
 - Reduced complexity in deployment management
 
 ### 4. Better Developer Experience
+
 - Clear usage examples and documentation
 - Modular execution of system components
 - Comprehensive validation and testing playbooks
@@ -124,6 +139,7 @@ This document summarizes the changes made to minimize Ansible to system-level ta
 ## Usage Examples
 
 ### Complete System Setup
+
 ```bash
 # Full system provisioning
 ansible-playbook -i inventory/hosts.yml site.yml
@@ -136,6 +152,7 @@ ansible-playbook -i inventory/hosts.yml site.yml -e "system_components=['bootstr
 ```
 
 ### Individual Tasks
+
 ```bash
 # System bootstrap
 ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml

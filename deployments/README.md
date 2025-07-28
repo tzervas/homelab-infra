@@ -24,7 +24,9 @@ deployments/
 ## Current Implementation
 
 ### K3s Deployment (`k3s/`)
+
 Contains K3s cluster-specific deployment configurations:
+
 - Cluster initialization scripts
 - Node configuration files
 - Network policy definitions
@@ -33,20 +35,26 @@ Contains K3s cluster-specific deployment configurations:
 ### Planned Directories
 
 #### Applications (`applications/`)
+
 Will contain application-specific deployment manifests:
+
 - GitLab deployment configurations
 - Keycloak identity management
 - Monitoring stack deployments
 - Custom application manifests
 
 #### Infrastructure (`infrastructure/`)
+
 Will house Infrastructure as Code configurations:
+
 - Terraform modules for infrastructure provisioning
 - Ansible playbooks for system configuration
 - Cloud-native infrastructure definitions
 
 #### Helm Charts (`helm-charts/`)
+
 Will contain custom Helm charts developed for this homelab:
+
 - Custom application charts
 - Infrastructure component charts
 - Shared library charts
@@ -55,6 +63,7 @@ Will contain custom Helm charts developed for this homelab:
 ## Deployment Strategy
 
 ### Current Approach
+
 The project currently uses a hybrid deployment approach:
 
 1. **Helm-based Deployment**: Primary deployment method using Helmfile
@@ -68,7 +77,9 @@ The project currently uses a hybrid deployment approach:
    - Specialized scripts: `deploy-homelab.sh`, `deploy-gitlab-keycloak.sh`
 
 ### Future Migration
+
 This `deployments/` directory is structured to support:
+
 - Migration from script-based to declarative deployments
 - Better separation of concerns
 - Environment-specific deployment strategies
@@ -77,7 +88,9 @@ This `deployments/` directory is structured to support:
 ## Integration with Existing System
 
 ### Script Integration
+
 Current deployment scripts automatically work with this structure:
+
 ```bash
 # Main deployment script
 ./scripts/deployment/deploy.sh -e production
@@ -90,7 +103,9 @@ Current deployment scripts automatically work with this structure:
 ```
 
 ### Helm Integration
+
 Helmfile configurations reference deployment artifacts:
+
 ```bash
 # Deploy using Helmfile
 helmfile --environment production apply
@@ -102,18 +117,21 @@ helmfile --environment development sync
 ## Environment Management
 
 ### Development Deployments
+
 - Minimal resource requirements
 - Single-node configurations
 - Development-specific networking
 - Rapid iteration capabilities
 
 ### Staging Deployments
+
 - Production-like configurations
 - Multi-node testing capabilities
 - Integration testing environments
 - Performance validation setups
 
 ### Production Deployments
+
 - High availability configurations
 - Security-hardened deployments
 - Monitoring and alerting enabled
@@ -122,12 +140,14 @@ helmfile --environment development sync
 ## Security Considerations
 
 ### Manifest Security
+
 - No hardcoded secrets in deployment files
 - Use of Kubernetes secrets and ConfigMaps
 - Sealed secrets for encrypted storage
 - RBAC configurations for access control
 
 ### Network Security
+
 - Network policies for traffic control
 - TLS termination at ingress
 - Service mesh considerations (future)
@@ -136,11 +156,13 @@ helmfile --environment development sync
 ## Automation and CI/CD
 
 ### Current Automation
+
 - Script-based deployment automation
 - Environment-specific configurations
 - Validation and testing integration
 
 ### Future CI/CD Integration
+
 - GitOps workflow implementation
 - Automated deployment pipelines
 - Progressive delivery strategies
@@ -149,12 +171,14 @@ helmfile --environment development sync
 ## Monitoring and Observability
 
 ### Deployment Monitoring
+
 - Health checks for deployed applications
 - Resource utilization monitoring
 - Performance metrics collection
 - Log aggregation and analysis
 
 ### Deployment Validation
+
 - Pre-deployment testing
 - Post-deployment verification
 - Integration testing automation
@@ -163,6 +187,7 @@ helmfile --environment development sync
 ## Usage Examples
 
 ### Deploy Specific Environment
+
 ```bash
 # Development environment
 ./scripts/deployment/deploy.sh -e development
@@ -173,6 +198,7 @@ helmfile --environment development sync
 ```
 
 ### Check Deployment Status
+
 ```bash
 # Overall system status
 ./scripts/deployment/deploy-with-privileges.sh status
@@ -183,6 +209,7 @@ kubectl get ingress -A
 ```
 
 ### Troubleshooting Deployments
+
 ```bash
 # View deployment logs
 kubectl logs -n kube-system -l app=k3s
@@ -215,6 +242,7 @@ When adding new deployment configurations:
 ## Migration Notes
 
 This structure supports the ongoing migration from:
+
 - **From**: Script-heavy deployment approaches
 - **To**: Declarative, Infrastructure as Code methodologies
 

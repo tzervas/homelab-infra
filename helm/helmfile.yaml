@@ -38,6 +38,8 @@ environments:
     secrets:
       - environments/secrets-prod.yaml
 
+---
+
 # Global hooks for all releases
 hooks:
   - events: ["presync"]
@@ -47,13 +49,13 @@ hooks:
       - "-c"
       - |
         echo "🔍 Pre-sync validation started..."
-        
+
         # Validate Kubernetes cluster connectivity
         if ! kubectl cluster-info &>/dev/null; then
           echo "❌ Kubernetes cluster is not accessible"
           exit 1
         fi
-        
+
         # Check if required namespaces exist
         for ns in metallb-system cert-manager ingress-nginx longhorn-system monitoring; do
           if ! kubectl get namespace "$ns" &>/dev/null; then
@@ -61,16 +63,16 @@ hooks:
             kubectl create namespace "$ns" || true
           fi
         done
-        
+
         # Apply pod security standards to namespaces
         kubectl label namespace metallb-system pod-security.kubernetes.io/enforce=privileged --overwrite=true
         kubectl label namespace cert-manager pod-security.kubernetes.io/enforce=baseline --overwrite=true
         kubectl label namespace ingress-nginx pod-security.kubernetes.io/enforce=baseline --overwrite=true
         kubectl label namespace longhorn-system pod-security.kubernetes.io/enforce=baseline --overwrite=true
         kubectl label namespace monitoring pod-security.kubernetes.io/enforce=baseline --overwrite=true
-        
+
         echo "✅ Pre-sync validation completed"
-        
+
   - events: ["postsync"]
     showlogs: true
     command: "bash"
@@ -78,14 +80,14 @@ hooks:
       - "-c"
       - |
         echo "🏥 Post-sync health check started..."
-        
+
         # Wait for critical deployments to be ready
         critical_deployments=(
           "metallb-system:metallb-controller"
           "cert-manager:cert-manager"
           "ingress-nginx:ingress-nginx-controller"
         )
-        
+
         for deployment in "${critical_deployments[@]}"; do
           namespace=$(echo "$deployment" | cut -d: -f1)
           name=$(echo "$deployment" | cut -d: -f2)
@@ -94,7 +96,7 @@ hooks:
             echo "⚠️  Deployment $namespace/$name failed to become ready"
           }
         done
-        
+
         echo "✅ Post-sync health check completed"
 
 # Common template values
@@ -102,26 +104,6 @@ commonLabels: &commonLabels
   app.kubernetes.io/managed-by: helmfile
   security.homelab.local/baseline: "enabled"
   homelab.local/environment: "{{ .Environment.Name }}"
-
-# Security baseline template
-securityBaseline: &securityBaseline
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-    seccompProfile:
-      type: RuntimeDefault
-    capabilities:
-      drop:
-        - ALL
-  resources:
-    limits:
-      cpu: "{{ .Values.resources.defaults.limits.cpu | default "500m" }}"
-      memory: "{{ .Values.resources.defaults.limits.memory | default "512Mi" }}"
-    requests:
-      cpu: "{{ .Values.resources.defaults.requests.cpu | default "100m" }}"
-      memory: "{{ .Values.resources.defaults.requests.memory | default "128Mi" }}"
 
 releases:
   # Security Baseline - Deploy First
@@ -183,7 +165,7 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - metallb
+      - metallb-system/metallb
 
   - name: ingress-nginx
     namespace: ingress-nginx
@@ -196,8 +178,8 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - metallb
-      - cert-manager
+      - metallb-system/metallb
+      - cert-manager/cert-manager
 
   - name: sealed-secrets
     namespace: kube-system
@@ -221,7 +203,7 @@ releases:
     wait: true
     timeout: 600
     needs:
-      - ingress-nginx
+      - ingress-nginx/ingress-nginx
 
   # Monitoring Stack - Deploy Last
   - name: kube-prometheus-stack
@@ -235,8 +217,8 @@ releases:
     wait: true
     timeout: 600
     needs:
-      - longhorn
-      - ingress-nginx
+      - longhorn-system/longhorn
+      - ingress-nginx/ingress-nginx
 
   - name: loki
     namespace: monitoring
@@ -248,7 +230,7 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - longhorn
+      - longhorn-system/longhorn
 
   - name: promtail
     namespace: monitoring
@@ -260,7 +242,7 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - loki
+      - monitoring/loki
 
   - name: grafana
     namespace: monitoring
@@ -272,5 +254,5 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - kube-prometheus-stack
-      - loki
+      - monitoring/kube-prometheus-stack
+      - monitoring/loki

@@ -14,16 +14,16 @@ data:
   health-check.sh: |
     #!/bin/bash
     set -euo pipefail
-    
+
     echo "🏥 Starting post-deployment health checks..."
-    
+
     # Function to wait for resource to be ready
     wait_for_resource() {
       local resource_type=$1
       local resource_name=$2
       local namespace=${3:-{{ .Release.Namespace }}}
       local timeout=${4:-300}
-      
+
       echo "⏳ Waiting for $resource_type/$resource_name in namespace $namespace..."
       kubectl wait --for=condition=available --timeout=${timeout}s "$resource_type/$resource_name" -n "$namespace" || {
         echo "❌ $resource_type/$resource_name failed to become ready"
@@ -31,23 +31,23 @@ data:
       }
       echo "✅ $resource_type/$resource_name is ready"
     }
-    
+
     # Function to check pod security standards
     check_pod_security() {
       echo "🔒 Checking Pod Security Standards compliance..."
-      
+
       # Get all pods in the namespace
       local pods=$(kubectl get pods -n {{ .Release.Namespace }} -o name 2>/dev/null || echo "")
-      
+
       if [ -z "$pods" ]; then
         echo "ℹ️  No pods found in namespace {{ .Release.Namespace }}"
         return 0
       fi
-      
+
       for pod in $pods; do
         local pod_name=$(echo "$pod" | cut -d'/' -f2)
         echo "🔍 Checking pod: $pod_name"
-        
+
         # Check security context
         local security_context=$(kubectl get "$pod" -n {{ .Release.Namespace }} -o jsonpath='{.spec.securityContext}' 2>/dev/null || echo "{}")
         if [ "$security_context" = "{}" ]; then
@@ -55,7 +55,7 @@ data:
         else
           echo "✅ Pod $pod_name has security context configured"
         fi
-        
+
         # Check for privileged containers
         local privileged=$(kubectl get "$pod" -n {{ .Release.Namespace }} -o jsonpath='{.spec.containers[*].securityContext.privileged}' 2>/dev/null || echo "")
         if [[ "$privileged" == *"true"* ]]; then
@@ -63,30 +63,30 @@ data:
         fi
       done
     }
-    
+
     # Function to test network policies
     test_network_policies() {
       echo "🌐 Testing network policies..."
-      
+
       local policies=$(kubectl get networkpolicies -n {{ .Release.Namespace }} -o name 2>/dev/null | wc -l)
       if [ "$policies" -gt 0 ]; then
         echo "✅ Found $policies network policies in namespace {{ .Release.Namespace }}"
-        
+
         # List the policies
         kubectl get networkpolicies -n {{ .Release.Namespace }} -o custom-columns=NAME:.metadata.name,TYPE:.metadata.labels."network-policy\.homelab\.local/type"
       else
         echo "ℹ️  No network policies found in namespace {{ .Release.Namespace }}"
       fi
     }
-    
+
     # Function to verify RBAC
     verify_rbac() {
       echo "🔑 Verifying RBAC configuration..."
-      
+
       local sa_name="{{ include "security-baseline.serviceAccountName" . }}"
       if kubectl get serviceaccount "$sa_name" -n {{ .Release.Namespace }} &>/dev/null; then
         echo "✅ Service account $sa_name exists"
-        
+
         # Check role bindings
         local bindings=$(kubectl get rolebindings -n {{ .Release.Namespace }} -o name 2>/dev/null | grep "$(echo {{ include "security-baseline.fullname" . }} | tr '[:upper:]' '[:lower:]')" | wc -l)
         echo "✅ Found $bindings role bindings for this release"
@@ -94,29 +94,29 @@ data:
         echo "⚠️  Service account $sa_name not found"
       fi
     }
-    
+
     # Function to check resource limits
     check_resource_limits() {
       echo "📊 Checking resource limits and requests..."
-      
+
       local pods=$(kubectl get pods -n {{ .Release.Namespace }} -o name 2>/dev/null || echo "")
-      
+
       for pod in $pods; do
         local pod_name=$(echo "$pod" | cut -d'/' -f2)
-        
+
         # Check if containers have resource limits
         local containers=$(kubectl get "$pod" -n {{ .Release.Namespace }} -o jsonpath='{.spec.containers[*].name}' 2>/dev/null || echo "")
-        
+
         for container in $containers; do
           local limits=$(kubectl get "$pod" -n {{ .Release.Namespace }} -o jsonpath="{.spec.containers[?(@.name=='$container')].resources.limits}" 2>/dev/null || echo "{}")
           local requests=$(kubectl get "$pod" -n {{ .Release.Namespace }} -o jsonpath="{.spec.containers[?(@.name=='$container')].resources.requests}" 2>/dev/null || echo "{}")
-          
+
           if [ "$limits" = "{}" ] || [ "$limits" = "" ]; then
             echo "⚠️  Container $container in pod $pod_name has no resource limits"
           else
             echo "✅ Container $container in pod $pod_name has resource limits"
           fi
-          
+
           if [ "$requests" = "{}" ] || [ "$requests" = "" ]; then
             echo "⚠️  Container $container in pod $pod_name has no resource requests"
           else
@@ -125,16 +125,16 @@ data:
         done
       done
     }
-    
+
     # Function to test TLS configuration
     test_tls_config() {
       echo "🔐 Testing TLS configuration..."
-      
+
       {{- if .Values.global.tls.enabled }}
       # Check for TLS secrets
       if kubectl get secret {{ .Values.global.tls.secretName }} -n {{ .Release.Namespace }} &>/dev/null; then
         echo "✅ TLS secret {{ .Values.global.tls.secretName }} found"
-        
+
         # Verify certificate validity
         local cert_data=$(kubectl get secret {{ .Values.global.tls.secretName }} -n {{ .Release.Namespace }} -o jsonpath='{.data.tls\.crt}' | base64 -d)
         local expiry=$(echo "$cert_data" | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2 || echo "Unable to parse")
@@ -146,11 +146,11 @@ data:
       echo "ℹ️  TLS is disabled in configuration"
       {{- end }}
     }
-    
+
     # Function to check monitoring endpoints
     check_monitoring() {
       echo "📈 Checking monitoring configuration..."
-      
+
       {{- if .Values.monitoring.serviceMonitor.enabled }}
       local service_monitors=$(kubectl get servicemonitors -n {{ .Release.Namespace }} -o name 2>/dev/null | wc -l)
       if [ "$service_monitors" -gt 0 ]; then
@@ -162,17 +162,17 @@ data:
       echo "ℹ️  ServiceMonitor is disabled in configuration"
       {{- end }}
     }
-    
+
     # Run all health checks
     echo "🚀 Running comprehensive health checks..."
-    
+
     check_pod_security
     test_network_policies
     verify_rbac
     check_resource_limits
     test_tls_config
     check_monitoring
-    
+
     # Final connectivity test
     echo "🔗 Testing basic connectivity..."
     if kubectl get nodes &>/dev/null; then
@@ -181,16 +181,16 @@ data:
       echo "❌ Kubernetes API connectivity failed"
       exit 1
     fi
-    
+
     # Check DNS resolution
     if nslookup kubernetes.default.svc.cluster.local &>/dev/null; then
       echo "✅ DNS resolution working"
     else
       echo "⚠️  DNS resolution issues detected"
     fi
-    
+
     echo "🎉 Post-deployment health checks completed successfully!"
-    
+
     # Generate health report
     echo "📋 Health Report Summary:"
     echo "========================"

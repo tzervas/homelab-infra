@@ -55,10 +55,10 @@ func testK3sClusterConfiguration(t *testing.T, terraformOptions *terraform.Optio
 	// Get outputs from terraform
 	clusterName := terraform.Output(t, terraformOptions, "cluster_name")
 	kubeconfig := terraform.Output(t, terraformOptions, "kubeconfig_content")
-	
+
 	assert.NotEmpty(t, clusterName, "Cluster name should not be empty")
 	assert.NotEmpty(t, kubeconfig, "Kubeconfig should not be empty")
-	
+
 	// Test cluster name matches expected value
 	expectedClusterName := terraformOptions.Vars["cluster_name"].(string)
 	assert.Equal(t, expectedClusterName, clusterName, "Cluster name should match input variable")
@@ -130,9 +130,9 @@ func testK3sClusterResources(t *testing.T, terraformOptions *terraform.Options) 
 		pods := k8s.ListPods(t, options, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("app=%s", podPrefix),
 		})
-		
+
 		assert.NotEmpty(t, pods, fmt.Sprintf("Should have %s pods running", podPrefix))
-		
+
 		for _, pod := range pods {
 			k8s.WaitUntilPodAvailable(t, options, pod.Name, 30, 5*time.Second)
 		}
@@ -152,7 +152,7 @@ func TestK3sClusterHelmIntegration(t *testing.T) {
 	t.Parallel()
 
 	terraformDir := filepath.Join("..", "..", "..", "terraform", "modules", "k3s-cluster")
-	
+
 	terraformOptions := &terraform.Options{
 		TerraformDir: terraformDir,
 		Vars: map[string]interface{}{
@@ -197,14 +197,14 @@ func TestK3sClusterUpgrade(t *testing.T) {
 	t.Parallel()
 
 	terraformDir := filepath.Join("..", "..", "..", "terraform", "modules", "k3s-cluster")
-	
+
 	// Initial cluster with older version
 	terraformOptions := &terraform.Options{
 		TerraformDir: terraformDir,
 		Vars: map[string]interface{}{
 			"cluster_name":   "test-k3s-upgrade-cluster",
 			"node_count":     2,
-			"server_memory":  "2048", 
+			"server_memory":  "2048",
 			"agent_memory":   "1024",
 			"k3s_version":    "v1.27.8+k3s1", // Older version
 			"environment":    "test",

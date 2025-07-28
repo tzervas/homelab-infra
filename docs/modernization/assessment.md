@@ -15,6 +15,7 @@ This assessment analyzes the current homelab infrastructure to identify componen
 #### 1.1 Existing Playbooks Status
 
 **✅ Migrated to Helm (Legacy/Reference Only):**
+
 - `deploy-gitlab.yml` → GitLab Helm chart
 - `deploy-keycloak.yml` → Keycloak Helm chart  
 - `deploy-cert-manager.yml` → cert-manager Helm chart
@@ -23,6 +24,7 @@ This assessment analyzes the current homelab infrastructure to identify componen
 - `deploy-nginx-ingress.yml` → nginx-ingress Helm chart
 
 **🔄 Current Active Playbooks:**
+
 - `site.yml` - Main orchestration playbook
 - `deploy-k3s.yml` / `deploy-k3s-fixed.yml` - K3s cluster installation
 - `create-vm.yml` - VM creation and configuration
@@ -34,12 +36,14 @@ This assessment analyzes the current homelab infrastructure to identify componen
 #### 1.2 Components Suitable for Migration
 
 **Infrastructure Bootstrapping (Keep in Ansible):**
+
 - System package installation and updates
 - User account and SSH key management
 - Basic system configuration
 - Initial K3s installation
 
 **Infrastructure Management (Terraform Candidates):**
+
 - VM lifecycle management
 - Network configuration and IP allocation
 - Storage provisioning and management
@@ -51,6 +55,7 @@ This assessment analyzes the current homelab infrastructure to identify componen
 #### 2.1 Current Helmfile Structure
 
 **Repository Configuration (`helmfile.yaml`):**
+
 ```yaml
 repositories:
   - prometheus-community: https://prometheus-community.github.io/helm-charts
@@ -63,6 +68,7 @@ repositories:
 ```
 
 **Release Dependencies:**
+
 ```
 Core Infrastructure (Deploy First):
 ├── metallb (v0.14.8) - Load balancer
@@ -83,15 +89,18 @@ Monitoring Stack (Deploy Last):
 #### 2.2 Chart Dependencies and Integration
 
 **Security Dependencies:**
+
 - cert-manager → TLS certificate lifecycle
 - sealed-secrets → Encrypted secret management
 - ingress-nginx → TLS termination and routing
 
 **Storage Dependencies:**
+
 - longhorn → Persistent volume provisioning
 - All stateful applications depend on longhorn storage class
 
 **Monitoring Dependencies:**
+
 - kube-prometheus-stack → Base metrics infrastructure
 - loki → Log aggregation backend
 - promtail → Log collection from all pods
@@ -102,11 +111,13 @@ Monitoring Stack (Deploy Last):
 #### 3.1 Current Infrastructure State
 
 **Physical Infrastructure:**
+
 - Homelab server: 192.168.16.26 (user: kang)
 - Network: 192.168.16.0/16 subnet
 - Storage: Local storage with Longhorn distributed layer
 
 **Virtualization Layer:**
+
 - VM creation currently handled by Ansible
 - Manual IP allocation and network configuration
 - Basic resource allocation without orchestration
@@ -114,6 +125,7 @@ Monitoring Stack (Deploy Last):
 #### 3.2 Terraform Migration Candidates
 
 **High Priority - Infrastructure as Code:**
+
 1. **VM Lifecycle Management**
    - VM provisioning and configuration
    - Resource allocation (CPU, memory, storage)
@@ -133,6 +145,7 @@ Monitoring Stack (Deploy Last):
    - Snapshot scheduling
 
 **Medium Priority - Service Infrastructure:**
+
 1. **Certificate Management**
    - Let's Encrypt integration
    - Internal CA certificate lifecycle
@@ -146,6 +159,7 @@ Monitoring Stack (Deploy Last):
    - Log retention policies
 
 **Low Priority - Application Configuration:**
+
 1. **Application Secrets Management**
    - External secret store integration
    - Secret rotation policies
@@ -205,25 +219,30 @@ Monitoring Stack (Deploy Last):
 
 ### TLS/mTLS Implementation Status
 
-#### Current TLS Coverage:
+#### Current TLS Coverage
+
 ✅ **Implemented:**
+
 - cert-manager with Let's Encrypt integration
 - Ingress TLS termination for all web services
 - Internal CA for cluster-internal communications
 - Kubernetes API server TLS
 
 ✅ **Partially Implemented:**
+
 - Service-to-service communication (some encrypted)
 - Log shipping with TLS (configurable)
 - Monitoring scrape endpoints (mixed)
 
 ⚠️ **Needs Enhancement:**
+
 - Comprehensive mTLS between all services
 - Certificate rotation automation
 - Certificate transparency monitoring
 - Backup data encryption in transit
 
-#### HTTPS Requirements:
+#### HTTPS Requirements
+
 - **External Services:** All require HTTPS with valid certificates
 - **Internal Services:** TLS preferred, plaintext acceptable for non-sensitive
 - **Admin Interfaces:** HTTPS mandatory (Grafana, Longhorn UI)
@@ -232,12 +251,14 @@ Monitoring Stack (Deploy Last):
 ### Security Criticality Analysis
 
 **Critical Security Components:**
+
 1. **Certificate Authority Management** - Foundation for all TLS
 2. **Secret Management** - Controls access to all sensitive data
 3. **Network Policies** - Controls service-to-service communication
 4. **RBAC Configuration** - Controls human and service account access
 
 **High Security Components:**
+
 1. **Storage Encryption** - Protects data at rest
 2. **Ingress Security** - Controls external access
 3. **Monitoring Security** - Prevents information disclosure
@@ -245,11 +266,14 @@ Monitoring Stack (Deploy Last):
 ## Migration Recommendations
 
 ### Phase 1: Infrastructure Foundation (Terraform)
+
 **Timeline:** 2-4 weeks  
 **Scope:** Core infrastructure provisioning
 
 **Actions:**
+
 1. **VM Infrastructure Management**
+
    ```hcl
    # terraform/infrastructure/vms.tf
    resource "proxmox_vm_qemu" "homelab_nodes" {
@@ -260,6 +284,7 @@ Monitoring Stack (Deploy Last):
    ```
 
 2. **Network Infrastructure**
+
    ```hcl
    # terraform/infrastructure/network.tf
    resource "proxmox_vm_qemu" "metallb_pool" {
@@ -268,6 +293,7 @@ Monitoring Stack (Deploy Last):
    ```
 
 3. **Storage Infrastructure**
+
    ```hcl
    # terraform/infrastructure/storage.tf
    resource "proxmox_lxc" "backup_storage" {
@@ -276,10 +302,12 @@ Monitoring Stack (Deploy Last):
    ```
 
 ### Phase 2: Enhanced Security Infrastructure (Terraform)
+
 **Timeline:** 2-3 weeks  
 **Scope:** Certificate and secret management
 
 **Actions:**
+
 1. **External Certificate Management**
    - Terraform integration with DNS providers
    - Automated Let's Encrypt certificate provisioning
@@ -291,10 +319,12 @@ Monitoring Stack (Deploy Last):
    - Backup retention policies
 
 ### Phase 3: Integration and Automation (Terraform + Helm)
+
 **Timeline:** 1-2 weeks  
 **Scope:** Workflow optimization
 
 **Actions:**
+
 1. **GitOps Integration**
    - Terraform Cloud/Enterprise setup
    - Automated Helm deployments
@@ -306,10 +336,12 @@ Monitoring Stack (Deploy Last):
    - Automated remediation workflows
 
 ### Phase 4: Advanced Features (Optional)
+
 **Timeline:** 2-4 weeks  
 **Scope:** Advanced automation and scaling
 
 **Actions:**
+
 1. **Auto-scaling Infrastructure**
    - Dynamic VM provisioning
    - Load-based resource allocation
@@ -323,17 +355,20 @@ Monitoring Stack (Deploy Last):
 ## Implementation Strategy
 
 ### Current State Preservation
+
 - **Keep Ansible for:** System bootstrapping, user management, tool installation
 - **Keep Helm for:** Application deployments, Kubernetes resources
 - **Add Terraform for:** Infrastructure provisioning, network management, external integrations
 
 ### Migration Approach
+
 1. **Parallel Implementation:** Build Terraform infrastructure alongside existing Ansible
 2. **Gradual Migration:** Move components one at a time to minimize disruption
 3. **Validation at Each Step:** Ensure functionality before deprecating old methods
 4. **Rollback Capability:** Maintain ability to return to previous state
 
 ### Risk Mitigation
+
 - **Backup Strategy:** Full system backup before each migration phase
 - **Testing Environment:** Validate all changes in isolated environment first
 - **Documentation:** Comprehensive documentation of new workflows

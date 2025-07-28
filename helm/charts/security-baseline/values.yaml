@@ -5,13 +5,13 @@ global:
   # Environment-specific settings
   environment: "development"
   domain: "homelab.local"
-  
+
   # Certificate and TLS Settings
   tls:
     enabled: true
     issuer: "letsencrypt-staging"
     secretName: "tls-secret"
-    
+
   # mTLS Configuration
   mtls:
     enabled: false  # Enable in prod environments
@@ -27,7 +27,7 @@ podSecurityStandards:
   enforce: "baseline"  # baseline, restricted, privileged
   audit: "restricted"   # audit level for violations
   warn: "restricted"    # warning level
-  
+
   # Namespace labels for PSS
   labels:
     enforce: "pod-security.kubernetes.io/enforce"
@@ -50,7 +50,7 @@ securityContexts:
         - ALL
     readOnlyRootFilesystem: true
     allowPrivilegeEscalation: false
-    
+
   # Baseline security context (moderate security)
   baseline:
     runAsNonRoot: true
@@ -63,7 +63,7 @@ securityContexts:
       drop:
         - ALL
     allowPrivilegeEscalation: false
-    
+
   # Privileged security context (for system components that need it)
   privileged:
     runAsNonRoot: false
@@ -78,7 +78,7 @@ securityContexts:
     seccompProfile:
       type: RuntimeDefault
     allowPrivilegeEscalation: true
-    
+
   # Network-focused security context (for ingress controllers, etc.)
   networking:
     runAsNonRoot: false
@@ -101,15 +101,15 @@ networkPolicies:
   # Default deny all ingress and egress
   defaultDeny:
     enabled: true
-    
+
   # Allow DNS resolution
   allowDNS:
     enabled: true
-    
+
   # Allow access to Kubernetes API
   allowKubeAPI:
     enabled: true
-    
+
   # Custom network policies
   custom: []
     # - name: "allow-frontend-to-backend"
@@ -132,13 +132,13 @@ networkPolicies:
 rbac:
   # Create RBAC resources
   create: true
-  
+
   # Default service account settings
   serviceAccount:
     create: true
     automountServiceAccountToken: false
     annotations: {}
-    
+
   # Standard roles
   roles:
     # Read-only role for monitoring
@@ -151,7 +151,7 @@ rbac:
         - apiGroups: ["apps"]
           resources: ["deployments", "replicasets"]
           verbs: ["get", "list", "watch"]
-          
+
     # Application deployment role
     deployer:
       enabled: true
@@ -173,7 +173,7 @@ resources:
     requests:
       cpu: "100m"
       memory: "128Mi"
-      
+
   # Resource profiles for different workload types
   profiles:
     # Minimal resources for small utilities
@@ -184,7 +184,7 @@ resources:
       requests:
         cpu: "50m"
         memory: "64Mi"
-        
+
     # Standard resources for typical applications
     standard:
       limits:
@@ -193,7 +193,7 @@ resources:
       requests:
         cpu: "100m"
         memory: "128Mi"
-        
+
     # High resource allocation for demanding applications
     high:
       limits:
@@ -214,7 +214,7 @@ healthChecks:
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
-    
+
   # Readiness probe defaults
   readinessProbe:
     httpGet:
@@ -230,11 +230,11 @@ secrets:
   # Use external secrets operator
   externalSecrets:
     enabled: false
-    
+
   # Use sealed secrets
   sealedSecrets:
     enabled: true
-    
+
   # Secret templates
   templates:
     basic:
@@ -253,11 +253,11 @@ monitoring:
       monitoring: "prometheus"
     interval: "30s"
     scrapeTimeout: "10s"
-    
+
   # Pod monitors
   podMonitor:
     enabled: false
-    
+
   # Default metrics port
   metricsPort: 9090
 
@@ -266,11 +266,11 @@ validation:
   # OPA Gatekeeper policies
   gatekeeper:
     enabled: false
-    
+
   # Falco runtime security
   falco:
     enabled: false
-    
+
   # Network policy testing
   networkPolicyTesting:
     enabled: false

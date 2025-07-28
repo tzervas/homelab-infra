@@ -39,7 +39,7 @@ backup_existing_config() {
 
 create_sudoers_config() {
     log "Creating sudoers configuration for user '$USERNAME'"
-    
+
     cat > "$SUDOERS_FILE" << EOF
 # Sudoers configuration for $USERNAME - Ansible automation
 # Created by $SCRIPT_NAME on $(date)
@@ -92,11 +92,11 @@ check_existing_config() {
     if [[ -f "$SUDOERS_FILE" ]]; then
         local existing_checksum backup_checksum
         existing_checksum=$(sha256sum "$SUDOERS_FILE" | cut -d' ' -f1)
-        
+
         create_sudoers_config
         local new_checksum
         new_checksum=$(sha256sum "$SUDOERS_FILE" | cut -d' ' -f1)
-        
+
         if [[ "$existing_checksum" == "$new_checksum" ]]; then
             log "Configuration is already up to date. No changes needed."
             return 0
@@ -110,21 +110,21 @@ check_existing_config() {
 
 main() {
     log "Starting passwordless sudo setup for user '$USERNAME'"
-    
+
     validate_environment
-    
+
     if check_existing_config; then
         log "Setup completed successfully (no changes needed)"
         exit 0
     fi
-    
+
     backup_existing_config
     create_sudoers_config
     validate_sudoers_syntax
     set_file_permissions
     test_sudo_access
     cleanup
-    
+
     log "Passwordless sudo setup completed successfully for user '$USERNAME'"
     log "Sudoers file created: $SUDOERS_FILE"
     log "User '$USERNAME' can now run ALL commands without password"

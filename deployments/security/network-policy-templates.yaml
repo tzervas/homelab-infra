@@ -18,8 +18,8 @@ metadata:
 spec:
   podSelector: {}
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
 
 ---
 # DNS resolution policy template
@@ -38,14 +38,14 @@ metadata:
 spec:
   podSelector: {}
   policyTypes:
-  - Egress
+    - Egress
   egress:
-  - to: []
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
 
 ---
 # Kubernetes API access policy template
@@ -64,20 +64,20 @@ metadata:
 spec:
   podSelector: {}
   policyTypes:
-  - Egress
+    - Egress
   egress:
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    - podSelector:
-        matchLabels:
-          k8s-app: kube-apiserver
-    ports:
-    - protocol: TCP
-      port: 6443
-    - protocol: TCP
-      port: 443
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-apiserver
+      ports:
+        - protocol: TCP
+          port: 6443
+        - protocol: TCP
+          port: 443
 
 ---
 # Web application ingress policy template
@@ -98,22 +98,22 @@ spec:
     matchLabels:
       app.kubernetes.io/component: web
   policyTypes:
-  - Ingress
+    - Ingress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 8080
-    - protocol: TCP
-      port: 8443
-    - protocol: TCP
-      port: 3000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+        - protocol: TCP
+          port: 3000
 
 ---
 # Database access policy template
@@ -134,24 +134,24 @@ spec:
     matchLabels:
       app.kubernetes.io/component: database
   policyTypes:
-  - Ingress
+    - Ingress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/component: web
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/component: api
-    ports:
-    - protocol: TCP
-      port: 5432  # PostgreSQL
-    - protocol: TCP
-      port: 3306  # MySQL
-    - protocol: TCP
-      port: 27017 # MongoDB
-    - protocol: TCP
-      port: 6379  # Redis
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: web
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 5432 # PostgreSQL
+        - protocol: TCP
+          port: 3306 # MySQL
+        - protocol: TCP
+          port: 27017 # MongoDB
+        - protocol: TCP
+          port: 6379 # Redis
 
 ---
 # Monitoring access policy template
@@ -172,22 +172,22 @@ spec:
     matchLabels:
       monitoring: enabled
   policyTypes:
-  - Ingress
+    - Ingress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/name: prometheus
-    ports:
-    - protocol: TCP
-      port: 9090
-    - protocol: TCP
-      port: 8080
-    - protocol: TCP
-      port: 2112
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 2112
 
 ---
 # Service mesh sidecar policy template
@@ -208,38 +208,38 @@ spec:
     matchLabels:
       security.istio.io/tlsMode: istio
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: istio-system
-    - podSelector:
-        matchLabels:
-          security.istio.io/tlsMode: istio
-    ports:
-    - protocol: TCP
-      port: 15001  # Envoy admin
-    - protocol: TCP
-      port: 15006  # Envoy inbound
-    - protocol: TCP
-      port: 15090  # Envoy health
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: istio-system
+        - podSelector:
+            matchLabels:
+              security.istio.io/tlsMode: istio
+      ports:
+        - protocol: TCP
+          port: 15001 # Envoy admin
+        - protocol: TCP
+          port: 15006 # Envoy inbound
+        - protocol: TCP
+          port: 15090 # Envoy health
   egress:
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: istio-system
-    - podSelector:
-        matchLabels:
-          security.istio.io/tlsMode: istio
-    ports:
-    - protocol: TCP
-      port: 15001
-    - protocol: TCP
-      port: 15010  # Pilot discovery
-    - protocol: TCP
-      port: 15011  # Pilot discovery TLS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: istio-system
+        - podSelector:
+            matchLabels:
+              security.istio.io/tlsMode: istio
+      ports:
+        - protocol: TCP
+          port: 15001
+        - protocol: TCP
+          port: 15010 # Pilot discovery
+        - protocol: TCP
+          port: 15011 # Pilot discovery TLS
 
 ---
 # Development environment policy template (more permissive)
@@ -261,27 +261,27 @@ spec:
     matchLabels:
       environment: development
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          environment: development
-    - podSelector: {}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              environment: development
+        - podSelector: {}
   egress:
-  - to: []
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
-    - protocol: TCP
-      port: 443
-    - protocol: TCP
-      port: 80
-    - protocol: TCP
-      port: 6443
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 6443
 
 ---
 # Production environment policy template (restrictive)
@@ -303,33 +303,33 @@ spec:
     matchLabels:
       environment: production
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/component: ingress
-    ports:
-    - protocol: TCP
-      port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: ingress
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
-  - to: []
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    ports:
-    - protocol: TCP
-      port: 6443
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 6443
 
 ---
 # Cross-namespace service communication template
@@ -350,34 +350,34 @@ spec:
     matchLabels:
       network-policy: cross-namespace-enabled
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          network-policy: trusted
-    - podSelector:
-        matchLabels:
-          network-policy: cross-namespace-client
-    ports:
-    - protocol: TCP
-      port: 8080
-    - protocol: TCP
-      port: 8443
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network-policy: trusted
+        - podSelector:
+            matchLabels:
+              network-policy: cross-namespace-client
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
   egress:
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          network-policy: trusted
-    - podSelector:
-        matchLabels:
-          network-policy: cross-namespace-service
-    ports:
-    - protocol: TCP
-      port: 8080
-    - protocol: TCP
-      port: 8443
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              network-policy: trusted
+        - podSelector:
+            matchLabels:
+              network-policy: cross-namespace-service
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
 
 ---
 # GitLab specific network policy
@@ -395,52 +395,52 @@ spec:
     matchLabels:
       app: gitlab
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 80
-    - protocol: TCP
-      port: 443
-    - protocol: TCP
-      port: 22
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/name: prometheus
-    ports:
-    - protocol: TCP
-      port: 9090
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 22
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
   egress:
-  - to: []
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    ports:
-    - protocol: TCP
-      port: 6443
-  - to: []
-    ports:
-    - protocol: TCP
-      port: 443  # External git repos, Docker registry
-    - protocol: TCP
-      port: 587  # SMTP
-    - protocol: TCP
-      port: 25   # SMTP
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 6443
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443 # External git repos, Docker registry
+        - protocol: TCP
+          port: 587 # SMTP
+        - protocol: TCP
+          port: 25 # SMTP
 
 ---
 # Keycloak specific network policy
@@ -458,46 +458,46 @@ spec:
     matchLabels:
       app: keycloak
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 8080
-    - protocol: TCP
-      port: 8443
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: gitlab
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
-    ports:
-    - protocol: TCP
-      port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: gitlab
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
-  - to: []
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    ports:
-    - protocol: TCP
-      port: 6443
-  - to:
-    - podSelector:
-        matchLabels:
-          app: postgresql
-    ports:
-    - protocol: TCP
-      port: 5432
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 6443
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432

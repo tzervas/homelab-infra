@@ -9,6 +9,7 @@ As of the homelab infrastructure refactoring, all application deployments have b
 ## Archived Components
 
 ### Application Deployment References
+
 The following deployment references have been removed from the main Ansible structure:
 
 - **GitLab Deployment**: Migrated to GitLab Helm chart in `helm/charts/gitlab/`
@@ -19,7 +20,9 @@ The following deployment references have been removed from the main Ansible stru
 - **nginx-ingress Deployment**: Migrated to nginx-ingress Helm chart in `helm/charts/nginx-ingress/`
 
 ### Legacy site.yml References
+
 The original `site.yml` contained include_tasks references for application deployments:
+
 - `playbooks/deploy-gitlab.yml`
 - `playbooks/deploy-keycloak.yml`
 - `playbooks/deploy-cert-manager.yml`
@@ -32,6 +35,7 @@ These references have been removed as these playbooks were conceptual and never 
 ## Migration Benefits
 
 ### Why Helm Instead of Ansible?
+
 1. **Kubernetes Native**: Helm is purpose-built for Kubernetes application management
 2. **Declarative State**: Better state management and rollback capabilities
 3. **Version Control**: Helm chart versioning provides better change tracking
@@ -40,7 +44,9 @@ These references have been removed as these playbooks were conceptual and never 
 6. **Lifecycle Management**: Built-in upgrade, rollback, and uninstall capabilities
 
 ### What Ansible Still Handles
+
 Ansible continues to be used for:
+
 - Initial server provisioning and bootstrapping
 - System-level configuration (network, storage, kernel parameters)
 - OS package installation and updates
@@ -54,6 +60,7 @@ Ansible continues to be used for:
 The original design included Ansible playbooks for application deployment to provide a single automation tool. However, as the project evolved and Kubernetes adoption matured, it became clear that Helm provides superior application lifecycle management within Kubernetes environments.
 
 This migration represents a best-practice approach to infrastructure automation:
+
 - **Ansible**: System-level provisioning and configuration
 - **Terraform**: Infrastructure as Code for cloud/VM resources  
 - **Helm**: Kubernetes application deployment and management

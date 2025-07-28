@@ -99,7 +99,7 @@ variable "nginx_service_type" {
   description = "Service type for Nginx ingress controller"
   type        = string
   default     = "LoadBalancer"
-  
+
   validation {
     condition     = contains(["ClusterIP", "NodePort", "LoadBalancer"], var.nginx_service_type)
     error_message = "Service type must be one of: ClusterIP, NodePort, LoadBalancer."
@@ -142,7 +142,7 @@ variable "log_level" {
   description = "Log level for networking components"
   type        = string
   default     = "info"
-  
+
   validation {
     condition     = contains(["error", "warn", "info", "debug"], var.log_level)
     error_message = "Log level must be one of: error, warn, info, debug."
@@ -171,7 +171,7 @@ variable "service_mesh_type" {
   description = "Type of service mesh to deploy"
   type        = string
   default     = "istio"
-  
+
   validation {
     condition     = contains(["istio", "linkerd", "consul"], var.service_mesh_type)
     error_message = "Service mesh type must be one of: istio, linkerd, consul."
@@ -183,7 +183,7 @@ variable "cni_type" {
   description = "CNI plugin type"
   type        = string
   default     = "flannel"
-  
+
   validation {
     condition     = contains(["flannel", "calico", "cilium", "weave"], var.cni_type)
     error_message = "CNI type must be one of: flannel, calico, cilium, weave."
@@ -194,7 +194,7 @@ variable "pod_cidr" {
   description = "Pod CIDR range"
   type        = string
   default     = "10.42.0.0/16"
-  
+
   validation {
     condition     = can(cidrhost(var.pod_cidr, 0))
     error_message = "Pod CIDR must be a valid CIDR block."

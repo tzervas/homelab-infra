@@ -197,15 +197,18 @@ ansible-playbook playbooks/test-authentication.yml --tags deployment_user
 #### Comprehensive Test Suite
 
 **Phase 1: SSH Key Authentication Tests**
+
 - SSH connection verification
 - Password-free authentication validation
 
 **Phase 2: Main User Authentication & Sudo**
+
 - User identity verification
 - Passwordless sudo testing
 - Ansible become functionality
 
 **Phase 3: Deployment User Management**
+
 - User existence checking
 - Automatic user creation if missing
 - SSH key generation
@@ -213,6 +216,7 @@ ansible-playbook playbooks/test-authentication.yml --tags deployment_user
 - Permission validation
 
 **Phase 4: Ansible Modules Testing**
+
 - File operations with privilege escalation
 - Copy operations with become
 - Package facts gathering
@@ -220,6 +224,7 @@ ansible-playbook playbooks/test-authentication.yml --tags deployment_user
 - Systemd module testing
 
 **Phase 5: Deployment Readiness Tests**
+
 - Essential tool availability (git, curl, wget, python3)
 - Network connectivity testing
 - Disk space validation
@@ -249,16 +254,19 @@ ansible-playbook playbooks/validate-deployment-setup.yml --tags readiness
 ### Initial Setup
 
 1. **Generate SSH Keys** (if not already present):
+
    ```bash
    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
    ```
 
 2. **Copy SSH Key to Target Host**:
+
    ```bash
    ssh-copy-id -i ~/.ssh/id_ed25519.pub kang@192.168.16.26
    ```
 
 3. **Configure Passwordless Sudo**:
+
    ```bash
    # On target host
    sudo ./setup-passwordless-sudo.sh kang
@@ -266,6 +274,7 @@ ansible-playbook playbooks/validate-deployment-setup.yml --tags readiness
    ```
 
 4. **Validate Configuration**:
+
    ```bash
    ansible-playbook playbooks/test-authentication.yml
    ```
@@ -318,11 +327,13 @@ ansible-playbook playbooks/system-health-check.yml
 #### SSH Connection Failures
 
 **Symptoms:**
+
 - "Permission denied (publickey)"
 - Connection timeouts
 - Host key verification failures
 
 **Solutions:**
+
 ```bash
 # Verify SSH key is loaded
 ssh-add -l
@@ -341,11 +352,13 @@ cat ~/.ssh/authorized_keys  # on target host
 #### Sudo Permission Issues
 
 **Symptoms:**
+
 - "sudo: a password is required"
 - Permission denied errors
 - Ansible become failures
 
 **Diagnosis:**
+
 ```bash
 # Test sudo manually
 ssh kang@192.168.16.26 'sudo -n whoami'
@@ -358,6 +371,7 @@ ls -la /etc/sudoers.d/kang-ansible
 ```
 
 **Solutions:**
+
 ```bash
 # Reconfigure sudo
 sudo ./setup-passwordless-sudo.sh kang
@@ -370,11 +384,13 @@ sudo chmod 440 /etc/sudoers.d/kang-ansible
 #### Ansible Configuration Issues
 
 **Symptoms:**
+
 - Inventory not found
 - Wrong user connection attempts
 - Module execution failures
 
 **Diagnosis:**
+
 ```bash
 # Verify ansible configuration
 ansible-config dump
@@ -387,6 +403,7 @@ ansible all -m ping
 ```
 
 **Solutions:**
+
 ```bash
 # Verify ansible.cfg location
 ansible-config view
@@ -401,11 +418,13 @@ ansible all -m ping -vvv
 #### User Management Issues
 
 **Symptoms:**
+
 - homelab-deploy user not found
 - SSH key generation failures
 - Home directory permission issues
 
 **Solutions:**
+
 ```bash
 # Create deployment user manually
 sudo useradd -m -s /bin/bash homelab-deploy
@@ -445,13 +464,13 @@ ansible-playbook playbooks/validate-deployment-setup.yml --extra-vars "detailed_
 
 1. **SSH Key Authentication Failure**:
    - Solution: Recopy SSH keys, check permissions
-   
+
 2. **Sudo Permission Failure**:
    - Solution: Run setup-passwordless-sudo.sh script
-   
+
 3. **Network Connectivity Failure**:
    - Solution: Check firewall, DNS, routing
-   
+
 4. **Tool Availability Failure**:
    - Solution: Install missing packages (git, curl, wget, python3)
 
@@ -460,12 +479,14 @@ ansible-playbook playbooks/validate-deployment-setup.yml --extra-vars "detailed_
 ### SSH Security
 
 #### Key Management
+
 - **Use Ed25519 Keys**: More secure than RSA
 - **Protect Private Keys**: Proper file permissions (600)
 - **Key Rotation**: Regularly rotate SSH keys
 - **Agent Forwarding**: Avoid when possible
 
 #### Configuration Security
+
 ```bash
 # Secure SSH client configuration
 Host homelab-server
@@ -480,17 +501,20 @@ Host homelab-server
 ### Sudo Security
 
 #### Risk Assessment
+
 - **Full Sudo Access**: Necessary for automation but increases attack surface
 - **NOPASSWD Configuration**: Convenient but requires careful access control
 - **User Isolation**: Separate users for different functions
 
 #### Mitigation Strategies
+
 1. **Network Isolation**: Homelab network segmentation
 2. **Access Monitoring**: Log sudo usage
 3. **Regular Audits**: Review sudo configurations
 4. **Principle of Least Privilege**: Limit where possible
 
 #### Monitoring Sudo Usage
+
 ```bash
 # Monitor sudo logs
 sudo tail -f /var/log/auth.log | grep sudo
@@ -510,6 +534,7 @@ sudo -l -U homelab-deploy
 | homelab-deploy | Full | Full | Automation | Medium |
 
 #### Network Security
+
 - **Internal Network**: 192.168.16.0/24 (homelab network)
 - **Firewall Rules**: Restrict SSH access to management networks
 - **VPN Access**: Consider VPN for remote management
@@ -519,12 +544,14 @@ sudo -l -U homelab-deploy
 ### Authentication Management
 
 #### SSH Key Management
+
 1. **Use Strong Keys**: Ed25519 or RSA 4096-bit minimum
 2. **Unique Keys**: Different keys for different purposes
 3. **Regular Rotation**: Rotate keys periodically
 4. **Secure Storage**: Protect private keys with passphrases when possible
 
 #### User Account Management
+
 1. **Principle of Least Privilege**: Grant minimum necessary permissions
 2. **Regular Audits**: Review user accounts and permissions
 3. **Account Lifecycle**: Disable unused accounts
@@ -533,12 +560,14 @@ sudo -l -U homelab-deploy
 ### Ansible Operations
 
 #### Playbook Best Practices
+
 1. **Idempotency**: Ensure playbooks can run multiple times safely
 2. **Error Handling**: Implement proper error handling and rollback
 3. **Validation**: Always validate before making changes
 4. **Logging**: Maintain detailed logs of all operations
 
 #### Security Practices
+
 1. **Secrets Management**: Use Ansible Vault for sensitive data
 2. **Variable Validation**: Validate all input variables
 3. **Task Isolation**: Use appropriate privilege escalation per task
@@ -547,6 +576,7 @@ sudo -l -U homelab-deploy
 ### Monitoring and Maintenance
 
 #### Regular Validation
+
 ```bash
 # Weekly authentication health check
 ansible-playbook playbooks/test-authentication.yml
@@ -559,6 +589,7 @@ ansible-playbook playbooks/security-audit.yml
 ```
 
 #### Log Management
+
 ```bash
 # Ansible operation logs
 tail -f ~/.ansible.log
@@ -571,6 +602,7 @@ sudo grep sudo /var/log/auth.log | tail -20
 ```
 
 #### Performance Optimization
+
 1. **SSH Multiplexing**: Configure ControlMaster for connection reuse
 2. **Fact Caching**: Enable fact caching to reduce gather time
 3. **Parallel Execution**: Use appropriate forks setting
@@ -579,12 +611,14 @@ sudo grep sudo /var/log/auth.log | tail -20
 ### Disaster Recovery
 
 #### Backup Procedures
+
 1. **SSH Keys**: Backup private keys securely
 2. **Configurations**: Version control all configuration files
 3. **User Accounts**: Document all user account configurations
 4. **Sudo Rules**: Backup sudoers configurations
 
 #### Recovery Procedures
+
 1. **Key Loss**: Process for SSH key recovery/regeneration
 2. **User Account Issues**: Steps to recreate user accounts
 3. **Sudo Problems**: Emergency sudo access procedures

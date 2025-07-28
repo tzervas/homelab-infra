@@ -18,7 +18,7 @@ resource "local_file" "homelab_inventory" {
     terraform_workspace = terraform.workspace
     infrastructure_components = var.infrastructure_components
   })
-  
+
   file_permission = "0644"
 }
 
@@ -34,7 +34,7 @@ resource "local_file" "service_registry" {
     services = var.homelab_services
     network_info = data.external.network_discovery.result
   })
-  
+
   file_permission = "0644"
 }
 

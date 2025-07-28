@@ -186,9 +186,9 @@ parse_arguments() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     local missing_tools=()
-    
+
     # Check required tools
     if [[ "$ENABLE_TERRATEST" == "true" ]]; then
         if ! command -v go &> /dev/null; then
@@ -198,13 +198,13 @@ check_prerequisites() {
             missing_tools+=("terraform")
         fi
     fi
-    
+
     if [[ "$ENABLE_HELM_UNITTEST" == "true" ]]; then
         if ! command -v helm &> /dev/null; then
             missing_tools+=("helm")
         fi
     fi
-    
+
     if [[ "$ENABLE_SECURITY_TESTS" == "true" || "$ENABLE_PERFORMANCE_TESTS" == "true" ]]; then
         if ! command -v python3 &> /dev/null; then
             missing_tools+=("python3")
@@ -213,27 +213,27 @@ check_prerequisites() {
             missing_tools+=("kubectl or k3s")
         fi
     fi
-    
+
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         log_error "Missing required tools: ${missing_tools[*]}"
         log_error "Please install the missing tools and try again"
         return 1
     fi
-    
+
     log_success "Prerequisites check completed"
 }
 
 # Setup output directory
 setup_output_directory() {
     log_info "Setting up output directory: $OUTPUT_DIR"
-    
+
     if [[ "${CLEAN_BEFORE_RUN:-false}" == "true" && -d "$OUTPUT_DIR" ]]; then
         log_info "Cleaning existing output directory"
         rm -rf "$OUTPUT_DIR"
     fi
-    
+
     mkdir -p "$OUTPUT_DIR"/{terratest,helm-unittest,security,performance,compliance}
-    
+
     # Create timestamp for this test run
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$OUTPUT_DIR/test_run_timestamp"
 }
@@ -244,43 +244,43 @@ run_terratest() {
         log_info "Skipping Terratest (disabled)"
         return 0
     fi
-    
+
     log_section "Running Terratest Infrastructure Tests"
-    
+
     local terratest_dir="$PROJECT_ROOT/testing/terraform/terratest"
     local output_file="$OUTPUT_DIR/terratest/results.json"
-    
+
     if [[ ! -d "$terratest_dir" ]]; then
         log_warning "Terratest directory not found: $terratest_dir"
         return 0
     fi
-    
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "DRY RUN: Would execute Terratest in $terratest_dir"
         return 0
     fi
-    
+
     cd "$terratest_dir"
-    
+
     # Install dependencies
     log_info "Installing Go dependencies..."
     if ! go mod download; then
         log_error "Failed to install Go dependencies"
         return 1
     fi
-    
+
     # Run tests with timeout and JSON output
     log_info "Running Terratest..."
     if timeout "$TEST_TIMEOUT" go test -v -timeout "${TEST_TIMEOUT}s" -json ./... > "$output_file" 2>&1; then
         log_success "Terratest completed successfully"
-        
+
         # Parse results for summary
         local passed failed
         passed=$(grep -c '"Action":"pass"' "$output_file" || echo "0")
         failed=$(grep -c '"Action":"fail"' "$output_file" || echo "0")
-        
+
         log_info "Terratest Results: $passed passed, $failed failed"
-        
+
         if [[ $failed -gt 0 ]]; then
             log_warning "Some Terratest tests failed"
             return 1
@@ -289,7 +289,7 @@ run_terratest() {
         log_error "Terratest failed or timed out"
         return 1
     fi
-    
+
     cd "$PROJECT_ROOT"
 }
 
@@ -299,51 +299,51 @@ run_helm_unittest() {
         log_info "Skipping Helm unit tests (disabled)"
         return 0
     fi
-    
+
     log_section "Running Helm Unit Tests"
-    
+
     local helm_charts_dir="$PROJECT_ROOT/helm/charts"
     local test_file="$PROJECT_ROOT/testing/helm/helm-unittest/charts_test.yaml"
     local output_file="$OUTPUT_DIR/helm-unittest/results.xml"
-    
+
     if [[ ! -d "$helm_charts_dir" ]]; then
         log_warning "Helm charts directory not found: $helm_charts_dir"
         return 0
     fi
-    
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "DRY RUN: Would execute Helm unit tests for charts in $helm_charts_dir"
         return 0
     fi
-    
+
     # Install helm unittest plugin if not already installed
     if ! helm plugin list | grep -q unittest; then
         log_info "Installing helm unittest plugin..."
         helm plugin install https://github.com/quintush/helm-unittest
     fi
-    
+
     # Run tests for each chart
     local total_tests=0
     local failed_tests=0
-    
+
     for chart_dir in "$helm_charts_dir"/*; do
         if [[ -d "$chart_dir" && -f "$chart_dir/Chart.yaml" ]]; then
             local chart_name
             chart_name=$(basename "$chart_dir")
-            
+
             log_info "Testing Helm chart: $chart_name"
-            
+
             local chart_output="$OUTPUT_DIR/helm-unittest/$chart_name.xml"
-            
+
             if helm unittest "$chart_dir" -o junit -f "$chart_output" 2>&1; then
                 log_success "Helm chart $chart_name tests passed"
-                
+
                 # Count tests from XML output
                 if [[ -f "$chart_output" ]]; then
                     local tests failures
                     tests=$(xmllint --xpath 'string(//testsuite/@tests)' "$chart_output" 2>/dev/null || echo "0")
                     failures=$(xmllint --xpath 'string(//testsuite/@failures)' "$chart_output" 2>/dev/null || echo "0")
-                    
+
                     total_tests=$((total_tests + tests))
                     failed_tests=$((failed_tests + failures))
                 fi
@@ -353,14 +353,14 @@ run_helm_unittest() {
             fi
         fi
     done
-    
+
     log_info "Helm Unit Tests Results: $((total_tests - failed_tests))/$total_tests passed"
-    
+
     if [[ $failed_tests -gt 0 ]]; then
         log_warning "Some Helm unit tests failed"
         return 1
     fi
-    
+
     log_success "All Helm unit tests passed"
 }
 
@@ -370,23 +370,23 @@ run_security_tests() {
         log_info "Skipping security tests (disabled)"
         return 0
     fi
-    
+
     log_section "Running Security Validation Tests"
-    
+
     local security_dir="$PROJECT_ROOT/testing/security"
     local output_file="$OUTPUT_DIR/security/results.json"
-    
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "DRY RUN: Would execute security tests"
         return 0
     fi
-    
+
     # Install Python dependencies if requirements file exists
     if [[ -f "$PROJECT_ROOT/requirements.txt" ]]; then
         log_info "Installing Python dependencies..."
         python3 -m pip install -r "$PROJECT_ROOT/requirements.txt" --quiet
     fi
-    
+
     # Run certificate validation tests
     log_info "Running certificate validation tests..."
     if python3 "$security_dir/certificate_validator.py" \
@@ -397,7 +397,7 @@ run_security_tests() {
     else
         log_warning "Certificate validation had issues"
     fi
-    
+
     # Run K3s security validation tests
     if [[ -f "$PROJECT_ROOT/testing/k3s-validation/modules/security/tls-validation.sh" ]]; then
         log_info "Running K3s TLS validation..."
@@ -407,7 +407,7 @@ run_security_tests() {
         else
             log_warning "TLS validation had issues"
         fi
-        
+
         log_info "Running K3s RBAC validation..."
         if timeout "$TEST_TIMEOUT" "$PROJECT_ROOT/testing/k3s-validation/modules/security/rbac-testing.sh" \
             > "$OUTPUT_DIR/security/rbac_validation.log" 2>&1; then
@@ -415,7 +415,7 @@ run_security_tests() {
         else
             log_warning "RBAC validation had issues"
         fi
-        
+
         log_info "Running K3s Network Policy validation..."
         if timeout "$TEST_TIMEOUT" "$PROJECT_ROOT/testing/k3s-validation/modules/security/network-policies.sh" \
             > "$OUTPUT_DIR/security/network_policy_validation.log" 2>&1; then
@@ -424,7 +424,7 @@ run_security_tests() {
             log_warning "Network Policy validation had issues"
         fi
     fi
-    
+
     log_success "Security tests completed"
 }
 
@@ -434,38 +434,38 @@ run_performance_tests() {
         log_info "Skipping performance tests (disabled)"
         return 0
     fi
-    
+
     log_section "Running Performance Benchmarks"
-    
+
     local performance_script="$PROJECT_ROOT/testing/performance/benchmarks.py"
     local output_file="$OUTPUT_DIR/performance/benchmark_results.json"
     local markdown_output="$OUTPUT_DIR/performance/benchmark_report.md"
-    
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "DRY RUN: Would execute performance benchmarks"
         return 0
     fi
-    
+
     if [[ ! -f "$performance_script" ]]; then
         log_warning "Performance benchmark script not found: $performance_script"
         return 0
     fi
-    
+
     # Install Python dependencies
     python3 -m pip install kubernetes psutil requests --quiet
-    
+
     log_info "Running comprehensive performance benchmarks..."
-    
+
     local endpoints=(
         "https://gitlab.homelab.local/api/v4/projects"
-        "https://prometheus.homelab.local/api/v1/status/config"  
+        "https://prometheus.homelab.local/api/v1/status/config"
         "https://grafana.homelab.local/api/health"
     )
-    
+
     local load_test_targets=(
         "https://gitlab.homelab.local"
     )
-    
+
     if timeout "$TEST_TIMEOUT" python3 "$performance_script" \
         --log-level "$LOG_LEVEL" \
         --kubeconfig "${KUBECONFIG:-}" \
@@ -474,9 +474,9 @@ run_performance_tests() {
         --output "$output_file" \
         --format json \
         > "$OUTPUT_DIR/performance/benchmark.log" 2>&1; then
-        
+
         log_success "Performance benchmarks completed"
-        
+
         # Generate markdown report
         python3 "$performance_script" \
             --log-level "$LOG_LEVEL" \
@@ -485,14 +485,14 @@ run_performance_tests() {
             --output "$markdown_output" \
             --format markdown \
             > /dev/null 2>&1 || true
-        
+
         # Extract summary from JSON results
         if [[ -f "$output_file" ]]; then
             local total_tests success_rate avg_response_time
             total_tests=$(python3 -c "import json; data=json.load(open('$output_file')); print(data.get('summary_stats', {}).get('total_tests', 0))" 2>/dev/null || echo "0")
             success_rate=$(python3 -c "import json; data=json.load(open('$output_file')); print(f\"{data.get('summary_stats', {}).get('success_rate', 0):.1f}\")" 2>/dev/null || echo "0.0")
             avg_response_time=$(python3 -c "import json; data=json.load(open('$output_file')); print(f\"{data.get('summary_stats', {}).get('avg_response_time_ms', 0):.2f}\")" 2>/dev/null || echo "0.00")
-            
+
             log_info "Performance Results: $total_tests tests, $success_rate% success rate, ${avg_response_time}ms avg response time"
         fi
     else
@@ -507,20 +507,20 @@ run_compliance_scan() {
         log_info "Skipping compliance scanning (disabled)"
         return 0
     fi
-    
+
     log_section "Running Infrastructure Compliance Scanning"
-    
+
     local output_file="$OUTPUT_DIR/compliance/scan_results.json"
-    
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "DRY RUN: Would execute compliance scanning"
         return 0
     fi
-    
+
     # Run existing infrastructure compliance checks
     if [[ -f "$PROJECT_ROOT/scripts/testing/config_validator.py" ]]; then
         log_info "Running configuration compliance checks..."
-        
+
         if python3 "$PROJECT_ROOT/scripts/testing/config_validator.py" \
             --directory "$PROJECT_ROOT/ansible/inventory" \
             --log-level "$LOG_LEVEL" \
@@ -530,25 +530,25 @@ run_compliance_scan() {
             log_warning "Configuration compliance checks had issues"
         fi
     fi
-    
+
     # Run Terraform state validation
     if [[ -f "$PROJECT_ROOT/scripts/testing/terraform_validator.py" ]]; then
         log_info "Running Terraform state compliance checks..."
-        
+
         if python3 "$PROJECT_ROOT/scripts/testing/terraform_validator.py" \
             --terraform-dir "$PROJECT_ROOT/terraform" \
             --log-level "$LOG_LEVEL" \
             > "$OUTPUT_DIR/compliance/terraform_validation.log" 2>&1; then
             log_success "Terraform compliance checks completed"
         else
-            log_warning "Terraform compliance checks had issues"  
+            log_warning "Terraform compliance checks had issues"
         fi
     fi
-    
+
     # Run Helm chart validation
     if [[ -f "$PROJECT_ROOT/helm/validate-charts.sh" ]]; then
         log_info "Running Helm chart compliance checks..."
-        
+
         if cd "$PROJECT_ROOT/helm" && timeout "$TEST_TIMEOUT" ./validate-charts.sh \
             > "$OUTPUT_DIR/compliance/helm_validation.log" 2>&1; then
             log_success "Helm compliance checks completed"
@@ -558,44 +558,44 @@ run_compliance_scan() {
             cd "$PROJECT_ROOT"
         fi
     fi
-    
+
     log_success "Compliance scanning completed"
 }
 
 # Generate comprehensive test report
 generate_test_report() {
     log_section "Generating Comprehensive Test Report"
-    
+
     local report_file="$OUTPUT_DIR/comprehensive_test_report.md"
     local timestamp
     timestamp=$(cat "$OUTPUT_DIR/test_run_timestamp" 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
-    
+
     cat > "$report_file" <<EOF
 # Infrastructure Testing & Validation Report
 
-**Generated:** $timestamp  
-**Test Suite:** Enhanced Infrastructure Testing  
-**Environment:** $(uname -a)  
+**Generated:** $timestamp
+**Test Suite:** Enhanced Infrastructure Testing
+**Environment:** $(uname -a)
 
 ## Test Execution Summary
 
 EOF
-    
+
     # Add results from each test category
     local overall_status="✅ PASS"
     local total_categories=0
     local passed_categories=0
-    
+
     # Terratest results
     if [[ "$ENABLE_TERRATEST" == "true" ]]; then
         total_categories=$((total_categories + 1))
         echo "### 🏗️ Terratest Infrastructure Tests" >> "$report_file"
-        
+
         if [[ -f "$OUTPUT_DIR/terratest/results.json" ]]; then
             local passed failed
             passed=$(grep -c '"Action":"pass"' "$OUTPUT_DIR/terratest/results.json" 2>/dev/null || echo "0")
             failed=$(grep -c '"Action":"fail"' "$OUTPUT_DIR/terratest/results.json" 2>/dev/null || echo "0")
-            
+
             if [[ $failed -eq 0 ]]; then
                 echo "- **Status:** ✅ PASS" >> "$report_file"
                 passed_categories=$((passed_categories + 1))
@@ -603,7 +603,7 @@ EOF
                 echo "- **Status:** ❌ FAIL" >> "$report_file"
                 overall_status="❌ FAIL"
             fi
-            
+
             echo "- **Tests:** $passed passed, $failed failed" >> "$report_file"
         else
             echo "- **Status:** ⚠️ SKIPPED" >> "$report_file"
@@ -611,15 +611,15 @@ EOF
         fi
         echo "" >> "$report_file"
     fi
-    
+
     # Helm unittest results
     if [[ "$ENABLE_HELM_UNITTEST" == "true" ]]; then
         total_categories=$((total_categories + 1))
         echo "### ⚓ Helm Unit Tests" >> "$report_file"
-        
+
         local helm_results_count
         helm_results_count=$(find "$OUTPUT_DIR/helm-unittest" -name "*.xml" 2>/dev/null | wc -l)
-        
+
         if [[ $helm_results_count -gt 0 ]]; then
             echo "- **Status:** ✅ PASS" >> "$report_file"
             echo "- **Charts Tested:** $helm_results_count" >> "$report_file"
@@ -630,15 +630,15 @@ EOF
         fi
         echo "" >> "$report_file"
     fi
-    
+
     # Security tests results
     if [[ "$ENABLE_SECURITY_TESTS" == "true" ]]; then
         total_categories=$((total_categories + 1))
         echo "### 🔒 Security Validation Tests" >> "$report_file"
-        
+
         local security_logs
         security_logs=$(find "$OUTPUT_DIR/security" -name "*.log" 2>/dev/null | wc -l)
-        
+
         if [[ $security_logs -gt 0 ]]; then
             echo "- **Status:** ✅ PASS" >> "$report_file"
             echo "- **Security Checks:** $security_logs completed" >> "$report_file"
@@ -649,18 +649,18 @@ EOF
         fi
         echo "" >> "$report_file"
     fi
-    
+
     # Performance tests results
     if [[ "$ENABLE_PERFORMANCE_TESTS" == "true" ]]; then
         total_categories=$((total_categories + 1))
         echo "### ⚡ Performance Benchmarks" >> "$report_file"
-        
+
         if [[ -f "$OUTPUT_DIR/performance/benchmark_results.json" ]]; then
             local total_tests success_rate avg_response_time
             total_tests=$(python3 -c "import json; data=json.load(open('$OUTPUT_DIR/performance/benchmark_results.json')); print(data.get('summary_stats', {}).get('total_tests', 0))" 2>/dev/null || echo "0")
             success_rate=$(python3 -c "import json; data=json.load(open('$OUTPUT_DIR/performance/benchmark_results.json')); print(f\"{data.get('summary_stats', {}).get('success_rate', 0):.1f}\")" 2>/dev/null || echo "0.0")
             avg_response_time=$(python3 -c "import json; data=json.load(open('$OUTPUT_DIR/performance/benchmark_results.json')); print(f\"{data.get('summary_stats', {}).get('avg_response_time_ms', 0):.2f}\")" 2>/dev/null || echo "0.00")
-            
+
             echo "- **Status:** ✅ PASS" >> "$report_file"
             echo "- **Total Tests:** $total_tests" >> "$report_file"
             echo "- **Success Rate:** $success_rate%" >> "$report_file"
@@ -672,15 +672,15 @@ EOF
         fi
         echo "" >> "$report_file"
     fi
-    
-    # Compliance scan results  
+
+    # Compliance scan results
     if [[ "$ENABLE_COMPLIANCE_SCAN" == "true" ]]; then
         total_categories=$((total_categories + 1))
         echo "### 📋 Compliance Scanning" >> "$report_file"
-        
+
         local compliance_logs
         compliance_logs=$(find "$OUTPUT_DIR/compliance" -name "*.log" 2>/dev/null | wc -l)
-        
+
         if [[ $compliance_logs -gt 0 ]]; then
             echo "- **Status:** ✅ PASS" >> "$report_file"
             echo "- **Compliance Checks:** $compliance_logs completed" >> "$report_file"
@@ -691,7 +691,7 @@ EOF
         fi
         echo "" >> "$report_file"
     fi
-    
+
     # Overall summary
     cat >> "$report_file" <<EOF
 
@@ -709,7 +709,7 @@ All test results, logs, and reports have been saved to: \`$OUTPUT_DIR\`
 \`\`\`
 $OUTPUT_DIR/
 ├── terratest/           # Terratest results and logs
-├── helm-unittest/       # Helm unit test results  
+├── helm-unittest/       # Helm unit test results
 ├── security/           # Security validation logs
 ├── performance/        # Performance benchmark results
 ├── compliance/         # Compliance scan results
@@ -719,9 +719,9 @@ $OUTPUT_DIR/
 ---
 *Report generated by Enhanced Testing Suite - $(date)*
 EOF
-    
+
     log_success "Comprehensive test report generated: $report_file"
-    
+
     # Print summary to console
     echo ""
     log_section "📊 TEST EXECUTION SUMMARY"
@@ -730,7 +730,7 @@ EOF
     echo "Success Rate: $(( (passed_categories * 100) / total_categories ))%"
     echo "Full Report: $report_file"
     echo ""
-    
+
     if [[ $passed_categories -lt $total_categories ]]; then
         return 1
     fi
@@ -741,14 +741,14 @@ main() {
     echo -e "${PURPLE}🧪 Enhanced Infrastructure Testing & Validation Suite${NC}"
     echo -e "${PURPLE}=====================================================${NC}"
     echo ""
-    
+
     # Parse command line arguments
     parse_arguments "$@"
-    
+
     # Show configuration
     log_info "Test Configuration:"
     echo "  - Terratest: $ENABLE_TERRATEST"
-    echo "  - Helm Unit Tests: $ENABLE_HELM_UNITTEST" 
+    echo "  - Helm Unit Tests: $ENABLE_HELM_UNITTEST"
     echo "  - Security Tests: $ENABLE_SECURITY_TESTS"
     echo "  - Performance Tests: $ENABLE_PERFORMANCE_TESTS"
     echo "  - Compliance Scan: $ENABLE_COMPLIANCE_SCAN"
@@ -757,47 +757,47 @@ main() {
     echo "  - Output Directory: $OUTPUT_DIR"
     echo "  - Log Level: $LOG_LEVEL"
     echo ""
-    
+
     # Check prerequisites
     if ! check_prerequisites; then
         log_error "Prerequisites check failed"
         exit 1
     fi
-    
+
     # Setup output directory
     setup_output_directory
-    
+
     # Record start time
     local start_time
     start_time=$(date +%s)
-    
+
     # Execute test categories
     local exit_code=0
-    
+
     # Run tests in sequence (could be parallelized in future)
     run_terratest || exit_code=1
     run_helm_unittest || exit_code=1
     run_security_tests || exit_code=1
     run_performance_tests || exit_code=1
     run_compliance_scan || exit_code=1
-    
+
     # Generate comprehensive report
     generate_test_report || exit_code=1
-    
+
     # Calculate total execution time
     local end_time duration
     end_time=$(date +%s)
     duration=$((end_time - start_time))
-    
+
     echo ""
     if [[ $exit_code -eq 0 ]]; then
         log_success "🎉 All tests completed successfully in ${duration}s!"
     else
         log_error "❌ Some tests failed. Check the report for details. Total time: ${duration}s"
     fi
-    
+
     log_info "💾 Test results saved to: $OUTPUT_DIR"
-    
+
     exit $exit_code
 }
 

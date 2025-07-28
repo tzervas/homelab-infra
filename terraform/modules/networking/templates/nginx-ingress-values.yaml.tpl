@@ -8,10 +8,10 @@ controller:
     image: ingress-nginx/controller
     digest: ""
     pullPolicy: IfNotPresent
-  
+
   # Replica configuration
   replicaCount: 1
-  
+
   # Service configuration
   service:
     enabled: true
@@ -27,7 +27,7 @@ controller:
       https: https
     annotations:
       metallb.universe.tf/allow-shared-ip: "nginx-ingress"
-  
+
   # Resource requirements
   resources:
     limits:
@@ -36,7 +36,7 @@ controller:
     requests:
       cpu: 100m
       memory: 90Mi
-  
+
   # Configuration
   config:
     %{ if enable_ssl_passthrough }
@@ -48,13 +48,13 @@ controller:
     proxy-body-size: "0"
     proxy-read-timeout: "600"
     proxy-send-timeout: "600"
-    
+
   # SSL configuration
   %{ if default_ssl_certificate != "" }
   extraArgs:
     default-ssl-certificate: ${default_ssl_certificate}
   %{ endif }
-  
+
   # Health checks
   livenessProbe:
     httpGet:
@@ -66,7 +66,7 @@ controller:
     timeoutSeconds: 1
     successThreshold: 1
     failureThreshold: 5
-  
+
   readinessProbe:
     httpGet:
       path: "/healthz"
@@ -77,7 +77,7 @@ controller:
     timeoutSeconds: 1
     successThreshold: 1
     failureThreshold: 3
-  
+
   # Security context
   securityContext:
     capabilities:
@@ -87,11 +87,11 @@ controller:
         - NET_BIND_SERVICE
     runAsUser: 101
     allowPrivilegeEscalation: true
-  
+
   # Node selector
   nodeSelector:
     kubernetes.io/os: linux
-  
+
   # Tolerations
   tolerations:
     - key: node-role.kubernetes.io/master
@@ -100,7 +100,7 @@ controller:
     - key: node-role.kubernetes.io/control-plane
       operator: Equal
       effect: NoSchedule
-  
+
   # Metrics
   %{ if enable_metrics }
   metrics:
@@ -119,7 +119,7 @@ controller:
       relabelings: []
       metricRelabelings: []
   %{ endif }
-  
+
   # Admission webhooks
   admissionWebhooks:
     enabled: true
@@ -130,20 +130,20 @@ controller:
     namespaceSelector: {}
     objectSelector: {}
     annotations: {}
-    
+
     service:
       annotations: {}
       externalIPs: []
       loadBalancerSourceRanges: []
       servicePort: 443
       type: ClusterIP
-    
+
     createSecretJob:
       resources: {}
-    
+
     patchWebhookJob:
       resources: {}
-    
+
     patch:
       enabled: true
       image:

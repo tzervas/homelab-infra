@@ -7,17 +7,17 @@
   hosts: homelab
   gather_facts: yes
   become: yes
-  
+
   vars:
     cleanup_timestamp: "{{ ansible_date_time.iso8601 }}"
-    
+
   tasks:
     - name: Clean package cache
       apt:
         autoclean: yes
         autoremove: yes
       register: package_cleanup
-      
+
     - name: Clean temporary files
       file:
         path: "{{ item }}"
@@ -30,14 +30,14 @@
         - /tmp/get_helm.sh
         - /tmp/helmfile.tar.gz
       register: temp_cleanup
-      
+
     - name: Clean log files (keep recent)
       shell: |
         find /opt/homelab/logs -name "*.log" -mtime +30 -delete
         find /var/log -name "*.log.*.gz" -mtime +30 -delete
       register: log_cleanup
       changed_when: false
-      
+
     - name: Reset system status files
       file:
         path: "{{ item }}"
@@ -49,34 +49,34 @@
         - /opt/homelab/storage-status.env
         - /opt/homelab/users-status.env
       register: status_cleanup
-      
+
     - name: Create cleanup status file
       copy:
         content: |
           # System Cleanup Status
           # Generated: {{ cleanup_timestamp }}
-          
+
           CLEANUP_COMPLETE=true
           CLEANUP_TIMESTAMP={{ cleanup_timestamp }}
-          
+
           # Cleanup actions performed
           PACKAGES_CLEANED={{ package_cleanup.changed }}
           TEMP_FILES_CLEANED=true
           LOGS_CLEANED=true
           STATUS_FILES_RESET=true
-          
+
           # System ready for fresh setup
           READY_FOR_BOOTSTRAP=true
         dest: /opt/homelab/cleanup-status.env
         mode: '0644'
-        
+
     - name: Log cleanup completion
       lineinfile:
         path: /opt/homelab/logs/cleanup.log
         line: "{{ cleanup_timestamp }} - System cleanup completed on {{ inventory_hostname }}"
         create: yes
         mode: '0644'
-        
+
     - name: Display cleanup summary
       debug:
         msg:

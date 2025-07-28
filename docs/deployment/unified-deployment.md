@@ -22,7 +22,7 @@ flowchart TD
     G --> H
     H --> I[Integration Testing]
     I --> J[Production Deployment]
-    
+
     subgraph "GitOps Loop"
         K[ArgoCD/Flux]
         L[Continuous Sync]
@@ -30,7 +30,7 @@ flowchart TD
         N[Auto Remediation]
         K --> L --> M --> N --> K
     end
-    
+
     J --> K
 ```
 
@@ -108,6 +108,7 @@ python3 scripts/testing/validate_deployment.py --pre-deployment
 ```
 
 **Key Validations:**
+
 - Terraform state consistency
 - Kubernetes cluster health
 - Required tools and versions
@@ -133,6 +134,7 @@ terraform apply tfplan
 ```
 
 **Terraform Modules Applied:**
+
 1. **K3s Cluster Module**: Cluster configuration and node management
 2. **Networking Module**: MetalLB, ingress, DNS configuration
 3. **Security Module**: Certificate management, RBAC, policies
@@ -156,6 +158,7 @@ helmfile --environment $ENVIRONMENT sync --wait --timeout 600
 ```
 
 **Deployment Tiers:**
+
 - **Infrastructure**: Core cluster services
 - **Storage**: Persistent volume management
 - **Monitoring**: Observability stack
@@ -174,6 +177,7 @@ python3 scripts/security/certificate-expiry-monitoring.py --check-expiry
 ```
 
 **Security Validations:**
+
 - TLS certificate validity and expiration
 - Network policy enforcement
 - RBAC configuration correctness
@@ -193,6 +197,7 @@ python3 scripts/testing/integrated_test_orchestrator.py
 ```
 
 **Test Categories:**
+
 - Infrastructure health checks
 - Service connectivity testing
 - Application functionality validation
@@ -204,6 +209,7 @@ python3 scripts/testing/integrated_test_orchestrator.py
 ### Development Environment
 
 **Characteristics:**
+
 - Relaxed security policies for easier debugging
 - Single-node deployment
 - Local storage only
@@ -224,6 +230,7 @@ python3 scripts/testing/integrated_test_orchestrator.py
 ```
 
 **Development-Specific Configuration:**
+
 ```yaml
 # environments/development/values.yaml
 global:
@@ -240,6 +247,7 @@ global:
 ### Staging Environment
 
 **Characteristics:**
+
 - Production-like configuration
 - Let's Encrypt staging certificates
 - Full monitoring stack
@@ -259,6 +267,7 @@ global:
 ```
 
 **Staging-Specific Configuration:**
+
 ```yaml
 # environments/staging/values.yaml
 global:
@@ -274,6 +283,7 @@ global:
 ### Production Environment
 
 **Characteristics:**
+
 - Strict security policies
 - Production Let's Encrypt certificates
 - High availability configuration
@@ -293,6 +303,7 @@ global:
 ```
 
 **Production-Specific Configuration:**
+
 ```yaml
 # environments/production/values.yaml
 global:
@@ -318,6 +329,7 @@ global:
 ### ArgoCD Configuration
 
 **App-of-Apps Pattern:**
+
 ```yaml
 # deployments/gitops/argocd/app-of-apps.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -346,6 +358,7 @@ spec:
 ```
 
 **Individual Application:**
+
 ```yaml
 # deployments/gitops/argocd/applications/monitoring.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -380,6 +393,7 @@ spec:
 ### Flux Configuration
 
 **Flux Bootstrap:**
+
 ```bash
 # Install Flux
 flux bootstrap github \
@@ -391,6 +405,7 @@ flux bootstrap github \
 ```
 
 **Flux Kustomization:**
+
 ```yaml
 # deployments/gitops/flux/clusters/homelab/kustomization.yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
@@ -432,19 +447,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Tools
         run: |
           # Install terraform, helm, kubectl
           ./scripts/setup/install-tools.sh
-      
+
       - name: Validate Terraform
         run: |
           cd terraform
           terraform init
           terraform validate
           terraform plan -var="environment=staging"
-      
+
       - name: Validate Helm
         run: |
           cd helm
@@ -458,24 +473,24 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Configure kubectl
         uses: azure/k8s-set-context@v1
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
-      
+
       - name: Deploy to Staging
         run: |
           ./scripts/deployment/deploy-unified.sh \
             --environment staging
-      
+
       - name: Run Tests
         run: |
           python3 scripts/testing/test_reporter.py \
             --environment staging \
             --output-format json > test-results.json
-      
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v3
         with:
@@ -489,29 +504,29 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Configure kubectl
         uses: azure/k8s-set-context@v1
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
-      
+
       - name: Deploy to Production
         run: |
           ./scripts/deployment/deploy-unified.sh \
             --environment production
-      
+
       - name: Verify Deployment
         run: |
           python3 scripts/testing/production_health_check.py
-      
+
       - name: Notify Success
         if: success()
         run: |
           curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
             -H 'Content-type: application/json' \
             --data '{"text":"✅ Production deployment successful"}'
-      
+
       - name: Notify Failure
         if: failure()
         run: |
@@ -609,7 +624,7 @@ data:
         annotations:
           summary: "Deployment taking longer than expected"
           description: "Deployment {{ $labels.environment }} has been running for {{ $value }} seconds"
-      
+
       - alert: DeploymentFailure
         expr: deployment_success == 0
         for: 0m
@@ -667,6 +682,7 @@ data:
 
 **Symptoms:** Terraform operations fail with state lock error
 **Solution:**
+
 ```bash
 # Check lock status
 terraform force-unlock LOCK_ID
@@ -682,6 +698,7 @@ terraform force-unlock LOCK_ID -force
 
 **Symptoms:** Helm deployment fails with existing release
 **Solution:**
+
 ```bash
 # Check existing releases
 helm list -A
@@ -697,6 +714,7 @@ helm upgrade release-name chart-name --force
 
 **Symptoms:** ArgoCD/Flux not syncing applications
 **Solution:**
+
 ```bash
 # ArgoCD troubleshooting
 argocd app sync app-name --force
@@ -711,6 +729,7 @@ flux reconcile kustomization flux-system
 
 **Symptoms:** TLS certificates not being issued
 **Solution:**
+
 ```bash
 # Check cert-manager status
 kubectl get certificates -A
@@ -826,4 +845,4 @@ This approach scales from simple homelab deployments to enterprise-grade infrast
 **Last Updated:** December 2024  
 **Next Review:** Quarterly  
 **Maintainer:** DevOps Team  
-**Contact:** tz-dev@vectorweight.com
+**Contact:** <tz-dev@vectorweight.com>

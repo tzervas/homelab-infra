@@ -12,7 +12,7 @@ This comprehensive troubleshooting guide addresses common issues encountered dur
 
 ### Emergency Contacts
 
-- **Infrastructure Team**: tz-dev@vectorweight.com
+- **Infrastructure Team**: <tz-dev@vectorweight.com>
 - **On-Call Escalation**: Available 24/7 for production issues
 - **Slack Channel**: #infrastructure-alerts
 
@@ -39,11 +39,13 @@ curl -k https://prometheus.homelab.local/api/v1/query?query=up
 #### 1.1 State Lock Problems
 
 **Symptoms:**
+
 - Error: "Another operation is already in progress"
 - Terraform operations hang indefinitely
 - Lock remains after failed operations
 
 **Diagnosis:**
+
 ```bash
 # Check current state
 terraform show terraform.tfstate | head -20
@@ -58,6 +60,7 @@ terraform force-unlock --help
 **Solutions:**
 
 **Option A: Safe Unlock (Recommended)**
+
 ```bash
 # Verify no other operations are running
 ps aux | grep terraform
@@ -73,6 +76,7 @@ terraform plan -detailed-exitcode
 ```
 
 **Option B: Force Unlock (Caution Required)**
+
 ```bash
 # Only if certain no other operations are running
 terraform force-unlock -force LOCK_ID
@@ -83,6 +87,7 @@ terraform plan
 ```
 
 **Rollback Procedure:**
+
 ```bash
 # If state is corrupted, restore from backup
 cp backup/terraform.tfstate.$(date -d "1 day ago" +%Y%m%d) terraform.tfstate
@@ -95,11 +100,13 @@ terraform import kubernetes_namespace.cert-manager cert-manager
 #### 1.2 Resource Conflicts
 
 **Symptoms:**
+
 - Error: "Resource already exists"
 - Import failures
 - Plan shows unexpected changes
 
 **Diagnosis:**
+
 ```bash
 # Check actual cluster state
 kubectl get all -A
@@ -114,6 +121,7 @@ terraform plan -detailed-exitcode | grep -E "(create|destroy|replace)"
 **Solutions:**
 
 **Option A: Import Existing Resources**
+
 ```bash
 # Import conflicting resources
 terraform import kubernetes_namespace.example example
@@ -124,6 +132,7 @@ terraform plan
 ```
 
 **Option B: Remove from State and Recreate**
+
 ```bash
 # Remove from Terraform state (resource remains in cluster)
 terraform state rm kubernetes_deployment.problematic
@@ -133,6 +142,7 @@ terraform apply -target=kubernetes_deployment.problematic
 ```
 
 **Rollback Procedure:**
+
 ```bash
 # Remove Terraform-managed resources
 terraform destroy -target=kubernetes_namespace.new-namespace
@@ -145,11 +155,13 @@ terraform apply
 #### 1.3 Provider Authentication Issues
 
 **Symptoms:**
+
 - Error: "Error authenticating with Kubernetes"
 - Timeout connecting to cluster
 - Permission denied errors
 
 **Diagnosis:**
+
 ```bash
 # Test kubectl connectivity
 kubectl cluster-info
@@ -165,6 +177,7 @@ terraform providers
 **Solutions:**
 
 **Option A: Fix Kubeconfig**
+
 ```bash
 # Update kubeconfig
 k3s kubectl config view --raw > ~/.kube/config
@@ -175,6 +188,7 @@ sed -i 's/127.0.0.1/192.168.16.26/g' ~/.kube/config
 ```
 
 **Option B: Use Service Account**
+
 ```bash
 # Create service account for Terraform
 kubectl create serviceaccount terraform -n kube-system
@@ -198,11 +212,13 @@ EOF
 #### 2.1 Release Conflicts
 
 **Symptoms:**
+
 - Error: "Release already exists"
 - Helm hooks failing
 - Unable to upgrade/rollback releases
 
 **Diagnosis:**
+
 ```bash
 # List all releases
 helm list -A
@@ -220,6 +236,7 @@ helm list -A --pending
 **Solutions:**
 
 **Option A: Force Upgrade**
+
 ```bash
 # Force upgrade to resolve conflicts
 helm upgrade prometheus prometheus-community/kube-prometheus-stack \
@@ -235,6 +252,7 @@ helm upgrade prometheus prometheus-community/kube-prometheus-stack \
 ```
 
 **Option B: Delete and Reinstall**
+
 ```bash
 # Delete release but keep data
 helm uninstall prometheus -n monitoring --keep-history
@@ -244,6 +262,7 @@ helmfile --environment production --selector name=prometheus sync
 ```
 
 **Rollback Procedure:**
+
 ```bash
 # Rollback to previous version
 helm rollback prometheus 1 -n monitoring
@@ -255,11 +274,13 @@ kubectl apply -f backup/prometheus-manifests.yaml
 #### 2.2 Dependency Issues
 
 **Symptoms:**
+
 - Charts fail to download
 - Version conflicts
 - Missing dependencies
 
 **Diagnosis:**
+
 ```bash
 # Check repository status
 helm repo list
@@ -275,6 +296,7 @@ helmfile --environment production list
 **Solutions:**
 
 **Option A: Update Dependencies**
+
 ```bash
 # Update Helm repositories
 helm repo update
@@ -288,6 +310,7 @@ helmfile --environment production sync
 ```
 
 **Option B: Pin Specific Versions**
+
 ```bash
 # Lock chart versions in helmfile.yaml
 releases:
@@ -301,11 +324,13 @@ releases:
 #### 3.1 Let's Encrypt Rate Limiting
 
 **Symptoms:**
+
 - Certificate issuance fails
 - Error: "too many certificates already issued"
 - ACME challenge failures
 
 **Diagnosis:**
+
 ```bash
 # Check certificate status
 kubectl get certificates -A
@@ -321,6 +346,7 @@ curl -s "https://letsencrypt.org/docs/rate-limits/"
 **Solutions:**
 
 **Option A: Use Staging Environment**
+
 ```bash
 # Switch to staging for testing
 kubectl apply -f - <<EOF
@@ -345,6 +371,7 @@ kubectl patch certificate example-cert -p '{"spec":{"issuerRef":{"name":"letsenc
 ```
 
 **Option B: Use Self-Signed Certificates Temporarily**
+
 ```bash
 # Create self-signed certificate
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -356,6 +383,7 @@ kubectl create secret tls temp-cert --key=tls.key --cert=tls.crt
 ```
 
 **Rollback Procedure:**
+
 ```bash
 # Restore previous certificates
 kubectl apply -f backup/certificates.yaml
@@ -367,11 +395,13 @@ kubectl delete certificaterequest --all
 #### 3.2 Certificate Validation Failures
 
 **Symptoms:**
+
 - Certificates not being issued
 - HTTP01 challenge failures
 - DNS validation errors
 
 **Diagnosis:**
+
 ```bash
 # Check certificate request details
 kubectl describe certificaterequest problematic-cert-request
@@ -386,6 +416,7 @@ curl -v http://example.homelab.local/.well-known/acme-challenge/test
 **Solutions:**
 
 **Option A: Fix Ingress Configuration**
+
 ```bash
 # Ensure ingress class is correct
 kubectl patch ingress example-ingress -p '{"metadata":{"annotations":{"kubernetes.io/ingress.class":"nginx"}}}'
@@ -396,6 +427,7 @@ kubectl describe svc ingress-nginx-controller -n ingress-nginx
 ```
 
 **Option B: Manual Certificate Creation**
+
 ```bash
 # Create certificate manually
 kubectl apply -f - <<EOF
@@ -426,11 +458,13 @@ EOF
 #### 4.1 MetalLB IP Pool Exhaustion
 
 **Symptoms:**
+
 - Services stuck in "Pending" state
 - No external IP assigned to LoadBalancer services
 - MetalLB logs show no available IPs
 
 **Diagnosis:**
+
 ```bash
 # Check MetalLB configuration
 kubectl get ipaddresspools -n metallb-system
@@ -447,6 +481,7 @@ kubectl logs -n metallb-system -l app=metallb --tail=50
 **Solutions:**
 
 **Option A: Expand IP Pool**
+
 ```bash
 # Update IP pool configuration
 kubectl patch ipaddresspool production-pool -n metallb-system --type='merge' -p='{"spec":{"addresses":["192.168.25.240-192.168.25.250","192.168.25.251-192.168.25.255"]}}'
@@ -456,6 +491,7 @@ terraform apply -var="metallb_ip_range=192.168.25.240-192.168.25.255"
 ```
 
 **Option B: Release Unused IPs**
+
 ```bash
 # Find services using MetalLB IPs
 kubectl get svc -A -o wide | grep LoadBalancer
@@ -470,11 +506,13 @@ kubectl delete pod -n metallb-system -l app=metallb
 #### 4.2 DNS Resolution Issues
 
 **Symptoms:**
+
 - Services cannot resolve each other
 - External DNS lookups fail
 - CoreDNS errors in logs
 
 **Diagnosis:**
+
 ```bash
 # Test DNS resolution
 kubectl run debug-pod --image=busybox:1.28 --rm -it --restart=Never -- nslookup kubernetes.default
@@ -490,6 +528,7 @@ kubectl get configmap coredns -n kube-system -o yaml
 **Solutions:**
 
 **Option A: Restart CoreDNS**
+
 ```bash
 # Restart CoreDNS pods
 kubectl delete pod -n kube-system -l k8s-app=kube-dns
@@ -499,6 +538,7 @@ kubectl wait --for=condition=ready pod -l k8s-app=kube-dns -n kube-system --time
 ```
 
 **Option B: Fix DNS Configuration**
+
 ```bash
 # Update CoreDNS configuration
 kubectl edit configmap coredns -n kube-system
@@ -512,11 +552,13 @@ kubectl patch configmap coredns -n kube-system --type='merge' -p='{"data":{"Core
 #### 5.1 Longhorn Volume Problems
 
 **Symptoms:**
+
 - PVCs stuck in "Pending" state
 - Volume attachment failures
 - Storage node issues
 
 **Diagnosis:**
+
 ```bash
 # Check Longhorn system status
 kubectl get pods -n longhorn-system
@@ -532,6 +574,7 @@ kubectl describe node | grep -A10 "Allocated resources"
 **Solutions:**
 
 **Option A: Restart Longhorn Components**
+
 ```bash
 # Restart Longhorn manager
 kubectl delete pod -n longhorn-system -l app=longhorn-manager
@@ -544,6 +587,7 @@ kubectl get volumes -n longhorn-system
 ```
 
 **Option B: Manual Volume Recovery**
+
 ```bash
 # List problematic volumes
 kubectl get volumes -n longhorn-system | grep -v Healthy
@@ -559,11 +603,13 @@ kubectl get volume problem-volume -n longhorn-system
 #### 5.2 Storage Class Issues
 
 **Symptoms:**
+
 - PVCs cannot be provisioned
 - Wrong storage class selected
 - Performance issues
 
 **Diagnosis:**
+
 ```bash
 # Check available storage classes
 kubectl get storageclass
@@ -578,6 +624,7 @@ kubectl get pods -A | grep provisioner
 **Solutions:**
 
 **Option A: Fix Default Storage Class**
+
 ```bash
 # Remove default from current class
 kubectl patch storageclass current-default -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
@@ -587,6 +634,7 @@ kubectl patch storageclass longhorn -p '{"metadata": {"annotations":{"storagecla
 ```
 
 **Option B: Create Temporary Storage Class**
+
 ```bash
 # Create fast storage class for critical workloads
 kubectl apply -f - <<EOF
@@ -608,11 +656,13 @@ EOF
 **Use Case:** Complete migration failure, need to return to Ansible-based deployment
 
 **Prerequisites:**
+
 - Complete backup of previous state
 - Ansible playbooks available
 - Access to original configuration
 
 **Procedure:**
+
 ```bash
 #!/bin/bash
 # scripts/rollback/full-infrastructure-rollback.sh
@@ -960,7 +1010,7 @@ echo "✅ Pre-migration tests passed"
 
 1. **Immediate Notification** (0-5 minutes)
    - Slack: #infrastructure-alerts
-   - Email: tz-dev@vectorweight.com
+   - Email: <tz-dev@vectorweight.com>
    - Status: "Investigating"
 
 2. **Assessment** (5-15 minutes)
@@ -1002,4 +1052,4 @@ Regular practice of these procedures ensures rapid recovery when issues occur du
 **Last Updated:** December 2024  
 **Next Review:** Post-incident or quarterly  
 **Maintainer:** Infrastructure Team  
-**Contact:** tz-dev@vectorweight.com
+**Contact:** <tz-dev@vectorweight.com>

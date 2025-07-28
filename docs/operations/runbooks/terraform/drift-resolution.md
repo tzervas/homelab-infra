@@ -1,11 +1,13 @@
 # Terraform Drift Resolution
 
 ## Symptom
+
 - Alert: `TerraformStateDriftDetected`
 - Configuration drift detected between Terraform state and actual infrastructure
 - Resources may have been modified outside of Terraform
 
 ## Impact
+
 - **Severity**: Warning
 - **Impact**: Medium - Infrastructure may be in an inconsistent state
 - **Urgency**: Medium - Should be resolved within 4 hours during business hours
@@ -13,6 +15,7 @@
 ## Investigation
 
 ### 1. Check Alert Details
+
 ```bash
 # Check Prometheus for drift details
 curl -s "http://prometheus.homelab.local:9090/api/v1/query?query=terraform_state_drift_detected" | jq .
@@ -22,6 +25,7 @@ kubectl get events -n monitoring --field-selector reason=TerraformDrift
 ```
 
 ### 2. Identify Affected Resources
+
 ```bash
 # Navigate to the affected environment
 cd terraform/environments/${ENVIRONMENT}
@@ -34,6 +38,7 @@ terraform show -json | jq '.values.root_module.resources[] | select(.type == "RE
 ```
 
 ### 3. Check Recent Changes
+
 ```bash
 # Check recent commits that might have caused drift
 git log --oneline -n 10 --grep="terraform"
@@ -45,6 +50,7 @@ kubectl get events --sort-by=.metadata.creationTimestamp
 ## Resolution
 
 ### Option 1: Import Manual Changes (Recommended)
+
 If the manual changes are desired and should be preserved:
 
 ```bash
@@ -63,6 +69,7 @@ echo $?  # Should return 0 if no drift
 ```
 
 ### Option 2: Revert Manual Changes
+
 If the manual changes should be reverted:
 
 ```bash
@@ -77,6 +84,7 @@ kubectl get pods -A --field-selector=status.phase!=Running
 ```
 
 ### Option 3: Refresh State (Caution)
+
 If state is out of sync but infrastructure is correct:
 
 ```bash
@@ -93,6 +101,7 @@ terraform plan -detailed-exitcode
 ## Verification
 
 ### 1. Confirm Drift is Resolved
+
 ```bash
 # Run terraform plan - should show no changes
 terraform plan -detailed-exitcode
@@ -109,12 +118,14 @@ fi
 ```
 
 ### 2. Check Monitoring
+
 ```bash
 # Verify drift metric is cleared
 curl -s "http://prometheus.homelab.local:9090/api/v1/query?query=terraform_state_drift_detected{environment=\"${ENVIRONMENT}\"}" | jq .
 ```
 
 ### 3. Test Infrastructure
+
 ```bash
 # Run basic connectivity tests
 kubectl get nodes
@@ -127,6 +138,7 @@ curl -I https://grafana.homelab.local/api/health
 ## Prevention
 
 ### 1. Implement Drift Detection
+
 ```bash
 # Add to CI/CD pipeline
 #!/bin/bash
@@ -141,11 +153,13 @@ fi
 ```
 
 ### 2. Access Controls
+
 - Review who has administrative access to infrastructure
 - Implement approval processes for manual changes
 - Use RBAC to limit direct cluster access
 
 ### 3. Monitoring and Alerting
+
 ```yaml
 # Add to terraform-state-monitor configuration
 drift_check:
@@ -156,6 +170,7 @@ drift_check:
 ```
 
 ### 4. Documentation
+
 - Document all approved manual change procedures
 - Update runbooks for emergency procedures
 - Train team on proper change management
@@ -163,27 +178,32 @@ drift_check:
 ## Escalation
 
 ### Level 1 (Immediate)
+
 - **When**: Drift affects critical production services
 - **Action**: Page on-call engineer
 - **Contact**: Slack #infrastructure-alerts
 
 ### Level 2 (2 hours)
+
 - **When**: Unable to resolve drift or widespread impact
 - **Action**: Escalate to infrastructure team lead
-- **Contact**: infrastructure-lead@homelab.local
+- **Contact**: <infrastructure-lead@homelab.local>
 
 ### Level 3 (4 hours)
+
 - **When**: Potential data loss or security implications
 - **Action**: Escalate to operations manager
-- **Contact**: ops-manager@homelab.local
+- **Contact**: <ops-manager@homelab.local>
 
 ## Related Documentation
+
 - [Terraform State Management](../infrastructure/terraform-state.md)
 - [Change Management Process](../../processes/change-management.md)
 - [Infrastructure Monitoring](../../monitoring/infrastructure.md)
 - [Emergency Procedures](../../emergency/infrastructure.md)
 
 ## Change Log
+
 - 2024-01-15: Initial runbook creation
 - 2024-01-20: Added automated drift detection
 - 2024-01-25: Updated escalation procedures

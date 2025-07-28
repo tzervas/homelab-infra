@@ -20,7 +20,7 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
         package k8srequiredlabels
-        
+
         violation[{"msg": msg}] {
           required := input.parameters.labels
           provided := input.review.object.metadata.labels
@@ -67,19 +67,19 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
         package k8srequiredsecuritycontext
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           not container.securityContext.runAsNonRoot
           msg := "Container must run as non-root user"
         }
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           not container.securityContext.readOnlyRootFilesystem
           msg := "Container must have read-only root filesystem"
         }
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           container.securityContext.allowPrivilegeEscalation == true
@@ -126,7 +126,7 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
         package k8srequiredresources
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           required_limits := input.parameters.limits
@@ -134,7 +134,7 @@ spec:
           not container.resources.limits[required_limit]
           msg := sprintf("Container must have resource limit: %v", [required_limit])
         }
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           required_requests := input.parameters.requests
@@ -173,14 +173,14 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
         package k8snolatestimage
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           image := container.image
           endswith(image, ":latest")
           msg := "Container image must not use 'latest' tag"
         }
-        
+
         violation[{"msg": msg}] {
           container := input.review.object.spec.containers[_]
           image := container.image

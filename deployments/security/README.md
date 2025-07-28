@@ -39,6 +39,7 @@ Implements comprehensive certificate lifecycle management:
 - **Rotation Policies**: Automated certificate renewal and rotation
 
 **Key Features**:
+
 - ECDSA P-256 keys for performance and security
 - Automated renewal 30 days before expiry
 - Backup and monitoring integration
@@ -56,6 +57,7 @@ Configures mutual TLS for service-to-service communication:
 - **Security Enhancement**: EnvoyFilters for advanced TLS configuration
 
 **Security Levels**:
+
 - **Strict**: mTLS required for all communication
 - **Permissive**: mTLS preferred but not required
 - **Disabled**: No mTLS enforcement (development only)
@@ -72,6 +74,7 @@ Provides reusable network security policies:
 - **Cross-Namespace**: Controlled inter-namespace communication
 
 **Policy Types**:
+
 - DNS resolution policies
 - Web application ingress policies
 - Database access policies
@@ -90,6 +93,7 @@ Automated secret lifecycle management:
 - **Monitoring**: Certificate expiry and rotation failure alerts
 
 **Rotation Intervals**:
+
 - Certificates: 30 days
 - Database passwords: 30 days
 - API keys: 90 days
@@ -108,6 +112,7 @@ Secure secret distribution using Bitnami Sealed Secrets:
 - **Usage Guidelines**: Best practices and troubleshooting
 
 **Secret Scopes**:
+
 - **Strict**: Same name and namespace only
 - **Namespace-wide**: Any name within namespace
 - **Cluster-wide**: Any name in any namespace
@@ -121,11 +126,13 @@ Located in `scripts/security/`, these Python scripts provide automated security 
 **Script**: `certificate-expiry-monitoring.py`
 
 Monitors certificate expiration across:
+
 - Kubernetes cert-manager certificates
 - File system certificates
 - Remote endpoint certificates
 
 **Features**:
+
 - Email and webhook alerts
 - Configurable warning thresholds
 - HTML email reports
@@ -136,11 +143,13 @@ Monitors certificate expiration across:
 **Script**: `tls-configuration-validation.py`
 
 Validates TLS configurations for:
+
 - Kubernetes ingresses and services
 - External endpoints
 - Security headers and policies
 
 **Checks**:
+
 - TLS version compliance (minimum TLSv1.2)
 - Cipher suite security
 - Forward secrecy support
@@ -152,6 +161,7 @@ Validates TLS configurations for:
 **Script**: `security-policy-compliance-checks.py`
 
 Validates security policy compliance:
+
 - Configurable policy definitions
 - Automated compliance checking
 - Detailed compliance reporting
@@ -169,26 +179,31 @@ Validates security policy compliance:
 ### Installation Steps
 
 1. **Deploy Certificate Management**:
+
    ```bash
    kubectl apply -f deployments/security/tls-certificate-management.yaml
    ```
 
 2. **Configure mTLS** (if using Istio):
+
    ```bash
    kubectl apply -f deployments/security/mtls-configuration.yaml
    ```
 
 3. **Apply Network Policies**:
+
    ```bash
    kubectl apply -f deployments/security/network-policy-templates.yaml
    ```
 
 4. **Setup Secret Rotation**:
+
    ```bash
    kubectl apply -f deployments/security/secret-rotation-mechanisms.yaml
    ```
 
 5. **Deploy Sealed Secrets**:
+
    ```bash
    kubectl apply -f deployments/security/sealed-secrets-patterns.yaml
    ```
@@ -242,6 +257,7 @@ rotation:
 ### Metrics
 
 The security layer exposes metrics for:
+
 - Certificate expiry dates
 - Secret rotation status
 - Network policy violations
@@ -250,6 +266,7 @@ The security layer exposes metrics for:
 ### Alerts
 
 Configure alerts in Prometheus for:
+
 - Certificates expiring within 30 days
 - Failed secret rotations
 - TLS configuration non-compliance
@@ -258,6 +275,7 @@ Configure alerts in Prometheus for:
 ### Dashboards
 
 Grafana dashboards for:
+
 - Certificate lifecycle monitoring
 - Security policy compliance
 - Network traffic analysis
@@ -349,7 +367,7 @@ When adding new security configurations:
 
 ## Security Contacts
 
-- **Security Team**: tz-dev@vectorweight.com
+- **Security Team**: <tz-dev@vectorweight.com>
 - **Incident Response**: Available 24/7
 - **Vulnerability Reports**: Follow responsible disclosure
 

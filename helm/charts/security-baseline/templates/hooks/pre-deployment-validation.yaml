@@ -14,20 +14,20 @@ data:
   validate.sh: |
     #!/bin/bash
     set -euo pipefail
-    
+
     echo "🔍 Starting pre-deployment validation..."
-    
+
     # Check Kubernetes version compatibility
     echo "📋 Checking Kubernetes version..."
     K8S_VERSION=$(kubectl version --client=false -o json | jq -r '.serverVersion.gitVersion')
     echo "Kubernetes version: $K8S_VERSION"
-    
+
     # Validate Pod Security Standards support
     echo "🔒 Validating Pod Security Standards support..."
     if kubectl api-resources | grep -q "podsecuritypolicies"; then
       echo "⚠️  PodSecurityPolicy detected - consider migrating to Pod Security Standards"
     fi
-    
+
     # Check for required CRDs
     echo "🔧 Checking for required Custom Resource Definitions..."
     REQUIRED_CRDS=(
@@ -35,7 +35,7 @@ data:
       "issuers.cert-manager.io"
       "clusterissuers.cert-manager.io"
     )
-    
+
     for crd in "${REQUIRED_CRDS[@]}"; do
       if kubectl get crd "$crd" &>/dev/null; then
         echo "✅ CRD $crd found"
@@ -43,7 +43,7 @@ data:
         echo "⚠️  CRD $crd not found - some features may not work"
       fi
     done
-    
+
     # Validate network policy support
     echo "🌐 Checking network policy support..."
     if kubectl get networkpolicies -A &>/dev/null; then
@@ -51,7 +51,7 @@ data:
     else
       echo "⚠️  NetworkPolicy support not detected - network policies will be ignored"
     fi
-    
+
     # Check RBAC permissions
     echo "🔑 Validating RBAC permissions..."
     if kubectl auth can-i create roles --as=system:serviceaccount:{{ .Release.Namespace }}:{{ include "security-baseline.serviceAccountName" . }}; then
@@ -59,7 +59,7 @@ data:
     else
       echo "⚠️  Limited RBAC permissions detected"
     fi
-    
+
     # Validate storage classes
     echo "💾 Checking storage classes..."
     if kubectl get storageclass {{ .Values.global.storageClass | default "longhorn" }} &>/dev/null; then
@@ -67,14 +67,14 @@ data:
     else
       echo "⚠️  Storage class {{ .Values.global.storageClass | default "longhorn" }} not found"
     fi
-    
+
     # Check for conflicting resources
     echo "🔍 Checking for conflicting resources..."
     EXISTING_POLICIES=$(kubectl get networkpolicies -n {{ .Release.Namespace }} -o name 2>/dev/null | wc -l)
     if [ "$EXISTING_POLICIES" -gt 0 ]; then
       echo "⚠️  Found $EXISTING_POLICIES existing network policies - review for conflicts"
     fi
-    
+
     # Validate environment-specific requirements
     {{- if eq .Values.global.environment "production" }}
     echo "🏭 Production environment validation..."
@@ -84,7 +84,7 @@ data:
     else
       echo "⚠️  Backup credentials not found - configure backup storage"
     fi
-    
+
     # Validate monitoring prerequisites
     if kubectl get namespace monitoring &>/dev/null; then
       echo "✅ Monitoring namespace exists"
@@ -92,7 +92,7 @@ data:
       echo "⚠️  Monitoring namespace not found"
     fi
     {{- end }}
-    
+
     echo "✅ Pre-deployment validation completed successfully!"
 
 ---

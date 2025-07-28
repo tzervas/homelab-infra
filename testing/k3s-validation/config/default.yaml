@@ -1,0 +1,61 @@
+# K3s Testing Framework Default Configuration
+
+# Test execution settings
+execution:
+  timeout: 300 # Default timeout in seconds
+  parallel: false # Enable parallel test execution
+  retry_count: 3 # Number of retries for failed tests
+  retry_delay: 5 # Delay between retries in seconds
+
+# Test categories to run by default
+categories:
+  core: true # Core Kubernetes functionality
+  k3s_specific: true # K3s-specific components
+  performance: false # Performance benchmarks (time-consuming)
+  security: true # Security validation
+  failure: false # Chaos/failure testing (potentially disruptive)
+  production: false # Production readiness (comprehensive)
+
+# Test environment settings
+environment:
+  test_namespace_prefix: "k3s-testing"
+  cleanup_on_exit: true
+  preserve_failed_resources: false
+  log_level: "INFO" # DEBUG, INFO, WARN, ERROR
+
+# Performance test settings
+performance:
+  pod_startup_iterations: 5
+  scaling_test_replicas: 5
+  response_time_iterations: 10
+  network_timeout: 30
+
+# K3s-specific settings
+k3s:
+  check_traefik: true
+  check_servicelb: true
+  check_local_path: true
+  check_embedded_db: true
+  traefik_timeout: 120
+  servicelb_timeout: 120
+
+# Security test settings
+security:
+  test_rbac: true
+  test_network_policies: true
+  test_pod_security: true
+  test_tls: true
+
+# Failure test settings (use with caution)
+failure:
+  enable_node_failure: false # Requires multi-node cluster
+  enable_pod_eviction: false
+  enable_network_partition: false
+  enable_resource_exhaustion: false
+
+# Reporting settings
+reporting:
+  format: "text" # text, json, html
+  include_debug_info: false
+  save_logs: true
+  report_directory: "reports"

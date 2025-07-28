@@ -1,0 +1,229 @@
+---
+- name: Install DevOps Tools on Workstation
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - wget
+          - gpg
+          - lsb-release
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - unzip
+        state: present
+        update_cache: yes
+
+    - name: Check if Terraform is installed
+      command: terraform --version
+      register: terraform_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Install Terraform
+      when: terraform_check.rc != 0
+      block:
+        - name: Add HashiCorp GPG key
+          get_url:
+            url: https://apt.releases.hashicorp.com/gpg
+            dest: /tmp/hashicorp.gpg
+
+        - name: Add HashiCorp GPG key to keyring
+          shell: |
+            cat /tmp/hashicorp.gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+        - name: Add HashiCorp repository
+          apt_repository:
+            repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+            state: present
+            filename: hashicorp
+
+        - name: Install Terraform
+          apt:
+            name: terraform
+            state: present
+            update_cache: yes
+
+    - name: Verify all tools are installed on workstation
+      command: "{{ item }}"
+      loop:
+        - ansible --version
+        - terraform --version
+        - docker --version
+        - kubectl version --client
+        - helm version
+      register: version_checks
+      changed_when: false
+
+    - name: Display installed versions on workstation
+      debug:
+        msg: "{{ item.stdout_lines[0] }}"
+      loop: "{{ version_checks.results }}"
+      loop_control:
+        label: "{{ item.cmd | join(' ') }}"
+
+- name: Install DevOps Tools on Server
+  hosts: homelab-server
+  become: yes
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - wget
+          - gpg
+          - lsb-release
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - unzip
+        state: present
+        update_cache: yes
+
+    - name: Install Docker
+      block:
+        - name: Add Docker GPG key
+          get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /tmp/docker.gpg
+
+        - name: Add Docker GPG key to keyring
+          shell: |
+            cat /tmp/docker.gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/docker-archive-keyring.gpg
+
+        - name: Add Docker repository
+          apt_repository:
+            repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+            state: present
+            filename: docker
+
+        - name: Install Docker
+          apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-compose-plugin
+            state: present
+            update_cache: yes
+
+        - name: Add user to docker group
+          user:
+            name: "{{ ansible_user }}"
+            groups: docker
+            append: yes
+
+    - name: Install kubectl
+      get_url:
+        url: "https://dl.k8s.io/release/v1.28.5/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Install Helm
+      block:
+        - name: Download Helm installation script
+          get_url:
+            url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+            dest: /tmp/get_helm.sh
+            mode: '0755'
+
+        - name: Install Helm
+          command: /tmp/get_helm.sh
+          args:
+            creates: /usr/local/bin/helm
+
+    - name: Install Terraform
+      block:
+        - name: Add HashiCorp GPG key
+          get_url:
+            url: https://apt.releases.hashicorp.com/gpg
+            dest: /tmp/hashicorp.gpg
+
+        - name: Add HashiCorp GPG key to keyring
+          shell: |
+            cat /tmp/hashicorp.gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+        - name: Add HashiCorp repository
+          apt_repository:
+            repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+            state: present
+            filename: hashicorp
+
+        - name: Install Terraform
+          apt:
+            name: terraform
+            state: present
+            update_cache: yes
+
+    - name: Install Ansible on server
+      apt:
+        name: ansible
+        state: present
+
+    - name: Install k3s
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - {{ k3s_server_args | join(' ') }}
+      args:
+        creates: /usr/local/bin/k3s
+      environment:
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+
+    - name: Wait for k3s to be ready
+      wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        state: present
+        timeout: 60
+
+    - name: Create .kube directory
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Copy k3s config to user kubeconfig
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+        remote_src: yes
+
+    - name: Update kubeconfig server URL
+      replace:
+        path: "/home/{{ ansible_user }}/.kube/config"
+        regexp: 'https://127.0.0.1:6443'
+        replace: "https://{{ ansible_host }}:6443"
+
+    - name: Verify all tools are installed on server
+      become_user: "{{ ansible_user }}"
+      command: "{{ item }}"
+      loop:
+        - ansible --version
+        - terraform --version
+        - docker --version
+        - kubectl version
+        - helm version
+        - k3s --version
+      register: server_version_checks
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Display installed versions on server
+      debug:
+        msg: "{{ item.stdout_lines[0] if item.rc == 0 else 'Failed to get version' }}"
+      loop: "{{ server_version_checks.results }}"
+      loop_control:
+        label: "{{ item.cmd | join(' ') }}"

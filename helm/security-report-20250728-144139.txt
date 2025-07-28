@@ -1,0 +1,40 @@
+Helm Security Baseline Report
+Generated: Mon Jul 28 02:41:39 PM EDT 2025
+===============================
+
+Chart Security Summary:
+-----------------------
+Chart: core-infrastructure
+  Security contexts: 1 files
+  Network policies: 0 files
+  RBAC resources: 0 files
+
+Chart: monitoring
+  Security contexts: 2 files
+  Network policies: 1 files
+  RBAC resources: 1 files
+
+Chart: security-baseline
+  Security contexts: 4 files
+  Network policies: 2 files
+  RBAC resources: 1 files
+
+Chart: storage
+  Security contexts: 1 files
+  Network policies: 0 files
+  RBAC resources: 0 files
+
+Environment Security Configuration:
+-----------------------------------
+Environment: dev
+  Pod Security Standard: not configured
+  TLS Enabled: not configured
+
+Environment: staging
+  Pod Security Standard: not configured
+  TLS Enabled: not configured
+
+Environment: prod
+  Pod Security Standard: not configured
+  TLS Enabled: not configured
+

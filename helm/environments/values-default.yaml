@@ -1,0 +1,9 @@
+# Default Values for Helmfile Environment
+
+global:
+  replicas: 2
+  resourceQuota: false
+  storageClass: "standard"
+
+# Add more global or environment-specific values as required
+

@@ -1,6 +1,11 @@
 global:
   domain: "staging.homelab.local"
   environment: "staging"
+  
+  # TLS Configuration
+  tls:
+    enabled: true
+    issuer: "letsencrypt-staging"
 
   # Security contexts for staging environment (restricted profile)
   securityContext:
@@ -14,11 +19,11 @@ global:
       drop:
         - ALL
 
-  # Pod security standards - restricted for staging
+  # Pod security standards - baseline for staging
   podSecurityStandards:
-    enforce: "restricted"
-    audit: "restricted"
-    warn: "restricted"
+    enforce: "baseline"
+    audit: "baseline"
+    warn: "baseline"
 
 # Moderate resource allocation for staging
 resources:

@@ -1,0 +1,230 @@
+{
+  "timestamp": "2025-07-28T20:35:57.461398+00:00",
+  "duration": 2.2751526832580566,
+  "overall_status": "fail",
+  "summary": {
+    "overall_status": "fail",
+    "test_duration": 2.2751526832580566,
+    "modules_run": 4,
+    "total_recommendations": 3
+  },
+  "config_validation": [],
+  "infrastructure_health": {
+    "cluster_status": "critical",
+    "total_checks": 5,
+    "healthy_checks": 0,
+    "warning_checks": 0,
+    "critical_checks": 2,
+    "component_statuses": [
+      {
+        "component": "cluster_connectivity",
+        "status": "critical",
+        "message": "Kubernetes client not available",
+        "details": {},
+        "timestamp": 1753734957.4614964
+      },
+      {
+        "component": "node_status",
+        "status": "unknown",
+        "message": "Kubernetes client unavailable",
+        "details": {},
+        "timestamp": 1753734957.4615078
+      },
+      {
+        "component": "core_components",
+        "status": "unknown",
+        "message": "Kubernetes client unavailable",
+        "details": {},
+        "timestamp": 1753734957.4615173
+      },
+      {
+        "component": "namespace_status",
+        "status": "unknown",
+        "message": "Kubernetes client unavailable",
+        "details": {},
+        "timestamp": 1753734957.4615247
+      },
+      {
+        "component": "network_connectivity",
+        "status": "critical",
+        "message": "Network connectivity issues detected",
+        "details": {
+          "dns_resolution": false,
+          "ping_test": false
+        },
+        "timestamp": 1753734957.522198
+      }
+    ]
+  },
+  "service_deployment": {
+    "gitlab": {
+      "service_name": "gitlab",
+      "namespace": "gitlab-system",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "keycloak": {
+      "service_name": "keycloak",
+      "namespace": "keycloak",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "prometheus": {
+      "service_name": "prometheus",
+      "namespace": "monitoring",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "grafana": {
+      "service_name": "grafana",
+      "namespace": "monitoring",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "nginx-ingress": {
+      "service_name": "nginx-ingress",
+      "namespace": "ingress-nginx",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "cert-manager": {
+      "service_name": "cert-manager",
+      "namespace": "cert-manager",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "metallb": {
+      "service_name": "metallb",
+      "namespace": "metallb-system",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    }
+  },
+  "network_security": [
+    {
+      "check_type": "network_connectivity",
+      "component": "cluster_network",
+      "status": "warning",
+      "message": "Connectivity issues: Internal DNS resolution failed",
+      "details": {
+        "external_ping": true,
+        "internal_dns": false
+      },
+      "recommendations": []
+    },
+    {
+      "check_type": "tls_certificates",
+      "component": "certificates",
+      "status": "unknown",
+      "message": "Kubernetes client unavailable",
+      "details": {},
+      "recommendations": []
+    },
+    {
+      "check_type": "network_policies",
+      "component": "network_security",
+      "status": "unknown",
+      "message": "Kubernetes client unavailable",
+      "details": {},
+      "recommendations": []
+    },
+    {
+      "check_type": "metallb_loadbalancer",
+      "component": "load_balancer",
+      "status": "unknown",
+      "message": "Kubernetes client unavailable",
+      "details": {},
+      "recommendations": []
+    },
+    {
+      "check_type": "dns_service_discovery",
+      "component": "dns",
+      "status": "vulnerable",
+      "message": "DNS service discovery failed",
+      "details": {
+        "dns_test_results": {
+          "kubernetes.default.svc.cluster.local": false,
+          "kube-dns.kube-system.svc.cluster.local": false
+        },
+        "successful_lookups": 0,
+        "total_tests": 2
+      },
+      "recommendations": []
+    },
+    {
+      "check_type": "rbac_security",
+      "component": "rbac",
+      "status": "unknown",
+      "message": "Kubernetes client unavailable",
+      "details": {},
+      "recommendations": []
+    }
+  ],
+  "integration_tests": null,
+  "recommendations": [
+    "Address infrastructure health issues before proceeding",
+    "Investigate unready services: gitlab, keycloak, prometheus, grafana, nginx-ingress, cert-manager, metallb",
+    "Review and address security warnings"
+  ],
+  "metrics": {
+    "total_test_duration": 2.2751526832580566,
+    "timestamp": "2025-07-28T20:35:57.461398+00:00",
+    "infrastructure_health": {
+      "health_percentage": 0.0,
+      "total_checks": 5,
+      "healthy_checks": 0
+    },
+    "service_deployment": {
+      "total_services": 7,
+      "ready_services": 0,
+      "readiness_rate": 0.0
+    },
+    "network_security": {
+      "total_checks": 6,
+      "secure_checks": 0,
+      "security_score": 0.0
+    }
+  }
+}

@@ -1,6 +1,11 @@
 global:
   domain: "homelab.local"
   environment: "production"
+  
+  # TLS Configuration
+  tls:
+    enabled: true
+    issuer: "letsencrypt-prod"
 
   # Production security contexts - strict enforcement
   securityContext:

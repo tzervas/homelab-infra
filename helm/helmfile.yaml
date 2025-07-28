@@ -23,20 +23,20 @@ environments:
     values:
       - environments/values-dev.yaml
       - charts/security-baseline/values.yaml
-    secrets:
-      - environments/secrets-dev.yaml
+    # secrets:
+    #   - environments/secrets-dev.yaml  # TODO: Encrypt with SOPS/helm-secrets
   staging:
     values:
       - environments/values-staging.yaml
       - charts/security-baseline/values.yaml
-    secrets:
-      - environments/secrets-staging.yaml
+    # secrets:
+    #   - environments/secrets-staging.yaml  # TODO: Encrypt with SOPS/helm-secrets
   production:
     values:
       - environments/values-prod.yaml
       - charts/security-baseline/values.yaml
-    secrets:
-      - environments/secrets-prod.yaml
+    # secrets:
+    #   - environments/secrets-prod.yaml  # TODO: Encrypt with SOPS/helm-secrets
 
 ---
 
@@ -142,7 +142,7 @@ releases:
     version: "0.14.8"
     values:
       - charts/core-infrastructure/values.yaml
-      - charts/core-infrastructure/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     set:
       - name: controller.resources.limits.cpu
         value: "100m"
@@ -158,7 +158,7 @@ releases:
     version: "v1.15.3"
     values:
       - charts/core-infrastructure/values.yaml
-      - charts/core-infrastructure/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     set:
       - name: installCRDs
         value: true
@@ -174,7 +174,7 @@ releases:
     version: "4.11.2"
     values:
       - charts/core-infrastructure/values.yaml
-      - charts/core-infrastructure/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 300
     needs:
@@ -187,7 +187,7 @@ releases:
     version: "2.16.1"
     values:
       - charts/core-infrastructure/values.yaml
-      - charts/core-infrastructure/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 300
 
@@ -199,7 +199,7 @@ releases:
     version: "1.7.1"
     values:
       - charts/storage/values.yaml
-      - charts/storage/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 600
     needs:
@@ -213,7 +213,7 @@ releases:
     version: "61.7.2"
     values:
       - charts/monitoring/values.yaml
-      - charts/monitoring/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 600
     needs:
@@ -223,10 +223,10 @@ releases:
   - name: loki
     namespace: monitoring
     chart: grafana/loki
-    version: "6.6.4"
+    version: "5.48.0"
     values:
       - charts/monitoring/values.yaml
-      - charts/monitoring/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 300
     needs:
@@ -238,7 +238,7 @@ releases:
     version: "6.16.4"
     values:
       - charts/monitoring/values.yaml
-      - charts/monitoring/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 300
     needs:
@@ -250,7 +250,7 @@ releases:
     version: "8.4.2"
     values:
       - charts/monitoring/values.yaml
-      - charts/monitoring/values-{{ .Environment.Name }}.yaml
+      - environments/values-{{ .Environment.Name }}.yaml
     wait: true
     timeout: 300
     needs:

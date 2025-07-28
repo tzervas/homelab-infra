@@ -1,0 +1,18 @@
+dependencies:
+- name: security-baseline
+  repository: file://../security-baseline
+  version: 0.1.0
+- name: metallb
+  repository: https://metallb.github.io/metallb
+  version: 0.14.8
+- name: cert-manager
+  repository: https://charts.jetstack.io
+  version: v1.15.3
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.11.2
+- name: sealed-secrets
+  repository: https://bitnami-labs.github.io/sealed-secrets
+  version: 2.16.1
+digest: sha256:4385190d4dc61649f25af23f261a5164f77431f3de80d5d0fe69b08f461a12c9
+generated: "2025-07-28T14:53:38.477503011-04:00"

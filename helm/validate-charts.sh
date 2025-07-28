@@ -114,6 +114,13 @@ validate_templates() {
         echo "  Validating templates for $chart_name..."
 
         if [[ -d "$chart_dir/templates" ]]; then
+            # Check if this is a library chart
+            local chart_type=$(yq e '.type // "application"' "$chart_dir/Chart.yaml")
+            if [[ "$chart_type" == "library" ]]; then
+                print_status $GREEN "✅ $chart_name is a library chart (skipping template rendering)"
+                continue
+            fi
+
             # Try to render templates (dry-run)
             if helm template "$chart_name" "$chart_dir" --dry-run &>/dev/null; then
                 print_status $GREEN "✅ $chart_name templates render successfully"
@@ -175,7 +182,7 @@ validate_environments() {
             print_status $GREEN "✅ $env environment configuration exists"
 
             # Check for security-related configurations
-            if yq e '.podSecurityStandards' "$env_file" | grep -q "enforce"; then
+            if yq e '.global.podSecurityStandards.enforce' "$env_file" | grep -v "null" | grep -q "."; then
                 print_status $GREEN "✅ $env has Pod Security Standards configured"
             else
                 print_status $YELLOW "⚠️  $env missing Pod Security Standards configuration"

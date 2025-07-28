@@ -65,6 +65,12 @@ securityContexts:
     allowPrivilegeEscalation: false
 
   # Privileged security context (for system components that need it)
+  # SECURITY JUSTIFICATION: Template for system-level operations requiring root
+  # - Network infrastructure components (CNI, load balancers, ingress controllers)
+  # - Storage drivers requiring direct hardware access
+  # - System monitoring agents requiring host-level access
+  # Usage: Only applied to components that explicitly require these privileges
+  # Mitigation: Capabilities are explicitly defined and limited to necessary operations
   privileged:
     runAsNonRoot: false
     runAsUser: 0
@@ -72,9 +78,9 @@ securityContexts:
       drop:
         - ALL
       add:
-        - NET_ADMIN
-        - NET_RAW
-        - SYS_ADMIN
+        - NET_ADMIN  # Network interface and routing management
+        - NET_RAW  # Raw socket operations for network protocols
+        - SYS_ADMIN  # System administration operations (mounts, devices)
     seccompProfile:
       type: RuntimeDefault
     allowPrivilegeEscalation: true

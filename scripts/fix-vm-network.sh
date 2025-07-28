@@ -44,7 +44,7 @@ log_warning() {
 check_vm_status() {
   log_info "Checking VM status on homelab server..."
 
-  local vm_status=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh domstate ${VM_NAME} 2>/dev/null || echo 'not-found'")
+  local vm_status=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domstate ${VM_NAME} 2>/dev/null || echo 'not-found'")
 
   if [[ "$vm_status" == "not-found" ]]; then
     log_error "VM ${VM_NAME} not found on homelab server"
@@ -52,7 +52,7 @@ check_vm_status() {
   elif [[ "$vm_status" != "running" ]]; then
     log_warning "VM ${VM_NAME} is in state: $vm_status"
     log_info "Starting VM..."
-    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh start ${VM_NAME}"
+    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system start ${VM_NAME}"
     sleep 10
   else
     log_success "VM ${VM_NAME} is running"
@@ -70,7 +70,7 @@ get_vm_ip() {
   local vm_ip=""
 
   while [[ $attempt -lt $max_attempts ]]; do
-    vm_ip=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh domifaddr ${VM_NAME} 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1")
+    vm_ip=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domifaddr ${VM_NAME} 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1")
 
     if [[ -n "$vm_ip" ]]; then
       log_success "VM IP address: $vm_ip"
@@ -138,7 +138,7 @@ test_ssh_connectivity() {
   if ! ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "ping -c 1 -W 2 $vm_ip" >/dev/null 2>&1; then
     log_error "Homelab server cannot reach VM at $vm_ip"
     log_info "Checking libvirt network status..."
-    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh net-list --all"
+    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system net-list --all"
     return 1
   fi
 

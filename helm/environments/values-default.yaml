@@ -6,4 +6,3 @@ global:
   storageClass: "standard"
 
 # Add more global or environment-specific values as required
-

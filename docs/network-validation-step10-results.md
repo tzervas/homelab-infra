@@ -24,6 +24,7 @@ The network and service validation has been completed successfully with **5 majo
 - ✅ Service accessible via allocated MetalLB IP
 
 **Configuration Details:**
+
 - **IP Pool Range:** 192.168.25.200-192.168.25.250 (51 available IPs)
 - **Advertisement Mode:** Layer 2 (L2Advertisement)
 - **Interface:** eth0
@@ -40,6 +41,7 @@ The network and service validation has been completed successfully with **5 majo
 - ⚠️ Ingress IP assignment delayed (expected behavior)
 
 **Configuration Details:**
+
 - **Controller:** nginx-ingress v4.11.2
 - **External IP:** 192.168.25.200 (assigned by MetalLB)
 - **Load Balancer:** Working correctly
@@ -56,8 +58,9 @@ The network and service validation has been completed successfully with **5 majo
 - ✅ CoreDNS service resolution working
 
 **Validated DNS Queries:**
+
 - `kubernetes.default.svc.cluster.local` ✅
-- `google.com` ✅ 
+- `google.com` ✅
 - `kube-dns.kube-system.svc.cluster.local` ✅
 
 ### 4. Network Policies Enforcement ✅
@@ -70,6 +73,7 @@ The network and service validation has been completed successfully with **5 majo
 - ⚠️ Permissive policy configuration needs refinement
 
 **Applied Policies:**
+
 - `default-deny-all` in default namespace
 - `allow-dns` for DNS resolution
 - `metallb-system-policy` for MetalLB operations
@@ -89,7 +93,7 @@ This is expected for the current infrastructure setup.
 
 ## Infrastructure Deployment Status
 
-### Successfully Deployed Components:
+### Successfully Deployed Components
 
 1. **MetalLB Load Balancer** (v0.14.8)
    - Controller and Speaker pods running
@@ -106,7 +110,7 @@ This is expected for the current infrastructure setup.
    - DNS resolution allowed
    - Default deny-all implemented
 
-### Network Topology Verified:
+### Network Topology Verified
 
 ```
 Internet/LAN (192.168.25.0/24)
@@ -122,7 +126,7 @@ Pods (CNI Network)
 
 ## Connectivity Issues Documented
 
-### Issues Found and Resolved:
+### Issues Found and Resolved
 
 1. **Initial MetalLB Missing:** ✅ RESOLVED
    - **Issue:** MetalLB was not deployed initially
@@ -134,7 +138,7 @@ Pods (CNI Network)
    - **Impact:** Low - core policies are working
    - **Resolution:** Will be resolved as additional services are deployed
 
-### No Critical Issues:
+### No Critical Issues
 
 - ✅ DNS resolution working internally and externally
 - ✅ Load balancer IP allocation working
@@ -144,7 +148,7 @@ Pods (CNI Network)
 
 ## Network Security Validation
 
-### Security Measures Verified:
+### Security Measures Verified
 
 1. **Network Segmentation:** ✅
    - Default deny-all policy active
@@ -163,13 +167,15 @@ Pods (CNI Network)
 
 ## Performance and Health Metrics
 
-### Resource Utilization:
+### Resource Utilization
+
 - **MetalLB Controller:** Running within limits
 - **Ingress Controller:** Healthy and responsive  
 - **CoreDNS:** Processing queries efficiently
 - **Network Policies:** No performance impact observed
 
-### Response Times Validated:
+### Response Times Validated
+
 - DNS resolution: < 1s
 - Service discovery: < 1s  
 - Load balancer IP assignment: ~30s (expected)
@@ -177,7 +183,7 @@ Pods (CNI Network)
 
 ## Recommendations and Next Steps
 
-### Immediate Actions (Optional):
+### Immediate Actions (Optional)
 
 1. **TLS Configuration**
    - Deploy cert-manager for automatic certificate management
@@ -189,7 +195,7 @@ Pods (CNI Network)
    - Set up Grafana dashboards for network visibility
    - Configure alerting for network issues
 
-### Future Enhancements:
+### Future Enhancements
 
 1. **Service Mesh (Optional)**
    - Consider Istio or Linkerd for advanced traffic management
@@ -203,12 +209,14 @@ Pods (CNI Network)
 
 ## Validation Scripts and Tools
 
-### Created Tools:
+### Created Tools
+
 - **Primary Script:** `scripts/network-validation.sh`
 - **Results Directory:** `scripts/network-validation-results/`
 - **Reports:** Markdown format with detailed logs
 
-### Testing Methodology:
+### Testing Methodology
+
 1. Component availability testing
 2. Configuration validation
 3. Functional connectivity testing

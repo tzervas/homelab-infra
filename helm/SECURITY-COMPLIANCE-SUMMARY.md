@@ -21,6 +21,7 @@ All security scans and compliance checks have been successfully completed for th
 - **External charts:** ✅ All external charts (MetalLB, cert-manager, ingress-nginx, sealed-secrets, kube-prometheus-stack, Loki, Promtail, Grafana, Longhorn) lint successfully
 
 **Issues Fixed:**
+
 - ✅ Fixed undefined `$labels` variable in PrometheusRule templates
 - ✅ Added proper Chart.yaml dependencies for all charts
 - ✅ Resolved missing values file references in helmfile.yaml
@@ -30,12 +31,14 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - NO HARDCODED SECRETS FOUND
 
 **Validation Results:**
+
 - ✅ All secret values use environment variable templating (`${VARIABLE_NAME}`)
 - ✅ Template files contain proper `CHANGE_ME_` placeholders
 - ✅ Secrets are managed via sealed-secrets operator
 - ✅ Production uses external secret management patterns
 
 **Secret Management Approach:**
+
 - Development: Environment variables with safe defaults
 - Staging: Sealed secrets or external secret operators
 - Production: Sealed secrets with encrypted values
@@ -45,11 +48,13 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - PROPERLY CONFIGURED
 
 **Environment-Specific Settings:**
+
 - **Development:** `baseline` enforcement, `baseline` audit/warn
 - **Staging:** `baseline` enforcement, `baseline` audit/warn  
 - **Production:** `restricted` enforcement, `restricted` audit/warn
 
 **Implementation:**
+
 - ✅ Pod Security Standards configured in all environment values files
 - ✅ Namespace labeling implemented in helmfile pre-sync hooks
 - ✅ Environment-appropriate security levels enforced
@@ -59,6 +64,7 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - PROPERLY CONFIGURED
 
 **RBAC Resources Implemented:**
+
 - ✅ Service accounts with minimal privileges
 - ✅ Read-only roles for monitoring components
 - ✅ Deployment roles with scoped permissions
@@ -66,6 +72,7 @@ All security scans and compliance checks have been successfully completed for th
 - ✅ Service account token auto-mounting disabled by default
 
 **Security Features:**
+
 - Role-based access control for all service accounts
 - Minimal permissions (get, list, watch for monitoring)
 - Scoped deployment permissions for CI/CD
@@ -76,6 +83,7 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - PROPERLY CONFIGURED
 
 **Network Security Implementation:**
+
 - ✅ Default deny-all policy enabled
 - ✅ Explicit allow rules for DNS resolution
 - ✅ Kubernetes API access properly configured
@@ -83,6 +91,7 @@ All security scans and compliance checks have been successfully completed for th
 - ✅ Ingress/egress traffic controls implemented
 
 **Network Isolation:**
+
 - Default deny for all pod-to-pod communication
 - Explicit allows for required system services
 - DNS resolution permitted for all pods
@@ -93,6 +102,7 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - CORRECTLY IMPLEMENTED
 
 **Helmfile Configuration:**
+
 - ✅ Security-baseline deployed first (priority: 1)
 - ✅ Core infrastructure deployed second
 - ✅ Storage and monitoring deployed after security baseline
@@ -104,18 +114,21 @@ All security scans and compliance checks have been successfully completed for th
 **Status:** PASSED - ALL PRIVILEGES JUSTIFIED
 
 **Privileged Containers Reviewed:**
+
 1. **Longhorn CSI Driver** (1 privileged container)
    - ✅ Justified: Required for storage volume mounting
    - ✅ Documented: Full security review in SECURITY-PRIVILEGE-REVIEW.md
    - ✅ Mitigated: Minimum required capabilities only
 
 **Root User Configurations Reviewed:**
+
 1. **Longhorn Manager/Driver** - Storage operations
 2. **MetalLB Speaker** - Network operations  
 3. **Promtail** - Log file access
 4. **Security Templates** - System components only
 
 **Security Statistics:**
+
 - 70.8% of containers run as non-root users
 - 1 privileged container (CSI driver only)
 - All privileges documented with business justification

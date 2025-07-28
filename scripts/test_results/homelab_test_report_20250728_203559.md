@@ -42,34 +42,44 @@
 ### Top Issues by Component
 
 **🚨 kubernetes_cluster** (1 issues)
-  - Cluster is in critical state
+
+- Cluster is in critical state
 
 **🚨 service_gitlab** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_keycloak** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_prometheus** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_grafana** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_nginx-ingress** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_cert-manager** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **🚨 service_metallb** (1 issues)
-  - Service not ready: No pods found
+
+- Service not ready: No pods found
 
 **⚠️ security_cluster_network** (1 issues)
-  - Connectivity issues: Internal DNS resolution failed
+
+- Connectivity issues: Internal DNS resolution failed
 
 **⚡ security_certificates** (1 issues)
-  - Kubernetes client unavailable
+
+- Kubernetes client unavailable
 
 ## Metrics
 
@@ -120,4 +130,3 @@
 - 🚨 **Metallb Loadbalancer:** Kubernetes client unavailable
 - 🚨 **Dns Service Discovery:** DNS service discovery failed
 - 🚨 **Rbac Security:** Kubernetes client unavailable
-

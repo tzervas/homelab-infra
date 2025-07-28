@@ -18,12 +18,14 @@ This document provides security justifications for all privileged containers and
 ### 1. Storage Chart (charts/storage/values.yaml)
 
 #### Longhorn Manager (runAsUser: 0)
+
 - **Lines:** 75, 103
 - **Justification:** Required for volume lifecycle management, block device access, and host filesystem operations
 - **Capabilities:** SYS_ADMIN, DAC_OVERRIDE, MKNOD (minimum required)
 - **Risk Assessment:** Medium - Limited to storage operations only
 
 #### Longhorn Driver (runAsUser: 0, privileged: true)  
+
 - **Lines:** 104-105
 - **Justification:** CSI driver requires privileged access for volume mounting, block device manipulation, and kernel module loading
 - **Capabilities:** SYS_ADMIN, DAC_OVERRIDE, MKNOD, SYS_RESOURCE
@@ -33,6 +35,7 @@ This document provides security justifications for all privileged containers and
 ### 2. Core Infrastructure Chart (charts/core-infrastructure/values.yaml)
 
 #### MetalLB Speaker (runAsUser: 0)
+
 - **Lines:** 78
 - **Justification:** Network load balancer requires root for ARP/BGP operations and network interface manipulation  
 - **Capabilities:** NET_ADMIN, NET_RAW, SYS_ADMIN (network operations only)
@@ -41,6 +44,7 @@ This document provides security justifications for all privileged containers and
 ### 3. Monitoring Chart (charts/monitoring/values.yaml)
 
 #### Promtail (runAsUser: 0)
+
 - **Lines:** 171
 - **Justification:** Log collection agent requires root access to read system logs from /var/log/* and logs owned by different users
 - **Capabilities:** DAC_READ_SEARCH (read-only operations)
@@ -49,6 +53,7 @@ This document provides security justifications for all privileged containers and
 ### 4. Security Baseline Chart (charts/security-baseline/values.yaml)
 
 #### Privileged Security Context Template (runAsUser: 0)
+
 - **Lines:** 76
 - **Justification:** Template for system-level components requiring root access
 - **Usage:** Only applied to components that explicitly require these privileges
@@ -66,6 +71,7 @@ This document provides security justifications for all privileged containers and
 ## Non-Privileged Components
 
 The majority of components (70.8%) run as non-root users:
+
 - Web UIs and dashboards
 - Application containers  
 - Database services
@@ -81,6 +87,7 @@ The majority of components (70.8%) run as non-root users:
 ## Compliance Notes
 
 These configurations are necessary for infrastructure functionality and represent industry-standard practices for:
+
 - Container storage interfaces (CSI)
 - Load balancer controllers  
 - Log collection agents

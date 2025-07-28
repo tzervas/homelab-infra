@@ -10,7 +10,9 @@ This report contains the results of comprehensive network and service validation
 ## Test Results
 
 ### 1. MetalLB Configuration and IP Allocation
-#### Results:
+
+#### Results
+
 ```
 PASS: MetalLB pods are running
 PASS: IP Address Pool configured
@@ -20,7 +22,9 @@ PASS: Service accessible via MetalLB IP
 ```
 
 ### 2. Ingress Controller Routing
-#### Results:
+
+#### Results
+
 ```
 PASS: ingress-nginx namespace exists
 PASS: Ingress controller pods running
@@ -29,7 +33,9 @@ WARN: Ingress IP not assigned
 ```
 
 ### 3. DNS Resolution for Services
-#### Results:
+
+#### Results
+
 ```
 PASS: CoreDNS pods running
 PASS: kubernetes.default.svc.cluster.local resolves
@@ -38,7 +44,9 @@ PASS: CoreDNS service resolution works
 ```
 
 ### 4. Network Policies Enforcement
-#### Results:
+
+#### Results
+
 ```
 PASS: Pre-policy connectivity works
 PASS: Network policy blocks traffic
@@ -46,7 +54,9 @@ WARN: Permissive policy still blocking
 ```
 
 ### 5. Service Mesh Connectivity
-#### Results:
+
+#### Results
+
 ```
 INFO: No service mesh installation found
 ```
@@ -54,6 +64,7 @@ INFO: No service mesh installation found
 ## Detailed Logs
 
 Detailed logs for each test can be found in the following files:
+
 - MetalLB: `metallb_test_20250728_164248.log`
 - Ingress: `ingress_test_20250728_164248.log`
 - DNS: `dns_test_20250728_164248.log`
@@ -62,10 +73,12 @@ Detailed logs for each test can be found in the following files:
 
 ## Recommendations
 
-### Connectivity Issues Found:
+### Connectivity Issues Found
+
 - No critical connectivity issues detected
 
-### Next Steps:
+### Next Steps
+
 1. Review detailed logs for any failed tests
 2. Address any network policy misconfigurations
 3. Verify MetalLB IP pool ranges are appropriate for your network

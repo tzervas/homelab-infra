@@ -88,11 +88,11 @@ RELEASES=("metallb" "cert-manager" "ingress-nginx" "sealed-secrets" "longhorn" "
 
 for release in "${RELEASES[@]}"; do
     log_info "Validating release: $release"
-    
+
     # Template rendering
     if helmfile --environment "$ENVIRONMENT" template --selector "name=$release" --skip-deps > "/tmp/${release}-templates.yaml" 2>> "$LOG_FILE"; then
         increment_success "Templates rendered successfully for $release"
-        
+
         # YAML syntax validation
         if command -v yq &> /dev/null; then
             if yq eval . "/tmp/${release}-templates.yaml" > /dev/null 2>> "$LOG_FILE"; then
@@ -101,7 +101,7 @@ for release in "${RELEASES[@]}"; do
                 increment_error "YAML syntax validation failed for $release"
             fi
         fi
-        
+
         # Check for required fields
         if grep -q "apiVersion:" "/tmp/${release}-templates.yaml" && \
            grep -q "kind:" "/tmp/${release}-templates.yaml" && \
@@ -110,38 +110,38 @@ for release in "${RELEASES[@]}"; do
         else
             increment_error "Missing required Kubernetes fields for $release"
         fi
-        
+
         # Security context validation
         log_info "Checking security contexts for $release..."
-        
+
         # Check for runAsNonRoot
         if grep -q "runAsNonRoot.*true" "/tmp/${release}-templates.yaml"; then
             increment_success "runAsNonRoot security context found for $release"
         else
             increment_warning "runAsNonRoot not explicitly set to true for $release"
         fi
-        
+
         # Check for dropped capabilities
         if grep -q "drop:" "/tmp/${release}-templates.yaml"; then
             increment_success "Capability dropping configured for $release"
         else
             increment_warning "No capability dropping found for $release"
         fi
-        
+
         # Check for readOnlyRootFilesystem
         if grep -q "readOnlyRootFilesystem.*true" "/tmp/${release}-templates.yaml"; then
             increment_success "readOnlyRootFilesystem configured for $release"
         else
             increment_warning "readOnlyRootFilesystem not configured for $release"
         fi
-        
+
         # Check for resource limits
         if grep -q "limits:" "/tmp/${release}-templates.yaml"; then
             increment_success "Resource limits configured for $release"
         else
             increment_warning "No resource limits found for $release"
         fi
-        
+
         # Check for liveness and readiness probes
         if grep -q "livenessProbe:" "/tmp/${release}-templates.yaml" && \
            grep -q "readinessProbe:" "/tmp/${release}-templates.yaml"; then
@@ -149,7 +149,7 @@ for release in "${RELEASES[@]}"; do
         else
             increment_warning "Health probes missing or incomplete for $release"
         fi
-        
+
         # Namespace validation
         NAMESPACE=$(grep "namespace:" "/tmp/${release}-templates.yaml" | head -1 | awk '{print $2}' | tr -d '"')
         if [[ -n "$NAMESPACE" ]]; then
@@ -158,7 +158,7 @@ for release in "${RELEASES[@]}"; do
         else
             increment_warning "No namespace defined for $release"
         fi
-        
+
     else
         increment_error "Template rendering failed for $release"
     fi
@@ -173,18 +173,18 @@ if [[ -f "$TEMP_FILE" ]]; then
     # Check for deprecated API versions (common ones)
     DEPRECATED_APIS=(
         "extensions/v1beta1"
-        "apps/v1beta1" 
+        "apps/v1beta1"
         "apps/v1beta2"
         "policy/v1beta1"
         "networking.k8s.io/v1beta1"
     )
-    
+
     for api in "${DEPRECATED_APIS[@]}"; do
         if grep -q "$api" "$TEMP_FILE"; then
             increment_warning "Deprecated API version found: $api"
         fi
     done
-    
+
     if ! grep -q "extensions/v1beta1\|apps/v1beta1\|apps/v1beta2\|policy/v1beta1\|networking.k8s.io/v1beta1" "$TEMP_FILE"; then
         increment_success "No deprecated API versions detected"
     fi

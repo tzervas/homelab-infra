@@ -5,7 +5,7 @@ global:
   resourceQuota: false
   storageClass: "standard"
   environment: "development"
-  
+
 ingress:
   enabled: true
   host: "dev.homelab.local"

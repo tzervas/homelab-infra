@@ -220,17 +220,18 @@ releases:
       - longhorn-system/longhorn
       - ingress-nginx/ingress-nginx
 
-  - name: loki
-    namespace: monitoring
-    chart: grafana/loki
-    version: "5.48.0"
-    values:
-      - charts/monitoring/values.yaml
-      - environments/values-{{ .Environment.Name }}.yaml
-    wait: true
-    timeout: 300
-    needs:
-      - longhorn-system/longhorn
+  # Loki temporarily disabled due to configuration issues
+  # - name: loki
+  #   namespace: monitoring
+  #   chart: grafana/loki
+  #   version: "5.48.0"
+  #   values:
+  #     - charts/monitoring/values.yaml
+  #     - environments/values-{{ .Environment.Name }}.yaml
+  #   wait: true
+  #   timeout: 300
+  #   needs:
+  #     - longhorn-system/longhorn
 
   - name: promtail
     namespace: monitoring
@@ -242,7 +243,7 @@ releases:
     wait: true
     timeout: 300
     needs:
-      - monitoring/loki
+      - monitoring/kube-prometheus-stack
 
   - name: grafana
     namespace: monitoring
@@ -255,4 +256,3 @@ releases:
     timeout: 300
     needs:
       - monitoring/kube-prometheus-stack
-      - monitoring/loki

@@ -111,11 +111,29 @@ kube-prometheus-stack:
         memory: 128Mi
 
 loki:
-  enabled: true
+  enabled: false
 
-  # Use simple filesystem storage for single binary mode
-  storage:
-    type: filesystem
+  # Use single binary mode for filesystem storage
+  deploymentMode: SingleBinary
+  singleBinary:
+    replicas: 1
+  
+  # Disable other deployment modes
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+
+  # Use simple filesystem storage
+  loki:
+    storage:
+      type: filesystem
+      bucketNames:
+        chunks: chunks
+        ruler: ruler
+        admin: admin
 
   # Configure schema for filesystem storage
   schemaConfig:
@@ -131,7 +149,7 @@ loki:
   # Use structured config to override defaults
   structuredConfig:
     auth_enabled: false
-    
+
     server:
       http_listen_port: 3100
       grpc_listen_port: 9095

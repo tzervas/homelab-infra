@@ -1,7 +1,7 @@
 global:
   domain: "homelab.local"
   environment: "production"
-  
+
   # TLS Configuration
   tls:
     enabled: true

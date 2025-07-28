@@ -1,0 +1,503 @@
+# Network Policy Templates for Comprehensive Network Security
+# This file defines reusable network policy templates for different security scenarios
+
+---
+# Default deny-all policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: deny-all
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Default deny-all ingress and egress policy"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# DNS resolution policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: dns-access
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow DNS resolution for all pods"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Kubernetes API access policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kube-api-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: kube-api-access
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow access to Kubernetes API server"
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    - podSelector:
+        matchLabels:
+          k8s-app: kube-apiserver
+    ports:
+    - protocol: TCP
+      port: 6443
+    - protocol: TCP
+      port: 443
+
+---
+# Web application ingress policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-app-ingress-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: web-app-ingress
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow ingress from ingress controller to web applications"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+    - protocol: TCP
+      port: 3000
+
+---
+# Database access policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-access-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: database-access
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow specific applications to access databases"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: database
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: web
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: api
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 3306  # MySQL
+    - protocol: TCP
+      port: 27017 # MongoDB
+    - protocol: TCP
+      port: 6379  # Redis
+
+---
+# Monitoring access policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-access-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: monitoring-access
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow monitoring systems to scrape metrics"
+spec:
+  podSelector:
+    matchLabels:
+      monitoring: enabled
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 2112
+
+---
+# Service mesh sidecar policy template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: service-mesh-sidecar-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: service-mesh
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow service mesh sidecar communication"
+spec:
+  podSelector:
+    matchLabels:
+      security.istio.io/tlsMode: istio
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - podSelector:
+        matchLabels:
+          security.istio.io/tlsMode: istio
+    ports:
+    - protocol: TCP
+      port: 15001  # Envoy admin
+    - protocol: TCP
+      port: 15006  # Envoy inbound
+    - protocol: TCP
+      port: 15090  # Envoy health
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - podSelector:
+        matchLabels:
+          security.istio.io/tlsMode: istio
+    ports:
+    - protocol: TCP
+      port: 15001
+    - protocol: TCP
+      port: 15010  # Pilot discovery
+    - protocol: TCP
+      port: 15011  # Pilot discovery TLS
+
+---
+# Development environment policy template (more permissive)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: development-permissive-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: dev-permissive
+    app.kubernetes.io/managed-by: homelab-security
+    environment: development
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "More permissive policy for development environments"
+spec:
+  podSelector:
+    matchLabels:
+      environment: development
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          environment: development
+    - podSelector: {}
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 6443
+
+---
+# Production environment policy template (restrictive)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: production-restrictive-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: prod-restrictive
+    app.kubernetes.io/managed-by: homelab-security
+    environment: production
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Restrictive policy for production environments"
+spec:
+  podSelector:
+    matchLabels:
+      environment: production
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: ingress
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 6443
+
+---
+# Cross-namespace service communication template
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cross-namespace-service-template
+  namespace: default
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: cross-ns-service
+    app.kubernetes.io/managed-by: homelab-security
+  annotations:
+    policy.homelab.local/template: "true"
+    policy.homelab.local/description: "Allow controlled cross-namespace service communication"
+spec:
+  podSelector:
+    matchLabels:
+      network-policy: cross-namespace-enabled
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          network-policy: trusted
+    - podSelector:
+        matchLabels:
+          network-policy: cross-namespace-client
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          network-policy: trusted
+    - podSelector:
+        matchLabels:
+          network-policy: cross-namespace-service
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+
+---
+# GitLab specific network policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gitlab-network-policy
+  namespace: gitlab
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: gitlab
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  podSelector:
+    matchLabels:
+      app: gitlab
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 22
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
+    ports:
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 6443
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443  # External git repos, Docker registry
+    - protocol: TCP
+      port: 587  # SMTP
+    - protocol: TCP
+      port: 25   # SMTP
+
+---
+# Keycloak specific network policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-network-policy
+  namespace: keycloak
+  labels:
+    app.kubernetes.io/name: network-policy
+    app.kubernetes.io/component: keycloak
+    app.kubernetes.io/managed-by: homelab-security
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8443
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: gitlab
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 6443
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432

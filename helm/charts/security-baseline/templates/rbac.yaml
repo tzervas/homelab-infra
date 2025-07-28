@@ -1,0 +1,81 @@
+{{- if .Values.rbac.create }}
+{{- if .Values.rbac.serviceAccount.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "security-baseline.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+  {{- with .Values.rbac.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: {{ .Values.rbac.serviceAccount.automountServiceAccountToken }}
+{{- end }}
+
+{{- if .Values.rbac.roles.readonly.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-readonly
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    rbac.homelab.local/type: "readonly"
+rules:
+  {{- toYaml .Values.rbac.roles.readonly.rules | nindent 2 }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-readonly
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    rbac.homelab.local/type: "readonly"
+subjects:
+- kind: ServiceAccount
+  name: {{ include "security-baseline.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "security-baseline.fullname" . }}-readonly
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+
+{{- if .Values.rbac.roles.deployer.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-deployer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    rbac.homelab.local/type: "deployer"
+rules:
+  {{- toYaml .Values.rbac.roles.deployer.rules | nindent 2 }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-deployer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    rbac.homelab.local/type: "deployer"
+subjects:
+- kind: ServiceAccount
+  name: {{ include "security-baseline.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "security-baseline.fullname" . }}-deployer
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+{{- end }}

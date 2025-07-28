@@ -157,7 +157,7 @@ setup_environment() {
   export HOMELAB_USER="$DEPLOYMENT_USER"
 
   # Verify required tools are available
-  local required_tools=("kubectl" "helm" "ansible-playbook" "python3")
+  local required_tools=("kubectl" "helm" "helmfile" "terraform" "ansible-playbook" "python3")
   local missing_tools=()
 
   for tool in "${required_tools[@]}"; do
@@ -262,6 +262,23 @@ deploy_component() {
       log "INFO" "Setting up deployment user (requires initial root access)"
       run_ansible_playbook "ansible/playbooks/setup-deployment-user.yml"
       ;;
+    "terraform")
+      log "INFO" "Provisioning infrastructure with Terraform"
+      cd "$PROJECT_ROOT/terraform"
+      terraform init
+      terraform plan -out=tfplan
+      if terraform apply "tfplan"; then
+        log "INFO" "Terraform provisioning successful"
+      else
+        log "ERROR" "Terraform provisioning failed"
+        return 1
+      fi
+      ;;
+    "helmfile")
+      log "INFO" "Deploying applications with Helmfile"
+      cd "$PROJECT_ROOT/helm"
+      helmfile sync
+      ;;
     "k3s")
       log "INFO" "Deploying K3s cluster"
       run_ansible_playbook "ansible/playbooks/deploy-k3s.yml"
@@ -292,7 +309,7 @@ deploy_component() {
       ;;
     "all")
       log "INFO" "Deploying all components"
-      for comp in "k3s" "metallb" "cert-manager" "nginx-ingress" "gitlab" "keycloak" "monitoring"; do
+      for comp in "terraform" "helmfile" "k3s" "metallb" "cert-manager" "nginx-ingress" "gitlab" "keycloak" "monitoring"; do
         deploy_component "$comp"
       done
       ;;
@@ -323,6 +340,8 @@ COMMANDS:
 
 COMPONENTS:
     user-setup         Set up deployment user (requires initial root access)
+    terraform          Provision infrastructure with Terraform
+    helmfile           Deploy applications with Helmfile
     k3s                Deploy K3s Kubernetes cluster
     metallb            Deploy MetalLB load balancer
     cert-manager       Deploy cert-manager for TLS

@@ -5,8 +5,22 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 ANSIBLE_DIR="$PROJECT_ROOT/ansible"
+
+# Global variable to track password file for cleanup
+TEMP_PASSWORD_FILE=""
+
+# Cleanup function for trap
+cleanup_password_file() {
+  if [ -n "$TEMP_PASSWORD_FILE" ] && [ -f "$TEMP_PASSWORD_FILE" ]; then
+    rm -f "$TEMP_PASSWORD_FILE"
+    TEMP_PASSWORD_FILE=""
+  fi
+}
+
+# Set trap to cleanup password file on script exit
+trap cleanup_password_file EXIT INT TERM
 
 # Default values
 DEPLOYMENT_PHASE="${1:-vm-test}"
@@ -159,6 +173,7 @@ EXAMPLES:
     $0 cleanup-vm
 
 ENVIRONMENT VARIABLES:
+    HLS_ELEV_PASS     Sudo password for homelab server (required)
     VERBOSE=true      Enable verbose Ansible output
     ANSIBLE_CONFIG    Custom Ansible configuration file
 
@@ -196,11 +211,30 @@ run_ansible() {
     ansible_cmd="$ansible_cmd --extra-vars '$extra_vars'"
   fi
 
-  # Add sudo password prompt
-  ansible_cmd="$ansible_cmd --ask-become-pass"
+  # Check if HLS_ELEV_PASS is set
+  if [ -z "$HLS_ELEV_PASS" ]; then
+    print_error "HLS_ELEV_PASS environment variable is not set"
+    print_status "Please set HLS_ELEV_PASS with the sudo password for the homelab server"
+    exit 1
+  fi
 
-  # Run the playbook
-  eval "$ansible_cmd $playbook"
+  # Create temporary password file (use global variable for cleanup trap)
+  TEMP_PASSWORD_FILE=$(mktemp)
+  echo "$HLS_ELEV_PASS" > "$TEMP_PASSWORD_FILE"
+  chmod 600 "$TEMP_PASSWORD_FILE"
+
+  # Add password file to ansible command
+  ansible_cmd="$ansible_cmd --become-password-file '$TEMP_PASSWORD_FILE'"
+
+  # Run the playbook with error handling
+  local exit_code=0
+  eval "$ansible_cmd $playbook" || exit_code=$?
+
+  # Clean up password file (function will also be called by trap)
+  cleanup_password_file
+
+  # Return the exit code from ansible-playbook
+  return $exit_code
 }
 
 # Function to display post-deployment information

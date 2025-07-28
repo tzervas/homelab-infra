@@ -50,7 +50,7 @@
             state: present
             update_cache: yes
 
-    - name: Verify all tools are installed on workstation
+    - name: Verify all tools are installed on workstation (idempotent)
       command: "{{ item }}"
       loop:
         - ansible --version
@@ -68,11 +68,11 @@
       loop_control:
         label: "{{ item.cmd | join(' ') }}"
 
-- name: Install DevOps Tools on Server
+- name: Install DevOps Tools on Server (idempotent)
   hosts: homelab-server
   become: yes
   tasks:
-    - name: Install prerequisites
+    - name: Ensure prerequisites are installed
       apt:
         name:
           - curl
@@ -105,7 +105,7 @@
             state: present
             filename: docker
 
-        - name: Install Docker
+        - name: Ensure Docker is installed
           apt:
             name:
               - docker-ce
@@ -127,7 +127,7 @@
         dest: /usr/local/bin/kubectl
         mode: '0755'
 
-    - name: Install Helm
+    - name: Install Helm (idempotent)
       block:
         - name: Download Helm installation script
           get_url:
@@ -135,12 +135,12 @@
             dest: /tmp/get_helm.sh
             mode: '0755'
 
-        - name: Install Helm
+        - name: Execute Helm installation script
           command: /tmp/get_helm.sh
           args:
             creates: /usr/local/bin/helm
 
-    - name: Install Terraform
+    - name: Install Terraform (idempotent)
       block:
         - name: Add HashiCorp GPG key
           get_url:
@@ -159,18 +159,18 @@
             state: present
             filename: hashicorp
 
-        - name: Install Terraform
+        - name: Ensure Terraform is installed
           apt:
             name: terraform
             state: present
             update_cache: yes
 
-    - name: Install Ansible on server
+    - name: Ensure Ansible is installed on server
       apt:
         name: ansible
         state: present
 
-    - name: Install k3s
+    - name: Install k3s if not present
       shell: |
         curl -sfL https://get.k3s.io | sh -s - {{ k3s_server_args | join(' ') }}
       args:
@@ -178,13 +178,13 @@
       environment:
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
 
-    - name: Wait for k3s to be ready
+    - name: Wait for k3s readiness
       wait_for:
         path: /var/lib/rancher/k3s/server/node-token
         state: present
         timeout: 60
 
-    - name: Create .kube directory
+    - name: Ensure .kube directory exists
       file:
         path: "/home/{{ ansible_user }}/.kube"
         state: directory
@@ -207,7 +207,7 @@
         regexp: 'https://127.0.0.1:6443'
         replace: "https://{{ ansible_host }}:6443"
 
-    - name: Verify all tools are installed on server
+    - name: Verify all tools installed on server (idempotent)
       become_user: "{{ ansible_user }}"
       command: "{{ item }}"
       loop:
@@ -221,7 +221,7 @@
       changed_when: false
       ignore_errors: yes
 
-    - name: Display installed versions on server
+    - name: Display installed versions on server (idempotent)
       debug:
         msg: "{{ item.stdout_lines[0] if item.rc == 0 else 'Failed to get version' }}"
       loop: "{{ server_version_checks.results }}"

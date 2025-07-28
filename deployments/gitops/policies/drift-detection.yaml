@@ -1,0 +1,196 @@
+# ArgoCD Drift Detection and Remediation Configuration
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-drift-detection-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-drift-detection
+    app.kubernetes.io/part-of: argocd
+data:
+  config.yaml: |
+    # Drift detection configuration
+    policies:
+      # Detect configuration drift
+      - name: configuration-drift
+        resource: "*"
+        action: detect
+        severity: warning
+        conditions:
+          - spec_changes
+          - annotation_changes
+          - label_changes
+      
+      # Detect resource deletion drift
+      - name: resource-deletion-drift
+        resource: "*"
+        action: detect
+        severity: critical
+        conditions:
+          - resource_missing
+      
+      # Detect security policy violations
+      - name: security-policy-drift
+        resource: "Pod,Deployment,StatefulSet,DaemonSet"
+        action: detect
+        severity: high
+        conditions:
+          - security_context_changes
+          - image_changes
+          - resource_limit_changes
+    
+    # Remediation actions
+    remediation:
+      auto_sync:
+        enabled: true
+        prune: true
+        self_heal: true
+        allow_empty: false
+      
+      manual_sync:
+        enabled: true
+        dry_run: false
+        force: false
+      
+      rollback:
+        enabled: true
+        revision_limit: 10
+    
+    # Notification settings
+    notifications:
+      slack:
+        enabled: false
+        webhook_url: ""
+        channel: "#ops"
+      
+      email:
+        enabled: false
+        smtp_server: ""
+        recipients: []
+      
+      webhook:
+        enabled: true
+        url: "http://webhook-service.monitoring.svc.cluster.local:8080/drift"
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer ${WEBHOOK_TOKEN}"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: drift-detection-scan
+  namespace: argocd
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: drift-detection-scan
+        spec:
+          serviceAccountName: argocd-application-controller
+          restartPolicy: OnFailure
+          containers:
+          - name: drift-scanner
+            image: argoproj/argocd:v2.9.3
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Drift detection script
+              echo "Starting drift detection scan..."
+              
+              # Get all applications
+              APPS=$(argocd app list -o name --grpc-web)
+              
+              for app in $APPS; do
+                echo "Checking drift for application: $app"
+                
+                # Get application status
+                STATUS=$(argocd app get $app --grpc-web -o json | jq -r '.status.sync.status')
+                HEALTH=$(argocd app get $app --grpc-web -o json | jq -r '.status.health.status')
+                
+                # Check for OutOfSync status (drift detected)
+                if [ "$STATUS" = "OutOfSync" ]; then
+                  echo "DRIFT DETECTED: Application $app is OutOfSync"
+                  
+                  # Get diff details
+                  DIFF=$(argocd app diff $app --grpc-web)
+                  
+                  # Send notification
+                  curl -X POST "http://webhook-service.monitoring.svc.cluster.local:8080/drift" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \
+                    -d "{
+                      \"application\": \"$app\",
+                      \"status\": \"$STATUS\",
+                      \"health\": \"$HEALTH\",
+                      \"timestamp\": \"$(date -Iseconds)\",
+                      \"diff\": $(echo "$DIFF" | jq -Rs .)
+                    }"
+                  
+                  # Auto-remediation based on policy
+                  if [ "$AUTO_SYNC_ENABLED" = "true" ]; then
+                    echo "Auto-syncing application $app"
+                    argocd app sync $app --grpc-web --prune --force
+                  fi
+                fi
+                
+                # Check for unhealthy status
+                if [ "$HEALTH" != "Healthy" ] && [ "$HEALTH" != "Progressing" ]; then
+                  echo "HEALTH ISSUE: Application $app is $HEALTH"
+                  
+                  # Send health notification
+                  curl -X POST "http://webhook-service.monitoring.svc.cluster.local:8080/health" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \
+                    -d "{
+                      \"application\": \"$app\",
+                      \"health\": \"$HEALTH\",
+                      \"timestamp\": \"$(date -Iseconds)\"
+                    }"
+                fi
+              done
+              
+              echo "Drift detection scan completed"
+            env:
+            - name: ARGOCD_SERVER
+              value: "argocd-server.argocd.svc.cluster.local:443"
+            - name: ARGOCD_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: argocd-drift-detection-token
+                  key: token
+            - name: WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: webhook-secret
+                  key: token
+            - name: AUTO_SYNC_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: argocd-drift-detection-config
+                  key: auto_sync_enabled
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-drift-detection-token
+  namespace: argocd
+type: Opaque
+stringData:
+  token: "replace-with-actual-argocd-auth-token"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhook-secret
+  namespace: argocd
+type: Opaque
+stringData:
+  token: "replace-with-webhook-auth-token"

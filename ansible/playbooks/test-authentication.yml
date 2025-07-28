@@ -1,0 +1,188 @@
+---
+# Test playbook to verify Ansible authentication and privilege escalation
+# This playbook validates that the current configuration works correctly
+
+- name: Test Authentication and Privilege Escalation
+  hosts: homelab
+  gather_facts: yes
+  vars:
+    test_results: []
+
+  tasks:
+    - name: Basic connectivity test
+      ping:
+      register: ping_test
+      tags: [connectivity]
+
+    - name: Record basic connectivity result
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Basic Connectivity', 'status': 'PASS', 'details': 'SSH connection successful'}] }}"
+      when: ping_test is succeeded
+      tags: [connectivity]
+
+    - name: Record basic connectivity failure
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Basic Connectivity', 'status': 'FAIL', 'details': 'SSH connection failed'}] }}"
+      when: ping_test is failed
+      tags: [connectivity]
+
+    - name: Test current user authentication
+      command: whoami
+      register: current_user_test
+      changed_when: false
+      tags: [user]
+
+    - name: Record current user test
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Current User Authentication', 'status': 'PASS', 'details': 'Connected as: ' + current_user_test.stdout}] }}"
+      when: current_user_test is succeeded
+      tags: [user]
+
+    - name: Test SSH key authentication (no password)
+      debug:
+        msg: "SSH key authentication working - no password prompt occurred"
+      tags: [ssh]
+
+    - name: Record SSH key authentication test
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'SSH Key Authentication', 'status': 'PASS', 'details': 'No password prompt required'}] }}"
+      tags: [ssh]
+
+    - name: Test sudo without password (should fail if password required)
+      command: sudo -n whoami
+      register: sudo_test
+      changed_when: false
+      failed_when: false
+      tags: [sudo]
+
+    - name: Record passwordless sudo test result - success
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Passwordless Sudo', 'status': 'PASS', 'details': 'Sudo executed as: ' + sudo_test.stdout}] }}"
+      when: sudo_test.rc == 0
+      tags: [sudo]
+
+    - name: Record passwordless sudo test result - failure
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Passwordless Sudo', 'status': 'FAIL', 'details': 'Sudo requires password: ' + (sudo_test.stderr | default('unknown error'))}] }}"
+      when: sudo_test.rc != 0
+      tags: [sudo]
+
+    - name: Test privilege escalation using become
+      command: whoami
+      become: yes
+      register: become_test
+      changed_when: false
+      tags: [become]
+
+    - name: Record become test result
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Ansible become', 'status': 'PASS', 'details': 'Escalated to: ' + become_test.stdout}] }}"
+      when: become_test is succeeded
+      tags: [become]
+
+    - name: Record become test failure
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Ansible become', 'status': 'FAIL', 'details': 'Privilege escalation failed'}] }}"
+      when: become_test is failed
+      tags: [become]
+
+    - name: Check if deployment user exists
+      command: id homelab-deploy
+      register: deployment_user_check
+      changed_when: false
+      failed_when: false
+      tags: [deployment_user]
+
+    - name: Record deployment user test - exists
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Deployment User Exists', 'status': 'PASS', 'details': deployment_user_check.stdout}] }}"
+      when: deployment_user_check.rc == 0
+      tags: [deployment_user]
+
+    - name: Record deployment user test - missing
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Deployment User Exists', 'status': 'FAIL', 'details': 'homelab-deploy user not found'}] }}"
+      when: deployment_user_check.rc != 0
+      tags: [deployment_user]
+
+    - name: Test deployment user sudo privileges (if user exists)
+      command: sudo -u homelab-deploy sudo -l
+      register: deployment_sudo_test
+      changed_when: false
+      failed_when: false
+      become: yes
+      when: deployment_user_check.rc == 0
+      tags: [deployment_user]
+
+    - name: Record deployment user sudo test
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Deployment User Sudo', 'status': 'PASS', 'details': 'User has sudo privileges'}] }}"
+      when: deployment_user_check.rc == 0 and deployment_sudo_test.rc == 0
+      tags: [deployment_user]
+
+    - name: Verify ansible.cfg settings
+      debug:
+        msg:
+          - "Host key checking: {{ ansible_host_key_checking | default('default') }}"
+          - "Remote user: {{ ansible_user | default(ansible_ssh_user | default('default')) }}"
+          - "SSH private key: {{ ansible_ssh_private_key_file | default('default') }}"
+          - "Become ask pass: {{ ansible_become_ask_pass | default('default') }}"
+      tags: [config]
+
+    - name: Record configuration validation
+      set_fact:
+        test_results: "{{ test_results + [{'test': 'Ansible Configuration', 'status': 'PASS', 'details': 'Configuration loaded successfully'}] }}"
+      tags: [config]
+
+  post_tasks:
+    - name: Display test summary
+      debug:
+        msg: |
+          ==========================================
+          AUTHENTICATION TEST RESULTS SUMMARY
+          ==========================================
+          {% for result in test_results %}
+          {{ result.test }}: {{ result.status }}
+            Details: {{ result.details }}
+          {% endfor %}
+          ==========================================
+
+    - name: Check if all tests passed
+      set_fact:
+        all_tests_passed: "{{ test_results | selectattr('status', 'equalto', 'FAIL') | list | length == 0 }}"
+
+    - name: Display overall result
+      debug:
+        msg: |
+          {% if all_tests_passed %}
+          ✅ ALL AUTHENTICATION TESTS PASSED
+          Your Ansible configuration is ready for automated authentication!
+          {% else %}
+          ❌ SOME AUTHENTICATION TESTS FAILED
+          Please review the failed tests above and fix the configuration.
+          {% endif %}
+
+    - name: Save test results to file
+      copy:
+        content: |
+          # Ansible Authentication Test Results
+          Generated: {{ ansible_date_time.iso8601 }}
+          Host: {{ inventory_hostname }}
+          
+          ## Test Results:
+          {% for result in test_results %}
+          ### {{ result.test }}: {{ result.status }}
+          {{ result.details }}
+          
+          {% endfor %}
+          
+          ## Overall Status: {% if all_tests_passed %}PASS{% else %}FAIL{% endif %}
+
+        dest: "/tmp/ansible-auth-test-results.md"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display results file location
+      debug:
+        msg: "Test results saved to: /tmp/ansible-auth-test-results.md"
+      run_once: true

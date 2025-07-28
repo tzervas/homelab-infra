@@ -1,0 +1,81 @@
+# Development Resource Patches - Reduced resource requirements
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-stack
+  namespace: argocd
+spec:
+  source:
+    helm:
+      values: |
+        prometheus:
+          prometheusSpec:
+            retention: 7d  # Reduced retention for dev
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  resources:
+                    requests:
+                      storage: 5Gi  # Reduced storage
+            resources:
+              requests:
+                cpu: 100m  # Reduced CPU
+                memory: 512Mi  # Reduced memory
+              limits:
+                cpu: 500m
+                memory: 1Gi
+        grafana:
+          persistence:
+            size: 2Gi  # Reduced storage
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        alertmanager:
+          alertmanagerSpec:
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  resources:
+                    requests:
+                      storage: 2Gi  # Reduced storage
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  source:
+    helm:
+      values: |
+        defaultSettings:
+          defaultReplicaCount: 1  # Single replica for dev
+          replicaSoftAntiAffinity: false
+        longhornManager:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        longhornDriver:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

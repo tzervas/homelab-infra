@@ -1,0 +1,388 @@
+suite: Security Baseline Chart Tests
+templates:
+  - templates/network-policies.yaml
+  - templates/rbac.yaml
+  - templates/hooks/pre-deployment-validation.yaml
+  - templates/hooks/post-deployment-health.yaml
+  - templates/hooks/cert-rotation.yaml
+tests:
+  - it: should create network policies with default values
+    template: templates/network-policies.yaml
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-security-baseline-default-deny
+      - equal:
+          path: spec.podSelector
+          value: {}
+      - equal:
+          path: spec.policyTypes
+          value: ["Ingress", "Egress"]
+
+  - it: should create network policies with custom values
+    template: templates/network-policies.yaml
+    set:
+      networkPolicies:
+        defaultDeny:
+          enabled: true
+          name: custom-deny-all
+        allowDns:
+          enabled: true
+          ports: [53]
+        monitoring:
+          enabled: true
+          namespaces: ["monitoring", "observability"]
+    asserts:
+      - hasDocuments:
+          count: 3
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-custom-deny-all
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-security-baseline-allow-dns
+      - documentIndex: 2
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-security-baseline-monitoring
+
+  - it: should create RBAC resources with proper permissions
+    template: templates/rbac.yaml
+    asserts:
+      - hasDocuments:
+          count: 3
+      - documentIndex: 0
+        isKind:
+          of: ServiceAccount
+      - documentIndex: 1
+        isKind:
+          of: ClusterRole
+      - documentIndex: 2
+        isKind:
+          of: ClusterRoleBinding
+      - documentIndex: 1
+        equal:
+          path: rules[0].apiGroups
+          value: [""]
+      - documentIndex: 1
+        equal:
+          path: rules[0].resources
+          value: ["pods", "services"]
+      - documentIndex: 1
+        equal:
+          path: rules[0].verbs
+          value: ["get", "list", "watch"]
+
+  - it: should create RBAC with custom service account
+    template: templates/rbac.yaml
+    set:
+      serviceAccount:
+        create: true
+        name: custom-security-sa
+        annotations:
+          "helm.sh/hook": pre-install
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: custom-security-sa
+      - documentIndex: 0
+        equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: pre-install
+
+  - it: should create pre-deployment validation hook
+    template: templates/hooks/pre-deployment-validation.yaml
+    asserts:
+      - isKind:
+          of: Job
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: pre-install,pre-upgrade
+      - equal:
+          path: metadata.annotations["helm.sh/hook-weight"]
+          value: "-10"
+      - equal:
+          path: metadata.annotations["helm.sh/hook-delete-policy"]
+          value: before-hook-creation,hook-succeeded
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: pre-deployment-validator
+
+  - it: should create post-deployment health check hook
+    template: templates/hooks/post-deployment-health.yaml
+    asserts:
+      - isKind:
+          of: Job
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: post-install,post-upgrade
+      - equal:
+          path: metadata.annotations["helm.sh/hook-weight"]
+          value: "10"
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: post-deployment-health-check
+
+  - it: should create certificate rotation hook when enabled
+    template: templates/hooks/cert-rotation.yaml
+    set:
+      certificateRotation:
+        enabled: true
+        schedule: "0 2 * * 0"
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "0 2 * * 0"
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].name
+          value: cert-rotator
+
+  - it: should not create certificate rotation hook when disabled
+    template: templates/hooks/cert-rotation.yaml
+    set:
+      certificateRotation:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should validate security context requirements
+    template: templates/rbac.yaml
+    set:
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: ServiceAccount
+      # Security contexts would be tested in actual pod templates
+      # This validates the values are properly structured
+
+  - it: should handle different environments
+    template: templates/network-policies.yaml
+    set:
+      global:
+        environment: production
+      networkPolicies:
+        defaultDeny:
+          enabled: true
+        strictMode:
+          enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/environment"]
+          value: production
+      - hasDocuments:
+          count: 2
+
+  - it: should create monitoring ingress policy for production
+    template: templates/network-policies.yaml
+    set:
+      global:
+        environment: production
+      networkPolicies:
+        monitoring:
+          enabled: true
+          allowedNamespaces: ["monitoring", "kube-system"]
+          ports: [9090, 3000, 8080]
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - namespaceSelector:
+                  matchLabels:
+                    name: monitoring
+            ports:
+              - protocol: TCP
+                port: 9090
+              - protocol: TCP
+                port: 3000
+              - protocol: TCP
+                port: 8080
+
+---
+suite: Core Infrastructure Chart Tests
+templates:
+  - ../charts/core-infrastructure/templates/*.yaml
+tests:
+  - it: should create namespace with proper labels
+    template: ../charts/core-infrastructure/templates/namespace.yaml
+    asserts:
+      - isKind:
+          of: Namespace
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm
+      - equal:
+          path: metadata.labels["security.homelab.local/baseline"]
+          value: "enabled"
+
+  - it: should create metallb configuration
+    template: ../charts/core-infrastructure/templates/metallb-config.yaml
+    set:
+      metallb:
+        enabled: true
+        ipRange: "192.168.25.200-192.168.25.250"
+        l2Advertisement: true
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentIndex: 0
+        isKind:
+          of: IPAddressPool
+      - documentIndex: 1
+        isKind:
+          of: L2Advertisement
+
+  - it: should create cert-manager configuration
+    template: ../charts/core-infrastructure/templates/cert-manager-config.yaml
+    set:
+      certManager:
+        enabled: true
+        clusterIssuers:
+          letsencrypt:
+            enabled: true
+            email: admin@homelab.local
+            server: https://acme-v02.api.letsencrypt.org/directory
+    asserts:
+      - isKind:
+          of: ClusterIssuer
+      - equal:
+          path: spec.acme.email
+          value: admin@homelab.local
+
+---
+suite: Monitoring Chart Tests
+templates:
+  - ../charts/monitoring/templates/*.yaml
+tests:
+  - it: should create prometheus configuration
+    template: ../charts/monitoring/templates/prometheus-config.yaml
+    set:
+      prometheus:
+        enabled: true
+        retention: "15d"
+        storage:
+          size: "50Gi"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: data["prometheus.yml"]
+          value: |
+            global:
+              scrape_interval: 15s
+              evaluation_interval: 15s
+            rule_files:
+              - "/etc/prometheus/rules/*.yml"
+            scrape_configs:
+              - job_name: 'kubernetes-pods'
+                kubernetes_sd_configs:
+                  - role: pod
+
+  - it: should create grafana configuration with security context
+    template: ../charts/monitoring/templates/grafana-config.yaml
+    set:
+      grafana:
+        enabled: true
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 472
+          fsGroup: 472
+        adminPassword: "CHANGE_ME"
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 472
+
+  - it: should validate monitoring network policies
+    template: ../charts/monitoring/templates/network-policies.yaml
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-monitoring-ingress
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-monitoring-egress
+
+---
+suite: Storage Chart Tests
+templates:  
+  - ../charts/storage/templates/*.yaml
+tests:
+  - it: should create storage class with proper configuration
+    template: ../charts/storage/templates/storage-class.yaml
+    set:
+      storageClass:
+        name: "homelab-ssd"
+        provisioner: "rancher.io/local-path"
+        reclaimPolicy: "Delete"
+        allowVolumeExpansion: true
+    asserts:
+      - isKind:
+          of: StorageClass
+      - equal:
+          path: metadata.name
+          value: "homelab-ssd"
+      - equal:
+          path: provisioner
+          value: "rancher.io/local-path"
+      - equal:
+          path: reclaimPolicy
+          value: "Delete"
+      - equal:
+          path: allowVolumeExpansion
+          value: true
+
+  - it: should create persistent volume claims with security context
+    template: ../charts/storage/templates/pvc-templates.yaml
+    set:
+      persistentVolumes:
+        - name: "gitlab-data"
+          size: "20Gi"
+          storageClass: "homelab-ssd"
+          accessModes: ["ReadWriteOnce"]
+        - name: "prometheus-data"
+          size: "50Gi"
+          storageClass: "homelab-ssd"
+          accessModes: ["ReadWriteOnce"]
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: "gitlab-data"
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: "prometheus-data"

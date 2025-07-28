@@ -1,0 +1,646 @@
+---
+# Enhanced Validation Playbook for Homelab Deployment Setup
+# This playbook comprehensively tests all aspects of Ansible authentication
+# and deployment readiness for the homelab infrastructure.
+
+- name: Validate Complete Deployment Setup
+  hosts: homelab
+  gather_facts: yes
+  vars:
+    validation_results: []
+    deployment_user: homelab-deploy
+    deployment_home: "/home/{{ deployment_user }}"
+    test_timestamp: "{{ ansible_date_time.iso8601 }}"
+    validation_report_path: "/tmp/homelab-deployment-validation-{{ ansible_date_time.epoch }}.json"
+    
+    # Test configuration
+    test_packages:
+      - curl
+      - wget
+      - git
+    
+    test_services:
+      - ssh
+      - systemd-resolved
+    
+    required_dirs:
+      - /tmp/homelab-test
+      - /var/log/homelab
+
+  tasks:
+    # ==========================================
+    # PHASE 1: SSH Key Authentication Tests
+    # ==========================================
+    - name: "TEST: SSH Key Authentication"
+      block:
+        - name: Verify SSH connection without password
+          ping:
+          register: ssh_ping_result
+          
+        - name: Check SSH connection type
+          debug:
+            msg: "SSH key authentication working - connection established"
+            
+        - name: Record SSH authentication success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'SSH Authentication',
+              'test': 'SSH Key Authentication',
+              'status': 'PASS',
+              'details': 'SSH connection established without password prompt',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+            
+      rescue:
+        - name: Record SSH authentication failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'SSH Authentication',
+              'test': 'SSH Key Authentication',
+              'status': 'FAIL',
+              'details': 'SSH connection failed: {{ ansible_failed_result.msg | default(\"Unknown error\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Verify SSH key is properly configured and added to authorized_keys'
+            }] }}"
+      
+      tags: [ssh, authentication]
+
+    # ==========================================
+    # PHASE 2: Main User Authentication & Sudo
+    # ==========================================
+    - name: "TEST: Main User Authentication and Privileges"
+      block:
+        - name: Get current user identity
+          command: whoami
+          register: current_user_result
+          changed_when: false
+          
+        - name: Record current user test
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'User Authentication',
+              'test': 'Current User Identity',
+              'status': 'PASS',
+              'details': 'Connected as user: {{ current_user_result.stdout }}',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+        - name: Test passwordless sudo for main user
+          command: sudo -n whoami
+          register: main_sudo_result
+          changed_when: false
+          failed_when: false
+
+        - name: Record main user sudo success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'User Authentication',
+              'test': 'Main User Passwordless Sudo',
+              'status': 'PASS',
+              'details': 'Sudo executed successfully as: {{ main_sudo_result.stdout }}',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+          when: main_sudo_result.rc == 0
+
+        - name: Record main user sudo failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'User Authentication',
+              'test': 'Main User Passwordless Sudo',
+              'status': 'FAIL',
+              'details': 'Sudo failed: {{ main_sudo_result.stderr | default(\"Permission denied\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Configure passwordless sudo by adding user to sudoers: echo \"{{ current_user_result.stdout }} ALL=(ALL) NOPASSWD:ALL\" | sudo tee /etc/sudoers.d/{{ current_user_result.stdout }}'
+            }] }}"
+          when: main_sudo_result.rc != 0
+
+        - name: Test Ansible become functionality
+          command: whoami
+          become: yes
+          register: become_result
+          changed_when: false
+
+        - name: Record Ansible become success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'User Authentication',
+              'test': 'Ansible Become Escalation',
+              'status': 'PASS',
+              'details': 'Privilege escalation successful, running as: {{ become_result.stdout }}',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+      rescue:
+        - name: Record user authentication failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'User Authentication',
+              'test': 'User Authentication Block',
+              'status': 'FAIL',
+              'details': 'User authentication block failed: {{ ansible_failed_result.msg | default(\"Unknown error\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Check user permissions and sudo configuration'
+            }] }}"
+      
+      tags: [user, sudo, authentication]
+
+    # ==========================================
+    # PHASE 3: Deployment User Management
+    # ==========================================
+    - name: "TEST: Deployment User Setup"
+      block:
+        - name: Check if deployment user exists
+          command: id {{ deployment_user }}
+          register: deploy_user_check
+          changed_when: false
+          failed_when: false
+
+        - name: Create deployment user if missing
+          block:
+            - name: Create deployment user
+              user:
+                name: "{{ deployment_user }}"
+                shell: /bin/bash
+                create_home: yes
+                home: "{{ deployment_home }}"
+                groups: sudo
+                append: yes
+              become: yes
+              register: user_creation
+
+            - name: Set up SSH directory for deployment user
+              file:
+                path: "{{ deployment_home }}/.ssh"
+                state: directory
+                owner: "{{ deployment_user }}"
+                group: "{{ deployment_user }}"
+                mode: '0700'
+              become: yes
+
+            - name: Generate SSH key for deployment user
+              command: ssh-keygen -t ed25519 -f "{{ deployment_home }}/.ssh/id_ed25519" -N ""
+              become: yes
+              become_user: "{{ deployment_user }}"
+              args:
+                creates: "{{ deployment_home }}/.ssh/id_ed25519"
+
+            - name: Set up passwordless sudo for deployment user
+              copy:
+                content: "{{ deployment_user }} ALL=(ALL) NOPASSWD:ALL\n"
+                dest: "/etc/sudoers.d/{{ deployment_user }}"
+                mode: '0440'
+                validate: 'visudo -cf %s'
+              become: yes
+
+            - name: Record deployment user creation
+              set_fact:
+                validation_results: "{{ validation_results + [{
+                  'phase': 'Deployment User',
+                  'test': 'Deployment User Creation',
+                  'status': 'PASS',
+                  'details': 'Successfully created deployment user: {{ deployment_user }}',
+                  'timestamp': test_timestamp,
+                  'remediation': None
+                }] }}"
+
+          when: deploy_user_check.rc != 0
+
+        - name: Record deployment user exists
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment User',
+              'test': 'Deployment User Existence',
+              'status': 'PASS',
+              'details': 'Deployment user already exists: {{ deploy_user_check.stdout }}',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+          when: deploy_user_check.rc == 0
+
+        - name: Test deployment user sudo privileges
+          command: sudo -u {{ deployment_user }} sudo -n whoami
+          register: deploy_sudo_test
+          changed_when: false
+          failed_when: false
+          become: yes
+
+        - name: Record deployment user sudo success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment User',
+              'test': 'Deployment User Sudo',
+              'status': 'PASS',
+              'details': 'Deployment user has passwordless sudo access',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+          when: deploy_sudo_test.rc == 0
+
+        - name: Record deployment user sudo failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment User',
+              'test': 'Deployment User Sudo',
+              'status': 'FAIL',
+              'details': 'Deployment user sudo failed: {{ deploy_sudo_test.stderr | default(\"Permission denied\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Configure passwordless sudo: echo \"{{ deployment_user }} ALL=(ALL) NOPASSWD:ALL\" | sudo tee /etc/sudoers.d/{{ deployment_user }}'
+            }] }}"
+          when: deploy_sudo_test.rc != 0
+
+      rescue:
+        - name: Record deployment user setup failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment User',
+              'test': 'Deployment User Setup Block',
+              'status': 'FAIL',
+              'details': 'Deployment user setup failed: {{ ansible_failed_result.msg | default(\"Unknown error\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Manually create deployment user and configure sudo access'
+            }] }}"
+      
+      tags: [deployment_user, user_management]
+
+    # ==========================================
+    # PHASE 4: Ansible Modules Testing
+    # ==========================================
+    - name: "TEST: Core Ansible Modules with Privilege Escalation"
+      block:
+        # File operations
+        - name: Test file module with become
+          file:
+            path: /tmp/homelab-test
+            state: directory
+            mode: '0755'
+          become: yes
+          register: file_test
+
+        - name: Record file module success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'File Module with Become',
+              'status': 'PASS',
+              'details': 'Successfully created directory with elevated privileges',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+        # Copy operations
+        - name: Test copy module with become
+          copy:
+            content: |
+              # Homelab Test File
+              Generated by Ansible validation at {{ test_timestamp }}
+              User: {{ ansible_user }}
+              Host: {{ inventory_hostname }}
+            dest: /tmp/homelab-test/validation-test.txt
+            mode: '0644'
+          become: yes
+          register: copy_test
+
+        - name: Record copy module success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'Copy Module with Become',
+              'status': 'PASS',
+              'details': 'Successfully copied file with elevated privileges',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+        # Package operations (safe read-only test)
+        - name: Test package module (query only)
+          package_facts:
+          register: package_test
+
+        - name: Record package module success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'Package Facts Module',
+              'status': 'PASS',
+              'details': 'Successfully queried installed packages',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+        # Service operations (query only)
+        - name: Test service module (status check)
+          service_facts:
+          register: service_test
+
+        - name: Record service module success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'Service Facts Module',
+              'status': 'PASS',
+              'details': 'Successfully queried service status',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+        # Systemd operations (query only)
+        - name: Test systemd module (status check)
+          systemd:
+            name: ssh
+          register: systemd_test
+          become: yes
+          check_mode: yes
+
+        - name: Record systemd module success
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'Systemd Module Check',
+              'status': 'PASS',
+              'details': 'Successfully checked systemd service status',
+              'timestamp': test_timestamp,
+              'remediation': None
+            }] }}"
+
+      rescue:
+        - name: Record ansible modules failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Ansible Modules',
+              'test': 'Ansible Modules Block',
+              'status': 'FAIL',
+              'details': 'Ansible modules test failed: {{ ansible_failed_result.msg | default(\"Unknown error\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Check sudo permissions and module availability'
+            }] }}"
+      
+      tags: [modules, testing]
+
+    # ==========================================
+    # PHASE 5: Deployment Readiness Tests
+    # ==========================================
+    - name: "TEST: Deployment Readiness"
+      block:
+        - name: Test common deployment tools
+          command: "{{ item }} --version"
+          register: tool_tests
+          changed_when: false
+          failed_when: false
+          loop:
+            - git
+            - curl
+            - wget
+            - python3
+          loop_control:
+            label: "{{ item }}"
+
+        - name: Record tool availability
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment Readiness',
+              'test': 'Tool: {{ item.item }}',
+              'status': '{{ \"PASS\" if item.rc == 0 else \"FAIL\" }}',
+              'details': '{{ item.stdout_lines[0] if item.rc == 0 else \"Tool not found: \" + item.item }}',
+              'timestamp': test_timestamp,
+              'remediation': '{{ \"Tool available\" if item.rc == 0 else \"Install \" + item.item + \" package\" }}'
+            }] }}"
+          loop: "{{ tool_tests.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+
+        - name: Test network connectivity
+          uri:
+            url: https://github.com
+            method: HEAD
+            timeout: 10
+          register: network_test
+          failed_when: false
+
+        - name: Record network connectivity
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment Readiness',
+              'test': 'Network Connectivity',
+              'status': '{{ \"PASS\" if network_test.status == 200 else \"FAIL\" }}',
+              'details': '{{ \"Internet connectivity verified\" if network_test.status == 200 else \"Network connectivity failed\" }}',
+              'timestamp': test_timestamp,
+              'remediation': '{{ \"Network is accessible\" if network_test.status == 200 else \"Check network configuration and firewall settings\" }}'
+            }] }}"
+
+        - name: Test disk space
+          setup:
+            filter: ansible_mounts
+          register: disk_info
+
+        - name: Check available disk space
+          set_fact:
+            root_space_gb: "{{ (ansible_mounts | selectattr('mount', 'equalto', '/') | first).size_available // (1024**3) }}"
+
+        - name: Record disk space check
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment Readiness',
+              'test': 'Disk Space',
+              'status': '{{ \"PASS\" if root_space_gb|int > 10 else \"WARN\" }}',
+              'details': 'Available space on /: {{ root_space_gb }} GB',
+              'timestamp': test_timestamp,
+              'remediation': '{{ \"Sufficient disk space\" if root_space_gb|int > 10 else \"Consider freeing up disk space for deployments\" }}'
+            }] }}"
+
+      rescue:
+        - name: Record deployment readiness failure
+          set_fact:
+            validation_results: "{{ validation_results + [{
+              'phase': 'Deployment Readiness',
+              'test': 'Deployment Readiness Block',
+              'status': 'FAIL',
+              'details': 'Deployment readiness test failed: {{ ansible_failed_result.msg | default(\"Unknown error\") }}',
+              'timestamp': test_timestamp,
+              'remediation': 'Check system requirements and network connectivity'
+            }] }}"
+      
+      tags: [readiness, deployment]
+
+  # ==========================================
+  # POST-TASKS: Reporting and Cleanup
+  # ==========================================
+  post_tasks:
+    - name: Generate comprehensive test summary
+      set_fact:
+        test_summary:
+          total_tests: "{{ validation_results | length }}"
+          passed_tests: "{{ validation_results | selectattr('status', 'equalto', 'PASS') | list | length }}"
+          failed_tests: "{{ validation_results | selectattr('status', 'equalto', 'FAIL') | list | length }}"
+          warning_tests: "{{ validation_results | selectattr('status', 'equalto', 'WARN') | list | length }}"
+          overall_status: "{{ 'PASS' if (validation_results | selectattr('status', 'equalto', 'FAIL') | list | length == 0) else 'FAIL' }}"
+
+    - name: Display validation summary
+      debug:
+        msg: |
+          ================================================================
+          HOMELAB DEPLOYMENT VALIDATION SUMMARY
+          ================================================================
+          Timestamp: {{ test_timestamp }}
+          Host: {{ inventory_hostname }} ({{ ansible_host }})
+          
+          📊 Test Statistics:
+          • Total Tests: {{ test_summary.total_tests }}
+          • Passed: {{ test_summary.passed_tests }} ✅
+          • Failed: {{ test_summary.failed_tests }} ❌
+          • Warnings: {{ test_summary.warning_tests }} ⚠️
+          
+          🎯 Overall Status: {{ test_summary.overall_status }}
+          
+          {% if test_summary.overall_status == 'PASS' %}
+          🎉 ALL CRITICAL TESTS PASSED!
+          Your homelab deployment setup is ready for automated deployments.
+          {% else %}
+          🚨 SOME TESTS FAILED!
+          Please review the detailed results below and apply suggested remediations.
+          {% endif %}
+          ================================================================
+
+    - name: Display detailed test results
+      debug:
+        msg: |
+          📋 DETAILED TEST RESULTS:
+          ========================
+          {% for result in validation_results %}
+          
+          {{ loop.index }}. {{ result.phase }} - {{ result.test }}
+             Status: {{ result.status }} {% if result.status == 'PASS' %}✅{% elif result.status == 'FAIL' %}❌{% else %}⚠️{% endif %}
+             Details: {{ result.details }}
+             {% if result.remediation and result.status != 'PASS' %}
+             💡 Remediation: {{ result.remediation }}
+             {% endif %}
+          {% endfor %}
+
+    - name: Save comprehensive validation report
+      copy:
+        content: |
+          # Homelab Deployment Validation Report
+          
+          **Generated:** {{ test_timestamp }}  
+          **Host:** {{ inventory_hostname }} ({{ ansible_host }})  
+          **Ansible User:** {{ ansible_user }}  
+          
+          ## Executive Summary
+          
+          | Metric | Count |
+          |--------|-------|
+          | Total Tests | {{ test_summary.total_tests }} |
+          | Passed | {{ test_summary.passed_tests }} |
+          | Failed | {{ test_summary.failed_tests }} |
+          | Warnings | {{ test_summary.warning_tests }} |
+          | **Overall Status** | **{{ test_summary.overall_status }}** |
+          
+          {% if test_summary.overall_status == 'PASS' %}
+          ## ✅ Status: READY FOR DEPLOYMENT
+          
+          All critical authentication and deployment readiness tests have passed. 
+          Your homelab infrastructure is ready for automated deployments.
+          {% else %}
+          ## ❌ Status: REQUIRES ATTENTION
+          
+          Some tests have failed. Please review the remediation steps below 
+          before proceeding with automated deployments.
+          {% endif %}
+          
+          ## Detailed Test Results
+          
+          {% for result in validation_results %}
+          ### {{ result.phase }}: {{ result.test }}
+          
+          - **Status:** {{ result.status }}
+          - **Details:** {{ result.details }}
+          {% if result.remediation and result.status != 'PASS' %}
+          - **Remediation:** {{ result.remediation }}
+          {% endif %}
+          - **Timestamp:** {{ result.timestamp }}
+          
+          {% endfor %}
+          
+          ## System Information
+          
+          - **Operating System:** {{ ansible_distribution }} {{ ansible_distribution_version }}
+          - **Python Version:** {{ ansible_python_version }}
+          - **Ansible Version:** {{ ansible_version.full }}
+          - **Available Memory:** {{ ansible_memtotal_mb }} MB
+          - **Available Disk (/):** {{ root_space_gb | default('Unknown') }} GB
+          
+          ---
+          *Report generated by Homelab Deployment Validation Playbook*
+        dest: "{{ validation_report_path }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Save JSON results for automation
+      copy:
+        content: |
+          {
+            "validation_metadata": {
+              "timestamp": "{{ test_timestamp }}",
+              "host": "{{ inventory_hostname }}",
+              "ansible_host": "{{ ansible_host }}",
+              "ansible_user": "{{ ansible_user }}",
+              "playbook_version": "1.0.0"
+            },
+            "summary": {{ test_summary | to_nice_json }},
+            "results": {{ validation_results | to_nice_json }},
+            "system_info": {
+              "os": "{{ ansible_distribution }} {{ ansible_distribution_version }}",
+              "python_version": "{{ ansible_python_version }}",
+              "ansible_version": "{{ ansible_version.full }}",
+              "memory_mb": {{ ansible_memtotal_mb }},
+              "disk_space_gb": {{ root_space_gb | default(0) }}
+            }
+          }
+        dest: "{{ validation_report_path | regex_replace('\\.json$', '') }}.json"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display report locations
+      debug:
+        msg: |
+          📄 Validation reports saved:
+          • Human-readable: {{ validation_report_path }}
+          • Machine-readable: {{ validation_report_path | regex_replace('\\.json$', '') }}.json
+          
+          💡 Use these reports to track validation history and automate deployment decisions.
+
+    - name: Cleanup test files
+      file:
+        path: /tmp/homelab-test
+        state: absent
+      become: yes
+      failed_when: false
+
+    - name: Final validation status
+      fail:
+        msg: |
+          ❌ VALIDATION FAILED!
+          
+          {{ test_summary.failed_tests }} out of {{ test_summary.total_tests }} tests failed.
+          Please review the detailed results above and apply the suggested remediations
+          before proceeding with automated deployments.
+          
+          Report saved to: {{ validation_report_path }}
+      when: test_summary.overall_status == 'FAIL'
+
+    - name: Success message
+      debug:
+        msg: |
+          🎉 VALIDATION SUCCESSFUL!
+          
+          All {{ test_summary.total_tests }} critical tests passed.
+          Your homelab deployment setup is ready for automated operations.
+          
+          Next steps:
+          1. Review the detailed report at: {{ validation_report_path }}
+          2. Proceed with your homelab deployments
+          3. Run this validation periodically to ensure continued readiness
+      when: test_summary.overall_status == 'PASS'

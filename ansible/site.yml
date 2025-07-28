@@ -1,129 +1,147 @@
 ---
-# Main GitLab + Keycloak Homelab Deployment Playbook
-# Supports both VM testing and bare metal deployment
+# Homelab System-Level Infrastructure Provisioning
+# Focuses on server bootstrapping, system configuration, and K3s cluster setup
+# Application deployments are handled via Helm charts
 
-- name: GitLab + Keycloak Homelab Infrastructure Deployment
+- name: Homelab System Infrastructure Provisioning
   hosts: homelab
   gather_facts: yes
   become: yes
 
   vars:
     deployment_timestamp: "{{ ansible_date_time.iso8601 }}"
+    system_tasks: "{{ system_components | default(['bootstrap', 'k3s']) }}"
 
   pre_tasks:
-    - name: Display deployment information
+    - name: Display system provisioning information
       debug:
         msg:
-          - "Deployment Phase: {{ phase }}"
+          - "System Provisioning Phase: {{ phase | default('bootstrap') }}"
           - "Target Host: {{ inventory_hostname }}"
           - "Ansible Host: {{ ansible_host }}"
           - "Timestamp: {{ deployment_timestamp }}"
-          - "Components: {{ deploy_components | join(', ') }}"
+          - "System Tasks: {{ system_tasks | join(', ') }}"
+          - "Note: Application deployments are handled via Helm"
 
-    - name: Ensure required directories exist
+    - name: Ensure system directories exist
       file:
         path: "{{ item }}"
         state: directory
         mode: '0755'
+        owner: root
+        group: root
       loop:
         - /opt/homelab
         - /opt/homelab/logs
         - /opt/homelab/configs
         - /opt/homelab/backups
+        - /etc/homelab
 
-    - name: Update system packages
+    - name: Update system packages (idempotent)
       apt:
         update_cache: yes
-        upgrade: dist
+        upgrade: safe
         autoremove: yes
-      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        autoclean: yes
+      when: "'bootstrap' in system_tasks"
+      register: package_update
+      
+    - name: Log package update results
+      debug:
+        msg: "System packages updated: {{ package_update.changed | default(false) }}"
 
   tasks:
+    # System Bootstrap Tasks
+    - name: Bootstrap system prerequisites
+      include_tasks: playbooks/bootstrap-system.yml
+      when: "'bootstrap' in system_tasks"
+      tags: [bootstrap, system]
+
     # VM Creation and Setup (for testing phases)
     - name: Create and configure test VM
       include_tasks: playbooks/create-vm.yml
       when: phase in ['vm-test', 'full-vm-test']
+      tags: [vm, testing]
 
-    # VM Cleanup (for cleanup phase)
-    - name: Cleanup test VM
-      include_tasks: playbooks/cleanup-vm.yml
-      when: phase == 'cleanup-vm'
+    # K3s Cluster Bootstrap (system-level Kubernetes installation)
+    - name: Deploy K3s cluster (system-level)
+      include_tasks: playbooks/deploy-k3s-fixed.yml
+      when: "'k3s' in system_tasks"
+      tags: [k3s, kubernetes, system]
 
-    # K3s Deployment (for all deployment phases)
-    - name: Deploy K3s cluster
-      include_tasks: playbooks/deploy-k3s.yml
-      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+    # System Configuration Tasks
+    - name: Configure system-level networking
+      include_tasks: playbooks/configure-networking.yml
+      when: "'networking' in system_tasks"
+      tags: [networking, system]
 
-    # Infrastructure Components
-    - name: Deploy MetalLB load balancer
-      include_tasks: playbooks/deploy-metallb.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'metallb' in deploy_components"
+    # Storage Configuration
+    - name: Configure system storage
+      include_tasks: playbooks/configure-storage.yml
+      when: "'storage' in system_tasks"
+      tags: [storage, system]
 
-    - name: Deploy cert-manager
-      include_tasks: playbooks/deploy-cert-manager.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'cert-manager' in deploy_components"
+    # User and SSH Management
+    - name: Configure system users and SSH
+      include_tasks: playbooks/configure-users.yml
+      when: "'users' in system_tasks"
+      tags: [users, ssh, system]
 
-    - name: Deploy nginx-ingress
-      include_tasks: playbooks/deploy-nginx-ingress.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'nginx-ingress' in deploy_components"
+    # System Validation
+    - name: Validate system configuration
+      include_tasks: playbooks/validate-deployment-setup.yml
+      when: "'validate' in system_tasks"
+      tags: [validation, system]
 
-    # Application Deployment
-    - name: Deploy Keycloak SSO
-      include_tasks: playbooks/deploy-keycloak.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'keycloak' in deploy_components"
-
-    - name: Deploy GitLab
-      include_tasks: playbooks/deploy-gitlab.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'gitlab' in deploy_components"
-
-    # Monitoring Stack
-    - name: Deploy monitoring stack
-      include_tasks: playbooks/deploy-monitoring.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'monitoring' in deploy_components"
-
-    # Backup Solutions
-    - name: Deploy backup solutions
-      include_tasks: playbooks/deploy-backup.yml
-      when:
-        - phase in ['vm-test', 'full-vm-test', 'bare-metal']
-        - "'backup-solutions' in deploy_components"
-
-    # Cleanup Tasks (for cleanup phases)
-    - name: Cleanup bare metal K3s
-      include_tasks: playbooks/cleanup-k3s.yml
-      when: phase == 'cleanup-bare-metal'
+    # Cleanup Tasks (system-level cleanup)
+    - name: Cleanup system resources
+      include_tasks: playbooks/cleanup-system.yml
+      when: phase in ['cleanup-vm', 'cleanup-bare-metal']
+      tags: [cleanup, system]
 
   post_tasks:
-    - name: Log deployment completion
+    - name: Log system provisioning completion
       lineinfile:
-        path: /opt/homelab/logs/deployment.log
-        line: "{{ deployment_timestamp }} - {{ phase }} deployment completed on {{ inventory_hostname }}"
+        path: /opt/homelab/logs/system-provisioning.log
+        line: "{{ deployment_timestamp }} - System provisioning '{{ phase | default('bootstrap') }}' completed on {{ inventory_hostname }}"
         create: yes
-      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+        mode: '0644'
+      when: phase not in ['cleanup-vm', 'cleanup-bare-metal']
 
-    - name: Display deployment summary
+    - name: Create system status file
+      copy:
+        content: |
+          # Homelab System Status
+          # Generated: {{ deployment_timestamp }}
+          # Host: {{ inventory_hostname }}
+          
+          SYSTEM_PHASE={{ phase | default('bootstrap') }}
+          SYSTEM_TASKS={{ system_tasks | join(',') }}
+          PROVISIONING_COMPLETE=true
+          K3S_READY={{ 'true' if 'k3s' in system_tasks else 'false' }}
+          HELM_READY={{ 'true' if 'k3s' in system_tasks else 'false' }}
+          
+          # Next Steps:
+          # 1. Deploy applications using Helm charts in ../helm/
+          # 2. Configure ingress and networking via Helm
+          # 3. Set up monitoring and backup solutions via Helm
+        dest: /opt/homelab/system-status.env
+        mode: '0644'
+      when: phase not in ['cleanup-vm', 'cleanup-bare-metal']
+
+    - name: Display system provisioning summary
       debug:
         msg:
-          - "✅ Deployment Phase '{{ phase }}' completed successfully!"
-          - "📝 Check logs at: /opt/homelab/logs/"
-          - "🔧 Next steps documented in deployment guide"
-      when: phase in ['vm-test', 'full-vm-test', 'bare-metal']
+          - "✅ System provisioning '{{ phase | default('bootstrap') }}' completed successfully!"
+          - "📁 System logs: /opt/homelab/logs/"
+          - "📋 System status: /opt/homelab/system-status.env"
+          - "🚀 Ready for Helm-based application deployments"
+          - "📖 Next: Use helm/ directory for application management"
+      when: phase not in ['cleanup-vm', 'cleanup-bare-metal']
 
     - name: Display cleanup summary
       debug:
         msg:
-          - "🧹 Cleanup Phase '{{ phase }}' completed successfully!"
-          - "💻 System ready for fresh deployment"
+          - "🧹 System cleanup '{{ phase }}' completed successfully!"
+          - "💻 System ready for fresh provisioning"
       when: phase in ['cleanup-vm', 'cleanup-bare-metal']

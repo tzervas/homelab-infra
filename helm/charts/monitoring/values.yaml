@@ -117,7 +117,7 @@ loki:
   deploymentMode: SingleBinary
   singleBinary:
     replicas: 1
-  
+
   # Disable other deployment modes
   backend:
     replicas: 0

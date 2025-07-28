@@ -1,6 +1,65 @@
 #!/bin/bash
 
+# MIT License
+#
+# Copyright (c) 2025 Tyler Zervas
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# K3s Deployment Stabilization & Setup Script
+#
+# USAGE:
+#   ./stabilize-and-setup-k3s.sh
+#
+# DESCRIPTION:
+#   Waits for K3s cluster to stabilize, runs smoke tests, and sets up
+#   helpful utilities for cluster management.
+#
+# ENVIRONMENT VARIABLES:
+#   K3S_MASTER_IP      IP address of K3s master node (default: 192.168.16.26)
+#   K3S_PORT           K3s API server port (default: 6443)
+#   VM_HOST_IP         VM host IP address (default: 192.168.1.100)
+#   HOMELAB_SERVER     Homelab server hostname/IP (default: homelab)
+#   SSH_TUNNEL_NEEDED  Set to enable SSH tunneling (optional)
+#
+# EXIT CODES:
+#   0: Success
+#   1: Cluster connection failed or timeout
+
 set -euo pipefail
+
+# Logging functions
+log_info() {
+    echo -e "\033[0;34m[INFO]\033[0m $*" >&2
+}
+
+log_success() {
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" >&2
+}
+
+log_warning() {
+    echo -e "\033[1;33m[WARNING]\033[0m $*" >&2
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" >&2
+}
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -30,15 +89,15 @@ setup_port_forwarding() {
         echo "Setting up SSH tunnel to homelab server..."
 
         # Kill any existing SSH tunnels for the same port
-        existing_tunnel=$(ps aux | grep "ssh.*-L.*:${CLUSTER_PORT}:${CLUSTER_IP}:${CLUSTER_PORT}" | grep -v grep | awk '{print $2}' || true)
+        existing_tunnel=$(pgrep -f "ssh.*-L.*:${CLUSTER_PORT}:${CLUSTER_IP}:${CLUSTER_PORT}" || true)
         if [[ -n "$existing_tunnel" ]]; then
             echo "Killing existing SSH tunnel (PID: $existing_tunnel)"
-            kill $existing_tunnel 2>/dev/null || true
+            kill "$existing_tunnel" 2>/dev/null || true
             sleep 2
         fi
 
         # Create SSH tunnel
-        ssh -f -N -L ${CLUSTER_PORT}:${CLUSTER_IP}:${CLUSTER_PORT} ${HOMELAB_SERVER} \
+        ssh -f -N -L "${CLUSTER_PORT}:${CLUSTER_IP}:${CLUSTER_PORT}" "${HOMELAB_SERVER}" \
             -o ServerAliveInterval=60 \
             -o ServerAliveCountMax=3 \
             -o ExitOnForwardFailure=yes
@@ -82,14 +141,14 @@ wait_for_cluster() {
             # Try to diagnose the issue
             echo -e "\n${YELLOW}Diagnostic information:${NC}"
             echo "1. Testing network connectivity to ${CLUSTER_IP}..."
-            if ping -c 1 -W 2 ${CLUSTER_IP} &>/dev/null; then
+            if ping -c 1 -W 2 "${CLUSTER_IP}" &>/dev/null; then
                 echo -e "   ${GREEN}Host is reachable${NC}"
             else
                 echo -e "   ${RED}Host is not reachable${NC}"
             fi
 
             echo "2. Testing port ${CLUSTER_PORT}..."
-            if nc -zv -w 2 ${CLUSTER_IP} ${CLUSTER_PORT} &>/dev/null; then
+            if nc -zv -w 2 "${CLUSTER_IP}" "${CLUSTER_PORT}" &>/dev/null; then
                 echo -e "   ${GREEN}Port is open${NC}"
             else
                 echo -e "   ${RED}Port is closed or filtered${NC}"
@@ -136,7 +195,7 @@ run_smoke_tests() {
             echo -e "   - $ns: ${GREEN}EXISTS${NC}"
         else
             echo -e "   - $ns: ${RED}MISSING${NC}"
-            all_ns_exist=false
+            # all_ns_exist=false # Unused variable
         fi
     done
 
@@ -242,7 +301,7 @@ EOF
 # Main execution
 main() {
     # Check if we need SSH tunnel (if not on the same network as cluster)
-    if ! ping -c 1 -W 2 ${CLUSTER_IP} &>/dev/null; then
+    if ! ping -c 1 -W 2 "${CLUSTER_IP}" &>/dev/null; then
         echo -e "${YELLOW}Direct connection to ${CLUSTER_IP} not available${NC}"
         echo "SSH tunnel may be required. Set SSH_TUNNEL_NEEDED=1 to enable."
     fi

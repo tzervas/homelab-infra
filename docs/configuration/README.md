@@ -203,23 +203,23 @@ echo "config/" >> .gitignore
 
 ```bash
 # Validate configuration syntax
-./scripts/validate-deployment-comprehensive.sh
+./scripts/validation/validate-deployment-comprehensive.sh
 
 # Test network connectivity
-./scripts/test-deployment-readiness.sh
+./scripts/validation/test-deployment-readiness.sh
 
 # Dry-run deployment
-./scripts/test-deployment-dry-run.sh
+./scripts/validation/test-deployment-dry-run.sh
 ```
 
 ### Configuration Management
 
 ```bash
 # Check current configuration
-./scripts/deploy-homelab.sh vm-test --dry-run
+./scripts/deployment/deploy-homelab.sh vm-test --dry-run
 
 # Validate Kubernetes manifests
-./scripts/validate-k8s-manifests.sh
+./scripts/validation/validate-k8s-manifests.sh
 
 # Update configuration from templates
 cp -r examples/private-config-template/* config/

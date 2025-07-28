@@ -1,0 +1,464 @@
+# GitLab CI/CD Pipeline for Homelab Infrastructure
+# Provides comprehensive deployment automation with security scanning,
+# multi-environment support, and integration testing
+
+variables:
+  # Pipeline configuration
+  TERRAFORM_VERSION: "1.6.0"
+  HELM_VERSION: "3.13.0"
+  KUBECTL_VERSION: "1.28.0"
+  HELMFILE_VERSION: "0.157.0"
+
+  # Cache configuration
+  CACHE_VERSION: "v1"
+
+  # Security scanning
+  ENABLE_SECURITY_SCAN: "true"
+  ENABLE_COMPLIANCE_CHECK: "true"
+
+  # Deployment options
+  AUTO_DEPLOY_STAGING: "true"
+  AUTO_DEPLOY_PRODUCTION: "false"
+
+  # Monitoring integration
+  ENABLE_MONITORING_CHECKS: "true"
+  SLACK_NOTIFICATIONS: "true"
+
+# Define stages
+stages:
+  - validate
+  - build
+  - security
+  - test
+  - deploy-staging
+  - integration-test
+  - deploy-production
+  - verify
+  - notify
+
+# Cache configuration
+cache:
+  key: ${CACHE_VERSION}-${CI_COMMIT_REF_SLUG}
+  paths:
+    - .terraform/
+    - helm/charts/*/charts/
+    - ~/.cache/pip/
+    - node_modules/
+
+# Include external pipeline configurations
+include:
+  - local: ".gitlab/ci/security.yml"
+  - local: ".gitlab/ci/terraform.yml"
+  - local: ".gitlab/ci/helm.yml"
+  - local: ".gitlab/ci/monitoring.yml"
+
+# ============================================================================
+# VALIDATION STAGE
+# ============================================================================
+
+validate:terraform:
+  stage: validate
+  image: hashicorp/terraform:${TERRAFORM_VERSION}
+  before_script:
+    - cd terraform
+    - terraform --version
+  script:
+    - terraform init -backend=false
+    - terraform validate
+    - terraform fmt -check=true -diff=true
+  rules:
+    - changes:
+        - terraform/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: terraform/validation-report.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+validate:helm:
+  stage: validate
+  image: alpine/helm:${HELM_VERSION}
+  before_script:
+    - apk add --no-cache bash curl
+    - curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+  script:
+    - cd helm
+    - ./validate-charts.sh
+    - helmfile --environment development lint
+    - helmfile --environment staging lint
+    - helmfile --environment production lint
+  rules:
+    - changes:
+        - helm/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: helm/lint-report.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+validate:scripts:
+  stage: validate
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache bash shellcheck
+    - pip install --upgrade pip
+    - pip install bandit pylint black flake8
+  script:
+    - echo "Validating shell scripts..."
+    - find scripts/ -name "*.sh" -exec shellcheck {} \;
+    - echo "Validating Python scripts..."
+    - find scripts/ -name "*.py" -exec python -m py_compile {} \;
+    - bandit -r scripts/ -f json -o security-report.json || true
+    - pylint scripts/ --output-format=junit > pylint-report.xml || true
+    - black --check scripts/ || true
+    - flake8 scripts/ --format=junit-xml --output-file=flake8-report.xml || true
+  rules:
+    - changes:
+        - scripts/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit:
+        - pylint-report.xml
+        - flake8-report.xml
+    paths:
+      - security-report.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# BUILD STAGE
+# ============================================================================
+
+build:terraform-plan:
+  stage: build
+  image: hashicorp/terraform:${TERRAFORM_VERSION}
+  before_script:
+    - cd terraform
+    - terraform init
+  script:
+    - terraform plan -var="environment=staging" -out=staging.tfplan
+    - terraform plan -var="environment=production" -out=production.tfplan
+    - terraform show -json staging.tfplan > staging-plan.json
+    - terraform show -json production.tfplan > production-plan.json
+  rules:
+    - changes:
+        - terraform/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    paths:
+      - terraform/*.tfplan
+      - terraform/*-plan.json
+    expire_in: 1 day
+  tags:
+    - homelab
+
+build:helm-templates:
+  stage: build
+  image: alpine/helm:${HELM_VERSION}
+  before_script:
+    - apk add --no-cache bash curl
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+  script:
+    - cd helm
+    - helmfile --environment staging template > staging-templates.yaml
+    - helmfile --environment production template > production-templates.yaml
+  rules:
+    - changes:
+        - helm/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    paths:
+      - helm/*-templates.yaml
+    expire_in: 1 day
+  tags:
+    - homelab
+
+# ============================================================================
+# SECURITY STAGE
+# ============================================================================
+
+security:terraform-scan:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy config terraform/ --format json --output terraform-security.json
+    - trivy config terraform/ --format junit --output terraform-security-junit.xml
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+    - changes:
+        - terraform/**/*
+  artifacts:
+    reports:
+      junit: terraform-security-junit.xml
+    paths:
+      - terraform-security.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+security:helm-scan:
+  stage: security
+  image: aquasec/trivy:latest
+  needs: [build:helm-templates]
+  script:
+    - trivy config helm/ --format json --output helm-security.json
+    - trivy config helm/ --format junit --output helm-security-junit.xml
+    # Scan rendered templates
+    - trivy k8s --format json --output k8s-security.json helm/staging-templates.yaml
+    - trivy k8s --format junit --output k8s-security-junit.xml helm/staging-templates.yaml
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+    - changes:
+        - helm/**/*
+  artifacts:
+    reports:
+      junit:
+        - helm-security-junit.xml
+        - k8s-security-junit.xml
+    paths:
+      - helm-security.json
+      - k8s-security.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+security:secrets-scan:
+  stage: security
+  image: trufflesecurity/trufflehog:latest
+  script:
+    - trufflehog filesystem . --json --output secrets-scan.json
+    - trufflehog filesystem . --format junit --output secrets-scan-junit.xml
+  rules:
+    - if: '$ENABLE_SECURITY_SCAN == "true"'
+  allow_failure: true
+  artifacts:
+    reports:
+      junit: secrets-scan-junit.xml
+    paths:
+      - secrets-scan.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# TEST STAGE
+# ============================================================================
+
+test:unit:
+  stage: test
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - pip install --upgrade pip
+    - pip install pytest pytest-cov pytest-junit
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+  script:
+    - python -m pytest scripts/testing/ -v --junitxml=unit-test-report.xml --cov=scripts/ --cov-report=xml
+  rules:
+    - changes:
+        - scripts/**/*
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: unit-test-report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+test:integration:
+  stage: test
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - pip install --upgrade pip
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+  script:
+    - python scripts/testing/test_reporter.py --environment test --output-format junit > integration-test-report.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: integration-test-report.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# STAGING DEPLOYMENT
+# ============================================================================
+
+deploy:staging:
+  stage: deploy-staging
+  image: python:3.11-alpine
+  environment:
+    name: staging
+    url: https://staging.homelab.local
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+    - unzip terraform_*.zip && mv terraform /usr/local/bin/
+    - curl -LO "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+    - tar -xzf helm-*.tar.gz && mv linux-amd64/helm /usr/local/bin/
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - ./scripts/deployment/deploy-unified.sh --environment staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $AUTO_DEPLOY_STAGING == "true"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  artifacts:
+    paths:
+      - "*.log"
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# INTEGRATION TESTING
+# ============================================================================
+
+integration-test:staging:
+  stage: integration-test
+  image: python:3.11-alpine
+  needs: [deploy:staging]
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - pip install --upgrade pip
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - python scripts/testing/test_reporter.py --environment staging --output-format junit > staging-integration-report.xml
+    - bash scripts/testing/validate-enhanced-monitoring.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $AUTO_DEPLOY_STAGING == "true"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: staging-integration-report.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# PRODUCTION DEPLOYMENT
+# ============================================================================
+
+deploy:production:
+  stage: deploy-production
+  image: python:3.11-alpine
+  environment:
+    name: production
+    url: https://homelab.local
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+    - unzip terraform_*.zip && mv terraform /usr/local/bin/
+    - curl -LO "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+    - tar -xzf helm-*.tar.gz && mv linux-amd64/helm /usr/local/bin/
+    - curl -LO "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+    - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - ./scripts/deployment/deploy-unified.sh --environment production
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $AUTO_DEPLOY_PRODUCTION == "true"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  artifacts:
+    paths:
+      - "*.log"
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# VERIFICATION STAGE
+# ============================================================================
+
+verify:production:
+  stage: verify
+  image: python:3.11-alpine
+  needs: [deploy:production]
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - pip install --upgrade pip
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - python scripts/testing/test_reporter.py --environment production --output-format junit > production-verification-report.xml
+    - bash scripts/testing/validate-enhanced-monitoring.sh
+    - python scripts/testing/production_health_check.py
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    reports:
+      junit: production-verification-report.xml
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# NOTIFICATION STAGE
+# ============================================================================
+
+notify:success:
+  stage: notify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ "$SLACK_NOTIFICATIONS" == "true" ]; then
+        curl -X POST $SLACK_WEBHOOK_URL \
+          -H 'Content-type: application/json' \
+          --data "{\"text\":\"✅ Homelab Infrastructure Pipeline Successful\n🌍 Environment: $CI_ENVIRONMENT_NAME\n🚀 Branch: $CI_COMMIT_REF_NAME\n📦 Commit: $CI_COMMIT_SHORT_SHA\n👤 Author: $GITLAB_USER_NAME\"}"
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+  tags:
+    - homelab
+
+notify:failure:
+  stage: notify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ "$SLACK_NOTIFICATIONS" == "true" ]; then
+        curl -X POST $SLACK_WEBHOOK_URL \
+          -H 'Content-type: application/json' \
+          --data "{\"text\":\"❌ Homelab Infrastructure Pipeline Failed\n🌍 Environment: $CI_ENVIRONMENT_NAME\n🚀 Branch: $CI_COMMIT_REF_NAME\n📦 Commit: $CI_COMMIT_SHORT_SHA\n👤 Author: $GITLAB_USER_NAME\n📋 Job: $CI_JOB_NAME\"}"
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_failure
+  tags:
+    - homelab

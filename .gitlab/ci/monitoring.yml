@@ -1,0 +1,296 @@
+# Monitoring-focused CI/CD pipeline components
+# Provides monitoring validation, alerting tests, and observability checks
+
+# ============================================================================
+# MONITORING VALIDATION
+# ============================================================================
+
+monitoring:validate:prometheus:
+  stage: test
+  image: prom/prometheus:latest
+  before_script:
+    - apk add --no-cache bash curl
+  script:
+    - |
+      # Validate Prometheus configuration
+      if [ -f helm/charts/monitoring/files/prometheus.yml ]; then
+        promtool check config helm/charts/monitoring/files/prometheus.yml
+      fi
+
+      # Validate alert rules
+      find helm/ -name "*alert*.yml" -o -name "*alert*.yaml" | while read -r file; do
+        echo "Validating alert rules in: $file"
+        promtool check rules "$file"
+      done
+  rules:
+    - changes:
+        - helm/charts/monitoring/**/*
+        - helm/environments/*/values-monitoring.yaml
+  tags:
+    - homelab
+
+monitoring:validate:grafana:
+  stage: test
+  image: grafana/grafana:latest
+  script:
+    - |
+      # Validate Grafana dashboard JSON files
+      find helm/ -name "*.json" | grep -i dashboard | while read -r dashboard; do
+        echo "Validating Grafana dashboard: $dashboard"
+        # Basic JSON syntax validation
+        if ! python3 -m json.tool "$dashboard" > /dev/null; then
+          echo "Invalid JSON in dashboard: $dashboard"
+          exit 1
+        fi
+        echo "Dashboard validation passed: $dashboard"
+      done
+  rules:
+    - changes:
+        - helm/charts/monitoring/**/*
+  tags:
+    - homelab
+
+# ============================================================================
+# HEALTH CHECKS
+# ============================================================================
+
+monitoring:health:endpoints:
+  stage: integration-test
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache curl kubectl bash
+    - pip install --upgrade pip requests
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      python3 << 'EOF'
+      import requests
+      import subprocess
+      import json
+      import sys
+      import time
+
+      def check_monitoring_endpoints():
+          # Get service endpoints
+          try:
+              result = subprocess.run(['kubectl', 'get', 'svc', '-n', 'monitoring', '-o', 'json'],
+                                    capture_output=True, text=True)
+              services = json.loads(result.stdout)
+
+              endpoints_to_check = []
+              for svc in services['items']:
+                  svc_name = svc['metadata']['name']
+                  if svc_name in ['prometheus', 'grafana', 'alertmanager']:
+                      # Get cluster IP and port
+                      cluster_ip = svc['spec'].get('clusterIP')
+                      ports = svc['spec'].get('ports', [])
+                      if cluster_ip and ports:
+                          port = ports[0]['port']
+                          endpoints_to_check.append((svc_name, f"http://{cluster_ip}:{port}"))
+
+              # Check health endpoints
+              failed = []
+              for name, url in endpoints_to_check:
+                  try:
+                      health_url = f"{url}/api/v1/status" if name == "prometheus" else f"{url}/api/health"
+                      response = requests.get(health_url, timeout=30)
+                      if response.status_code == 200:
+                          print(f"✅ {name} health check passed: {health_url}")
+                      else:
+                          print(f"❌ {name} health check failed: {response.status_code}")
+                          failed.append(name)
+                  except Exception as e:
+                      print(f"❌ {name} health check error: {e}")
+                      failed.append(name)
+
+              if failed:
+                  print(f"Health checks failed for: {', '.join(failed)}")
+                  sys.exit(1)
+              else:
+                  print("All monitoring service health checks passed")
+
+          except Exception as e:
+              print(f"Error checking monitoring health: {e}")
+              sys.exit(1)
+
+      check_monitoring_endpoints()
+      EOF
+  rules:
+    - if: '$ENABLE_MONITORING_CHECKS == "true"'
+  allow_failure: true
+  tags:
+    - homelab
+
+monitoring:metrics:validation:
+  stage: integration-test
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache curl kubectl bash
+    - pip install --upgrade pip requests
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      python3 << 'EOF'
+      import requests
+      import subprocess
+      import json
+      import sys
+
+      def validate_metrics():
+          try:
+              # Get Prometheus service
+              result = subprocess.run(['kubectl', 'get', 'svc', 'prometheus', '-n', 'monitoring', '-o', 'json'],
+                                    capture_output=True, text=True)
+              if result.returncode != 0:
+                  print("Prometheus service not found")
+                  sys.exit(1)
+
+              svc = json.loads(result.stdout)
+              cluster_ip = svc['spec']['clusterIP']
+              port = svc['spec']['ports'][0]['port']
+
+              prometheus_url = f"http://{cluster_ip}:{port}"
+
+              # Check essential metrics are available
+              essential_metrics = [
+                  'up',
+                  'kube_node_info',
+                  'kube_pod_info',
+                  'prometheus_build_info',
+                  'terraform_state_serial_number',
+                  'helm_release_info'
+              ]
+
+              failed_metrics = []
+              for metric in essential_metrics:
+                  try:
+                      response = requests.get(f"{prometheus_url}/api/v1/query",
+                                            params={'query': metric}, timeout=30)
+                      if response.status_code == 200:
+                          data = response.json()
+                          if data['status'] == 'success' and data['data']['result']:
+                              print(f"✅ Metric available: {metric}")
+                          else:
+                              print(f"❌ No data for metric: {metric}")
+                              failed_metrics.append(metric)
+                      else:
+                          print(f"❌ Error querying metric {metric}: {response.status_code}")
+                          failed_metrics.append(metric)
+                  except Exception as e:
+                      print(f"❌ Exception querying metric {metric}: {e}")
+                      failed_metrics.append(metric)
+
+              if failed_metrics:
+                  print(f"Failed to validate metrics: {', '.join(failed_metrics)}")
+                  # Don't fail pipeline for missing custom metrics
+                  if all(m.startswith(('terraform_', 'helm_')) for m in failed_metrics):
+                      print("Only custom metrics failed - allowing pipeline to continue")
+                  else:
+                      sys.exit(1)
+              else:
+                  print("All essential metrics validation passed")
+
+          except Exception as e:
+              print(f"Error validating metrics: {e}")
+              sys.exit(1)
+
+      validate_metrics()
+      EOF
+  rules:
+    - if: '$ENABLE_MONITORING_CHECKS == "true"'
+  allow_failure: true
+  tags:
+    - homelab
+
+# ============================================================================
+# ALERTING VALIDATION
+# ============================================================================
+
+monitoring:alerts:test:
+  stage: integration-test
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache curl kubectl bash
+    - pip install --upgrade pip requests
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      python3 << 'EOF'
+      import requests
+      import subprocess
+      import json
+      import sys
+      import time
+
+      def test_alerting():
+          try:
+              # Get AlertManager service
+              result = subprocess.run(['kubectl', 'get', 'svc', 'alertmanager', '-n', 'monitoring', '-o', 'json'],
+                                    capture_output=True, text=True)
+              if result.returncode != 0:
+                  print("AlertManager service not found")
+                  return
+
+              svc = json.loads(result.stdout)
+              cluster_ip = svc['spec']['clusterIP']
+              port = svc['spec']['ports'][0]['port']
+
+              alertmanager_url = f"http://{cluster_ip}:{port}"
+
+              # Check AlertManager status
+              response = requests.get(f"{alertmanager_url}/api/v1/status", timeout=30)
+              if response.status_code == 200:
+                  print("✅ AlertManager is responding")
+
+                  # Check for active alerts
+                  alerts_response = requests.get(f"{alertmanager_url}/api/v1/alerts", timeout=30)
+                  if alerts_response.status_code == 200:
+                      alerts = alerts_response.json()
+                      active_alerts = [a for a in alerts['data'] if a['status']['state'] == 'active']
+
+                      if active_alerts:
+                          print(f"⚠️  Found {len(active_alerts)} active alerts:")
+                          for alert in active_alerts[:5]:  # Show first 5
+                              print(f"  - {alert['labels']['alertname']}: {alert['annotations'].get('summary', 'N/A')}")
+                      else:
+                          print("✅ No active alerts found")
+                  else:
+                      print(f"❌ Failed to query alerts: {alerts_response.status_code}")
+              else:
+                  print(f"❌ AlertManager health check failed: {response.status_code}")
+
+          except Exception as e:
+              print(f"Error testing alerting: {e}")
+
+      test_alerting()
+      EOF
+  rules:
+    - if: '$ENABLE_MONITORING_CHECKS == "true"'
+  allow_failure: true
+  tags:
+    - homelab
+
+# ============================================================================
+# MONITORING DEPLOYMENT VALIDATION
+# ============================================================================
+
+monitoring:deployment:validate:
+  stage: verify
+  image: python:3.11-alpine
+  before_script:
+    - apk add --no-cache bash kubectl
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - bash scripts/testing/validate-enhanced-monitoring.sh
+  rules:
+    - if: '$ENABLE_MONITORING_CHECKS == "true"'
+  artifacts:
+    paths:
+      - monitoring-validation-*.log
+    expire_in: 1 week
+  tags:
+    - homelab

@@ -1,0 +1,290 @@
+{{- if .Values.structuredLogging.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring.fullname" . }}-structured-logging
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "monitoring.labels" . | nindent 4 }}
+    component: structured-logging
+data:
+  promtail-config.yaml: |
+    server:
+      http_listen_port: 3101
+      grpc_listen_port: 0
+      log_level: {{ .Values.structuredLogging.logLevel }}
+      log_format: {{ .Values.structuredLogging.format }}
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+
+    scrape_configs:
+      # Kubernetes pod logs with structured parsing
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        pipeline_stages:
+          # Parse JSON logs
+          - json:
+              expressions:
+                timestamp: time
+                level: level
+                message: msg
+                service: service
+                component: component
+                trace_id: trace_id
+                span_id: span_id
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_controller_name
+            regex: ([0-9a-z-.]+?)(-[0-9a-f]{8,10})?
+            target_label: __tmp_controller_name
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+              - __meta_kubernetes_pod_label_app
+              - __tmp_controller_name
+              - __meta_kubernetes_pod_name
+            regex: ^;*([^;]+)(;.*)?$
+            target_label: app
+            replacement: $1
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_instance
+              - __meta_kubernetes_pod_label_instance
+            regex: ^;*([^;]+)(;.*)?$
+            target_label: instance
+            replacement: $1
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_component
+              - __meta_kubernetes_pod_label_component
+            regex: ^;*([^;]+)(;.*)?$
+            target_label: component
+            replacement: $1
+          - replacement: /var/log/pods/*$1/*.log
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+          - replacement: /var/log/pods/*$1/*.log
+            regex: true/(.*)
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_annotationpresent_kubernetes_io_config_hash
+              - __meta_kubernetes_pod_annotation_kubernetes_io_config_hash
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+
+      # Infrastructure component logs
+      - job_name: infrastructure-logs
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - kube-system
+                - monitoring
+                - cert-manager
+                - ingress-nginx
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: ts
+                level: level
+                message: msg
+                component: component
+          - labels:
+              component:
+              level:
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            target_label: component
+          - replacement: /var/log/pods/*$1/*.log
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+
+      # Application logs with enhanced parsing
+      - job_name: application-logs
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - gitlab
+                - keycloak
+                - applications
+        pipeline_stages:
+          # Multi-line log aggregation
+          - multiline:
+              firstline: '^\d{4}-\d{2}-\d{2}'
+              max_wait_time: 3s
+          # JSON parsing for structured logs
+          - json:
+              expressions:
+                timestamp: "@timestamp"
+                level: level
+                message: message
+                service: service
+                trace_id: trace_id
+                span_id: span_id
+                user_id: user_id
+                request_id: request_id
+          # Template for consistent formatting
+          - template:
+              source: message
+              template: '{{ .message | printf "%.100s" }}'
+          # Add static labels
+          - static_labels:
+              cluster: {{ .Values.structuredLogging.additionalFields.cluster }}
+              environment: {{ .Values.structuredLogging.additionalFields.environment }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            target_label: app
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_version]
+            target_label: version
+          - replacement: /var/log/pods/*$1/*.log
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+
+      # Security audit logs
+      - job_name: security-logs
+        kubernetes_sd_configs:
+          - role: pod
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: timestamp
+                level: level
+                audit_id: auditID
+                verb: verb
+                resource: objectRef.resource
+                namespace: objectRef.namespace
+                name: objectRef.name
+                user: user.username
+                source_ip: sourceIPs
+          - labels:
+              verb:
+              resource:
+              user:
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_security_audit]
+            regex: "true"
+            action: keep
+          - replacement: /var/log/pods/*$1/*.log
+            separator: /
+            source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+
+      # System journal logs
+      - job_name: journal
+        journal:
+          max_age: 12h
+          labels:
+            job: systemd-journal
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: __REALTIME_TIMESTAMP
+                message: MESSAGE
+                unit: _SYSTEMD_UNIT
+                priority: PRIORITY
+          - labels:
+              unit:
+              priority:
+        relabel_configs:
+          - source_labels: ['__journal__systemd_unit']
+            target_label: unit
+          - source_labels: ['__journal_priority']
+            target_label: priority
+
+  fluentbit-config.yaml: |
+    [SERVICE]
+        Flush         5
+        Daemon        off
+        Log_Level     {{ .Values.structuredLogging.logLevel }}
+        Parsers_File  /fluent-bit/etc/parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*.log
+        Parser            cri
+        Tag               kube.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Merge_Log_Key       log_processed
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude Off
+
+    [FILTER]
+        Name                  parser
+        Match                 kube.*
+        Key_Name              log
+        Parser                json
+        Reserve_Data          On
+
+    [FILTER]
+        Name                modify
+        Match               kube.*
+        Add                 cluster {{ .Values.structuredLogging.additionalFields.cluster }}
+        Add                 environment {{ .Values.structuredLogging.additionalFields.environment }}
+
+    [OUTPUT]
+        Name            loki
+        Match           kube.*
+        Host            loki
+        Port            3100
+        Labels          job=fluentbit,cluster={{ .Values.structuredLogging.additionalFields.cluster }}
+        Label_keys      $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name']
+        Line_format     json
+        Remove_keys     kubernetes,docker
+
+  parsers.conf: |
+    [PARSER]
+        Name        json
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name        syslog
+        Format      regex
+        Regex       ^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
+        Time_Key    time
+        Time_Format %b %d %H:%M:%S
+{{- end }}

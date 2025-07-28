@@ -1,0 +1,137 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-validation-script
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  validate.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    echo "🔍 Starting pre-deployment validation..."
+
+    # Check Kubernetes version compatibility
+    echo "📋 Checking Kubernetes version..."
+    K8S_VERSION=$(kubectl version --client=false -o json | jq -r '.serverVersion.gitVersion')
+    echo "Kubernetes version: $K8S_VERSION"
+
+    # Validate Pod Security Standards support
+    echo "🔒 Validating Pod Security Standards support..."
+    if kubectl api-resources | grep -q "podsecuritypolicies"; then
+      echo "⚠️  PodSecurityPolicy detected - consider migrating to Pod Security Standards"
+    fi
+
+    # Check for required CRDs
+    echo "🔧 Checking for required Custom Resource Definitions..."
+    REQUIRED_CRDS=(
+      "certificates.cert-manager.io"
+      "issuers.cert-manager.io"
+      "clusterissuers.cert-manager.io"
+    )
+
+    for crd in "${REQUIRED_CRDS[@]}"; do
+      if kubectl get crd "$crd" &>/dev/null; then
+        echo "✅ CRD $crd found"
+      else
+        echo "⚠️  CRD $crd not found - some features may not work"
+      fi
+    done
+
+    # Validate network policy support
+    echo "🌐 Checking network policy support..."
+    if kubectl get networkpolicies -A &>/dev/null; then
+      echo "✅ NetworkPolicy support detected"
+    else
+      echo "⚠️  NetworkPolicy support not detected - network policies will be ignored"
+    fi
+
+    # Check RBAC permissions
+    echo "🔑 Validating RBAC permissions..."
+    if kubectl auth can-i create roles --as=system:serviceaccount:{{ .Release.Namespace }}:{{ include "security-baseline.serviceAccountName" . }}; then
+      echo "✅ RBAC permissions validated"
+    else
+      echo "⚠️  Limited RBAC permissions detected"
+    fi
+
+    # Validate storage classes
+    echo "💾 Checking storage classes..."
+    if kubectl get storageclass {{ .Values.global.storageClass | default "longhorn" }} &>/dev/null; then
+      echo "✅ Storage class {{ .Values.global.storageClass | default "longhorn" }} found"
+    else
+      echo "⚠️  Storage class {{ .Values.global.storageClass | default "longhorn" }} not found"
+    fi
+
+    # Check for conflicting resources
+    echo "🔍 Checking for conflicting resources..."
+    EXISTING_POLICIES=$(kubectl get networkpolicies -n {{ .Release.Namespace }} -o name 2>/dev/null | wc -l)
+    if [ "$EXISTING_POLICIES" -gt 0 ]; then
+      echo "⚠️  Found $EXISTING_POLICIES existing network policies - review for conflicts"
+    fi
+
+    # Validate environment-specific requirements
+    {{- if eq .Values.global.environment "production" }}
+    echo "🏭 Production environment validation..."
+    # Check for backup configuration
+    if kubectl get secret backup-credentials -n {{ .Release.Namespace }} &>/dev/null; then
+      echo "✅ Backup credentials found"
+    else
+      echo "⚠️  Backup credentials not found - configure backup storage"
+    fi
+
+    # Validate monitoring prerequisites
+    if kubectl get namespace monitoring &>/dev/null; then
+      echo "✅ Monitoring namespace exists"
+    else
+      echo "⚠️  Monitoring namespace not found"
+    fi
+    {{- end }}
+
+    echo "✅ Pre-deployment validation completed successfully!"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-pre-validation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    job.homelab.local/type: "pre-validation"
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "security-baseline.selectorLabels" . | nindent 8 }}
+        job.homelab.local/type: "pre-validation"
+    spec:
+      serviceAccountName: {{ include "security-baseline.serviceAccountName" . }}
+      restartPolicy: Never
+      securityContext:
+        {{- include "security-baseline.securityContext.baseline" . | nindent 8 }}
+      containers:
+      - name: validator
+        image: bitnami/kubectl:latest
+        command: ["/bin/bash", "/scripts/validate.sh"]
+        securityContext:
+          {{- include "security-baseline.securityContext.baseline" . | nindent 10 }}
+        volumeMounts:
+        - name: validation-script
+          mountPath: /scripts
+        resources:
+          {{- include "security-baseline.resources" (dict "Values" .Values "profile" "minimal") | nindent 10 }}
+      volumes:
+      - name: validation-script
+        configMap:
+          name: {{ include "security-baseline.fullname" . }}-validation-script
+          defaultMode: 0755

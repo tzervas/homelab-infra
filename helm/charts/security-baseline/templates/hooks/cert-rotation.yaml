@@ -1,0 +1,344 @@
+{{- if .Values.global.tls.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-cert-rotation-script
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+data:
+  cert-rotation.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    echo "🔄 Starting certificate rotation process..."
+
+    # Configuration
+    NAMESPACE="{{ .Release.Namespace }}"
+    TLS_SECRET_NAME="{{ .Values.global.tls.secretName }}"
+    ISSUER_NAME="{{ .Values.global.tls.issuer }}"
+    CERT_THRESHOLD_DAYS=${CERT_THRESHOLD_DAYS:-30}
+
+    # Function to check certificate expiry
+    check_cert_expiry() {
+      local secret_name=$1
+      local namespace=$2
+
+      echo "🔍 Checking certificate expiry for secret: $secret_name"
+
+      if ! kubectl get secret "$secret_name" -n "$namespace" &>/dev/null; then
+        echo "⚠️  Secret $secret_name not found in namespace $namespace"
+        return 1
+      fi
+
+      # Extract certificate data
+      local cert_data=$(kubectl get secret "$secret_name" -n "$namespace" -o jsonpath='{.data.tls\.crt}' | base64 -d)
+
+      if [ -z "$cert_data" ]; then
+        echo "❌ No certificate data found in secret $secret_name"
+        return 1
+      fi
+
+      # Get certificate expiry date
+      local expiry_date=$(echo "$cert_data" | openssl x509 -noout -enddate | cut -d= -f2)
+      local expiry_epoch=$(date -d "$expiry_date" +%s)
+      local current_epoch=$(date +%s)
+      local days_until_expiry=$(( (expiry_epoch - current_epoch) / 86400 ))
+
+      echo "📅 Certificate expires in $days_until_expiry days ($expiry_date)"
+
+      if [ "$days_until_expiry" -le "$CERT_THRESHOLD_DAYS" ]; then
+        echo "⚠️  Certificate expires within $CERT_THRESHOLD_DAYS days - rotation needed"
+        return 0
+      else
+        echo "✅ Certificate is valid for $days_until_expiry days - no rotation needed"
+        return 1
+      fi
+    }
+
+    # Function to create certificate request
+    create_cert_request() {
+      local domain=$1
+      local issuer=$2
+      local secret_name=$3
+      local namespace=$4
+
+      echo "📝 Creating certificate request for domain: $domain"
+
+      cat <<EOF | kubectl apply -f -
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: ${secret_name}-renewal
+      namespace: ${namespace}
+      labels:
+        cert-rotation.homelab.local/original-secret: ${secret_name}
+        cert-rotation.homelab.local/rotation-job: {{ include "security-baseline.fullname" . }}-cert-rotation
+    spec:
+      secretName: ${secret_name}-new
+      issuerRef:
+        name: ${issuer}
+        kind: ClusterIssuer
+      dnsNames:
+      - ${domain}
+      - "*.${domain}"
+    EOF
+
+      echo "✅ Certificate request created"
+    }
+
+    # Function to wait for certificate to be ready
+    wait_for_certificate() {
+      local cert_name=$1
+      local namespace=$2
+      local timeout=${3:-300}
+
+      echo "⏳ Waiting for certificate $cert_name to be ready..."
+
+      local end_time=$(($(date +%s) + timeout))
+
+      while [ $(date +%s) -lt $end_time ]; do
+        if kubectl get certificate "$cert_name" -n "$namespace" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
+          echo "✅ Certificate $cert_name is ready"
+          return 0
+        fi
+
+        echo "⏳ Still waiting for certificate... ($(( end_time - $(date +%s) )) seconds remaining)"
+        sleep 10
+      done
+
+      echo "❌ Timeout waiting for certificate $cert_name"
+      return 1
+    }
+
+    # Function to perform atomic certificate replacement
+    replace_certificate() {
+      local old_secret=$1
+      local new_secret=$2
+      local namespace=$3
+
+      echo "🔄 Performing atomic certificate replacement..."
+
+      # Backup the old certificate
+      kubectl get secret "$old_secret" -n "$namespace" -o yaml > "/tmp/${old_secret}-backup.yaml"
+      echo "💾 Backup created: /tmp/${old_secret}-backup.yaml"
+
+      # Get new certificate data
+      local new_cert=$(kubectl get secret "$new_secret" -n "$namespace" -o jsonpath='{.data.tls\.crt}')
+      local new_key=$(kubectl get secret "$new_secret" -n "$namespace" -o jsonpath='{.data.tls\.key}')
+
+      if [ -z "$new_cert" ] || [ -z "$new_key" ]; then
+        echo "❌ New certificate data is incomplete"
+        return 1
+      fi
+
+      # Update the original secret with new certificate data
+      kubectl patch secret "$old_secret" -n "$namespace" --type='merge' -p="{\"data\":{\"tls.crt\":\"$new_cert\",\"tls.key\":\"$new_key\"}}"
+
+      if [ $? -eq 0 ]; then
+        echo "✅ Certificate replacement successful"
+
+        # Clean up the temporary new secret
+        kubectl delete secret "$new_secret" -n "$namespace" --ignore-not-found=true
+        kubectl delete certificate "${old_secret}-renewal" -n "$namespace" --ignore-not-found=true
+
+        return 0
+      else
+        echo "❌ Certificate replacement failed"
+        return 1
+      fi
+    }
+
+    # Function to restart dependent pods
+    restart_dependent_pods() {
+      local secret_name=$1
+      local namespace=$2
+
+      echo "🔄 Restarting pods that use certificate: $secret_name"
+
+      # Find deployments that reference the secret
+      local deployments=$(kubectl get deployments -n "$namespace" -o json | jq -r ".items[] | select(.spec.template.spec.volumes[]?.secret?.secretName == \"$secret_name\") | .metadata.name" 2>/dev/null || echo "")
+
+      if [ -n "$deployments" ]; then
+        for deployment in $deployments; do
+          echo "🔄 Restarting deployment: $deployment"
+          kubectl rollout restart deployment "$deployment" -n "$namespace"
+          kubectl rollout status deployment "$deployment" -n "$namespace" --timeout=300s
+        done
+      else
+        echo "ℹ️  No deployments found using certificate secret $secret_name"
+      fi
+
+      # Find statefulsets that reference the secret
+      local statefulsets=$(kubectl get statefulsets -n "$namespace" -o json | jq -r ".items[] | select(.spec.template.spec.volumes[]?.secret?.secretName == \"$secret_name\") | .metadata.name" 2>/dev/null || echo "")
+
+      if [ -n "$statefulsets" ]; then
+        for statefulset in $statefulsets; do
+          echo "🔄 Restarting statefulset: $statefulset"
+          kubectl rollout restart statefulset "$statefulset" -n "$namespace"
+          kubectl rollout status statefulset "$statefulset" -n "$namespace" --timeout=300s
+        done
+      else
+        echo "ℹ️  No statefulsets found using certificate secret $secret_name"
+      fi
+    }
+
+    # Function to send notification
+    send_notification() {
+      local status=$1
+      local message=$2
+
+      echo "📢 Notification: $status - $message"
+
+      # Log to kubernetes events
+      kubectl create event "cert-rotation-$status" \
+        --namespace="$NAMESPACE" \
+        --reason="CertificateRotation" \
+        --message="$message" \
+        --type="Normal" || true
+    }
+
+    # Main certificate rotation logic
+    main() {
+      echo "🚀 Starting certificate rotation for secret: $TLS_SECRET_NAME"
+
+      # Check if certificate rotation is needed
+      if ! check_cert_expiry "$TLS_SECRET_NAME" "$NAMESPACE"; then
+        echo "ℹ️  Certificate rotation not needed at this time"
+        send_notification "skipped" "Certificate rotation skipped - certificate is still valid for more than $CERT_THRESHOLD_DAYS days"
+        exit 0
+      fi
+
+      # Certificate rotation is needed
+      send_notification "started" "Certificate rotation started for secret $TLS_SECRET_NAME"
+
+      # Extract domain from existing certificate
+      local cert_data=$(kubectl get secret "$TLS_SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.tls\.crt}' | base64 -d)
+      local domain=$(echo "$cert_data" | openssl x509 -noout -subject | grep -o 'CN=[^,]*' | cut -d= -f2 | tr -d ' ')
+
+      if [ -z "$domain" ]; then
+        domain="{{ .Values.global.domain }}"
+        echo "⚠️  Could not extract domain from certificate, using default: $domain"
+      fi
+
+      echo "🌐 Rotating certificate for domain: $domain"
+
+      # Create new certificate request
+      create_cert_request "$domain" "$ISSUER_NAME" "$TLS_SECRET_NAME" "$NAMESPACE"
+
+      # Wait for new certificate to be ready
+      if ! wait_for_certificate "${TLS_SECRET_NAME}-renewal" "$NAMESPACE"; then
+        send_notification "failed" "Certificate rotation failed - new certificate was not issued within timeout"
+        exit 1
+      fi
+
+      # Replace the certificate atomically
+      if replace_certificate "$TLS_SECRET_NAME" "${TLS_SECRET_NAME}-new" "$NAMESPACE"; then
+        send_notification "completed" "Certificate rotation completed successfully"
+
+        # Restart dependent pods to pick up new certificate
+        restart_dependent_pods "$TLS_SECRET_NAME" "$NAMESPACE"
+
+        echo "🎉 Certificate rotation completed successfully!"
+      else
+        send_notification "failed" "Certificate rotation failed during replacement phase"
+        exit 1
+      fi
+    }
+
+    # Run main function
+    main
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-cert-rotation
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    cronjob.homelab.local/type: "cert-rotation"
+spec:
+  # Run every day at 2 AM
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "security-baseline.selectorLabels" . | nindent 12 }}
+            cronjob.homelab.local/type: "cert-rotation"
+        spec:
+          serviceAccountName: {{ include "security-baseline.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          securityContext:
+            {{- include "security-baseline.securityContext.baseline" . | nindent 12 }}
+          containers:
+          - name: cert-rotator
+            image: bitnami/kubectl:latest
+            command: ["/bin/bash", "/scripts/cert-rotation.sh"]
+            env:
+            - name: CERT_THRESHOLD_DAYS
+              value: "30"  # Rotate certificates 30 days before expiry
+            securityContext:
+              {{- include "security-baseline.securityContext.baseline" . | nindent 14 }}
+            volumeMounts:
+            - name: cert-rotation-script
+              mountPath: /scripts
+            resources:
+              {{- include "security-baseline.resources" (dict "Values" .Values "profile" "minimal") | nindent 14 }}
+          volumes:
+          - name: cert-rotation-script
+            configMap:
+              name: {{ include "security-baseline.fullname" . }}-cert-rotation-script
+              defaultMode: 0755
+
+---
+# Manual certificate rotation job template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "security-baseline.fullname" . }}-cert-rotation-manual
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "security-baseline.labels" . | nindent 4 }}
+    job.homelab.local/type: "cert-rotation-manual"
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "security-baseline.selectorLabels" . | nindent 8 }}
+        job.homelab.local/type: "cert-rotation-manual"
+    spec:
+      serviceAccountName: {{ include "security-baseline.serviceAccountName" . }}
+      restartPolicy: OnFailure
+      securityContext:
+        {{- include "security-baseline.securityContext.baseline" . | nindent 8 }}
+      containers:
+      - name: cert-rotator
+        image: bitnami/kubectl:latest
+        command: ["/bin/bash", "/scripts/cert-rotation.sh"]
+        env:
+        - name: CERT_THRESHOLD_DAYS
+          value: "7"  # More aggressive rotation during upgrades
+        securityContext:
+          {{- include "security-baseline.securityContext.baseline" . | nindent 10 }}
+        volumeMounts:
+        - name: cert-rotation-script
+          mountPath: /scripts
+        resources:
+          {{- include "security-baseline.resources" (dict "Values" .Values "profile" "minimal") | nindent 10 }}
+      volumes:
+      - name: cert-rotation-script
+        configMap:
+          name: {{ include "security-baseline.fullname" . }}-cert-rotation-script
+          defaultMode: 0755
+{{- end }}

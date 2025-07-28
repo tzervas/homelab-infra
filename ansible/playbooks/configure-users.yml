@@ -1,0 +1,78 @@
+---
+# System User and SSH Configuration Playbook
+# Handles user management and SSH configuration for homelab infrastructure
+# Ensures proper user setup for system administration
+
+- name: Configure System Users and SSH
+  hosts: homelab
+  gather_facts: yes
+  become: yes
+
+  vars:
+    users_timestamp: "{{ ansible_date_time.iso8601 }}"
+
+  tasks:
+    - name: Include deployment user role
+      include_role:
+        name: deployment-user
+      when: "'users' in system_tasks"
+      tags: [deployment_user]
+
+    - name: Configure SSH key distribution
+      block:
+        - name: Ensure SSH keys are properly distributed
+          authorized_key:
+            user: "{{ ansible_user }}"
+            state: present
+            key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+          register: ssh_key_added
+
+        - name: Log SSH key distribution
+          debug:
+            msg: "SSH key updated: {{ ssh_key_added.changed }}"
+
+      tags: [ssh_keys]
+
+    - name: Configure sudo access
+      block:
+        - name: Ensure main user has proper sudo access
+          user:
+            name: "{{ ansible_user }}"
+            groups: sudo
+            append: yes
+          register: sudo_configured
+
+        - name: Log sudo configuration
+          debug:
+            msg: "Sudo configured: {{ sudo_configured.changed }}"
+
+      tags: [sudo]
+
+    - name: Create users status file
+      copy:
+        content: |
+          # System Users Configuration Status
+          # Generated: {{ users_timestamp }}
+
+          USERS_CONFIGURED=true
+          USERS_TIMESTAMP={{ users_timestamp }}
+
+          # Main user configuration
+          MAIN_USER={{ ansible_user }}
+          SSH_KEY_CONFIGURED={{ ssh_key_added.changed | default(false) }}
+          SUDO_CONFIGURED={{ sudo_configured.changed | default(false) }}
+
+          # Deployment user
+          DEPLOYMENT_USER_CONFIGURED=true
+
+          # Ready for system operations
+          READY_FOR_OPERATIONS=true
+        dest: /opt/homelab/users-status.env
+        mode: '0644'
+
+    - name: Log users configuration completion
+      lineinfile:
+        path: /opt/homelab/logs/users.log
+        line: "{{ users_timestamp }} - System users configured on {{ inventory_hostname }}"
+        create: yes
+        mode: '0644'

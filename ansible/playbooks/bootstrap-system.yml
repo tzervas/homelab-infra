@@ -1,0 +1,182 @@
+---
+# System Bootstrap Playbook
+# Handles initial server provisioning and system-level configuration
+# Ensures idempotency and prepares systems for K3s and Helm deployments
+
+- name: Bootstrap System Prerequisites
+  hosts: homelab
+  gather_facts: yes
+  become: yes
+
+  vars:
+    bootstrap_timestamp: "{{ ansible_date_time.iso8601 }}"
+    required_packages:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - net-tools
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+      - software-properties-common
+      - unzip
+      - jq
+      - python3
+      - python3-pip
+      - rsync
+
+  tasks:
+    - name: Update package cache (idempotent)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Ensure essential packages are installed
+      apt:
+        name: "{{ required_packages }}"
+        state: present
+        update_cache: yes
+      register: package_install
+
+    - name: Log package installation results
+      debug:
+        msg: "Packages installed: {{ package_install.changed }}"
+
+    - name: Ensure system timezone is configured
+      timezone:
+        name: "{{ server_timezone | default('UTC') }}"
+      register: timezone_change
+
+    - name: Log timezone configuration
+      debug:
+        msg: "Timezone updated: {{ timezone_change.changed }}"
+
+    - name: Configure system hostname (idempotent)
+      hostname:
+        name: "{{ server_hostname | default(inventory_hostname) }}"
+      register: hostname_change
+
+    - name: Update /etc/hosts with hostname
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1 {{ server_hostname | default(inventory_hostname) }}"
+        state: present
+      when: hostname_change.changed
+
+    - name: Ensure required system directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      loop:
+        - /opt/homelab
+        - /opt/homelab/bin
+        - /opt/homelab/logs
+        - /opt/homelab/configs
+        - /etc/homelab
+
+    - name: Configure system-level security settings
+      block:
+        - name: Disable unnecessary services (if present)
+          systemd:
+            name: "{{ item }}"
+            state: stopped
+            enabled: no
+          loop:
+            - snapd.seeded.service
+          failed_when: false
+
+        - name: Configure SSH settings for security
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            state: present
+            backup: yes
+          loop:
+            - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+            - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+            - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+          register: ssh_config_changed
+
+        - name: Restart SSH service if configuration changed
+          systemd:
+            name: sshd
+            state: restarted
+          when: ssh_config_changed.changed
+
+      tags: [security, ssh]
+
+    - name: Configure system performance settings
+      block:
+        - name: Set kernel parameters for better performance
+          sysctl:
+            name: "{{ item.name }}"
+            value: "{{ item.value }}"
+            state: present
+            reload: yes
+          loop:
+            - { name: 'vm.swappiness', value: '10' }
+            - { name: 'net.core.rmem_max', value: '134217728' }
+            - { name: 'net.core.wmem_max', value: '134217728' }
+            - { name: 'net.ipv4.tcp_rmem', value: '4096 65536 134217728' }
+            - { name: 'net.ipv4.tcp_wmem', value: '4096 65536 134217728' }
+          register: sysctl_changes
+
+        - name: Log kernel parameter changes
+          debug:
+            msg: "Kernel parameters updated: {{ sysctl_changes.changed }}"
+
+      tags: [performance, kernel]
+
+    - name: Create system status file
+      copy:
+        content: |
+          # System Bootstrap Status
+          # Generated: {{ bootstrap_timestamp }}
+
+          BOOTSTRAP_COMPLETE=true
+          BOOTSTRAP_TIMESTAMP={{ bootstrap_timestamp }}
+          HOSTNAME={{ server_hostname | default(inventory_hostname) }}
+          TIMEZONE={{ server_timezone | default('UTC') }}
+          ANSIBLE_USER={{ ansible_user }}
+
+          # Package Status
+          PACKAGES_INSTALLED={{ package_install.changed }}
+
+          # Security Status
+          SSH_CONFIGURED={{ ssh_config_changed.changed | default(false) }}
+
+          # Performance Status
+          KERNEL_TUNED={{ sysctl_changes.changed | default(false) }}
+
+          # Ready for next steps
+          READY_FOR_K3S=true
+          READY_FOR_HELM=false
+        dest: /opt/homelab/bootstrap-status.env
+        mode: '0644'
+
+    - name: Log bootstrap completion
+      lineinfile:
+        path: /opt/homelab/logs/bootstrap.log
+        line: "{{ bootstrap_timestamp }} - System bootstrap completed on {{ inventory_hostname }}"
+        create: yes
+        mode: '0644'
+
+    - name: Display bootstrap summary
+      debug:
+        msg:
+          - "✅ System bootstrap completed successfully!"
+          - "🏠 Hostname: {{ server_hostname | default(inventory_hostname) }}"
+          - "🕒 Timezone: {{ server_timezone | default('UTC') }}"
+          - "📦 Packages: {{ 'Updated' if package_install.changed else 'Already current' }}"
+          - "🔒 SSH: {{ 'Configured' if ssh_config_changed.changed | default(false) else 'Already secure' }}"
+          - "⚡ Performance: {{ 'Tuned' if sysctl_changes.changed | default(false) else 'Already optimized' }}"
+          - "📄 Status file: /opt/homelab/bootstrap-status.env"
+          - "🚀 Ready for K3s deployment!"

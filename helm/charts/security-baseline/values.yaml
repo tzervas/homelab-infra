@@ -1,0 +1,276 @@
+# Security Baseline Configuration
+# This file defines standardized security contexts, policies, and configurations
+
+global:
+  # Environment-specific settings
+  environment: "development"
+  domain: "homelab.local"
+
+  # Certificate and TLS Settings
+  tls:
+    enabled: true
+    issuer: "letsencrypt-staging"
+    secretName: "tls-secret"
+
+  # mTLS Configuration
+  mtls:
+    enabled: false  # Enable in prod environments
+    mode: "permissive"  # strict, permissive, disabled
+    certs:
+      ca: "ca-cert"
+      cert: "tls-cert"
+      key: "tls-key"
+
+# Pod Security Standards Configuration
+podSecurityStandards:
+  # Pod Security Standard enforcement levels
+  enforce: "baseline"  # baseline, restricted, privileged
+  audit: "restricted"   # audit level for violations
+  warn: "restricted"    # warning level
+
+  # Namespace labels for PSS
+  labels:
+    enforce: "pod-security.kubernetes.io/enforce"
+    audit: "pod-security.kubernetes.io/audit"
+    warn: "pod-security.kubernetes.io/warn"
+    version: "pod-security.kubernetes.io/enforce-version"
+
+# Standard Security Context Templates
+securityContexts:
+  # Restricted security context (most secure)
+  restricted:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+
+  # Baseline security context (moderate security)
+  baseline:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+    allowPrivilegeEscalation: false
+
+  # Privileged security context (for system components that need it)
+  privileged:
+    runAsNonRoot: false
+    runAsUser: 0
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - NET_ADMIN
+        - NET_RAW
+        - SYS_ADMIN
+    seccompProfile:
+      type: RuntimeDefault
+    allowPrivilegeEscalation: true
+
+  # Network-focused security context (for ingress controllers, etc.)
+  networking:
+    runAsNonRoot: false
+    runAsUser: 101
+    runAsGroup: 101
+    capabilities:
+      drop:
+        - ALL
+      add:
+        - NET_BIND_SERVICE
+        - CHOWN
+        - SETGID
+        - SETUID
+    seccompProfile:
+      type: RuntimeDefault
+    allowPrivilegeEscalation: false
+
+# Network Policies Configuration
+networkPolicies:
+  # Default deny all ingress and egress
+  defaultDeny:
+    enabled: true
+
+  # Allow DNS resolution
+  allowDNS:
+    enabled: true
+
+  # Allow access to Kubernetes API
+  allowKubeAPI:
+    enabled: true
+
+  # Custom network policies
+  custom: []
+    # - name: "allow-frontend-to-backend"
+    #   podSelector:
+    #     matchLabels:
+    #       app: frontend
+    #   policyTypes:
+    #     - Ingress
+    #     - Egress
+    #   egress:
+    #     - to:
+    #       - podSelector:
+    #           matchLabels:
+    #             app: backend
+    #       ports:
+    #         - protocol: TCP
+    #           port: 8080
+
+# RBAC Configuration
+rbac:
+  # Create RBAC resources
+  create: true
+
+  # Default service account settings
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: false
+    annotations: {}
+
+  # Standard roles
+  roles:
+    # Read-only role for monitoring
+    readonly:
+      enabled: true
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "services", "endpoints"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["apps"]
+          resources: ["deployments", "replicasets"]
+          verbs: ["get", "list", "watch"]
+
+    # Application deployment role
+    deployer:
+      enabled: true
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "services", "configmaps", "secrets"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+        - apiGroups: ["apps"]
+          resources: ["deployments"]
+          verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Resource Limits and Requests
+resources:
+  # Default resource constraints
+  defaults:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+
+  # Resource profiles for different workload types
+  profiles:
+    # Minimal resources for small utilities
+    minimal:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+
+    # Standard resources for typical applications
+    standard:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+    # High resource allocation for demanding applications
+    high:
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+
+# Health Check Configuration
+healthChecks:
+  # Liveness probe defaults
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Readiness probe defaults
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Secret Management
+secrets:
+  # Use external secrets operator
+  externalSecrets:
+    enabled: false
+
+  # Use sealed secrets
+  sealedSecrets:
+    enabled: true
+
+  # Secret templates
+  templates:
+    basic:
+      type: Opaque
+    tls:
+      type: kubernetes.io/tls
+    dockerRegistry:
+      type: kubernetes.io/dockerconfigjson
+
+# Monitoring and Observability
+monitoring:
+  # ServiceMonitor for Prometheus
+  serviceMonitor:
+    enabled: true
+    labels:
+      monitoring: "prometheus"
+    interval: "30s"
+    scrapeTimeout: "10s"
+
+  # Pod monitors
+  podMonitor:
+    enabled: false
+
+  # Default metrics port
+  metricsPort: 9090
+
+# Validation and Testing
+validation:
+  # OPA Gatekeeper policies
+  gatekeeper:
+    enabled: false
+
+  # Falco runtime security
+  falco:
+    enabled: false
+
+  # Network policy testing
+  networkPolicyTesting:
+    enabled: false

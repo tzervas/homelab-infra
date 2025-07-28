@@ -2,13 +2,27 @@
 # K3s Kubernetes Cluster Deployment
 # Installs and configures K3s with required settings for homelab
 
-- name: Check if K3s is already installed
-  command: k3s --version
-  register: k3s_check
-  changed_when: false
-  failed_when: false
+- name: Deploy K3s to homelab
+  hosts: test-vm
+  become: yes
+  vars:
+    k3s_version: "v1.27.4+k3s1"
+    k3s_server_args:
+      - "--disable=traefik"
+      - "--disable=servicelb"
+      - "--disable-cloud-controller"
+      - "--kube-controller-manager-arg=bind-address=0.0.0.0"
+      - "--kube-proxy-arg=metrics-bind-address=0.0.0.0"
+      - "--kube-scheduler-arg=bind-address=0.0.0.0"
 
-- name: Display K3s status
+  tasks:
+    - name: Check if K3s is already installed
+      command: k3s --version
+      register: k3s_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display K3s status
   debug:
     msg: "K3s is {{ 'already installed' if k3s_check.rc == 0 else 'not installed' }}"
 

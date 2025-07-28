@@ -1,0 +1,213 @@
+# Helm-focused CI/CD pipeline components
+# Provides Helm chart validation, deployment, and release management
+
+# ============================================================================
+# HELM CHART VALIDATION
+# ============================================================================
+
+helm:lint:charts:
+  stage: validate
+  image: alpine/helm:latest
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - cd helm
+    - |
+      find charts/ -name "Chart.yaml" -exec dirname {} \; | while read -r chart; do
+        echo "Linting chart: $chart"
+        helm lint "$chart"
+      done
+  rules:
+    - changes:
+        - helm/**/*
+  tags:
+    - homelab
+
+helm:template:dry-run:
+  stage: build
+  image: alpine/helm:latest
+  before_script:
+    - apk add --no-cache bash curl
+    - curl -LO
+      "https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+  script:
+    - cd helm
+    - helmfile --environment staging template --skip-deps > staging-templates.yaml
+    - helmfile --environment production template --skip-deps > production-templates.yaml
+  rules:
+    - changes:
+        - helm/**/*
+  artifacts:
+    paths:
+      - helm/*-templates.yaml
+    expire_in: 1 day
+  tags:
+    - homelab
+
+# ============================================================================
+# HELM DEPLOYMENT
+# ============================================================================
+
+helm:deploy:staging:
+  stage: deploy-staging
+  image: alpine/helm:latest
+  environment:
+    name: staging
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - curl -LO
+      "https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - cd helm
+    - helmfile --environment staging sync
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: manual
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  artifacts:
+    paths:
+      - helm/*.log
+    expire_in: 1 week
+  tags:
+    - homelab
+
+helm:deploy:production:
+  stage: deploy-production
+  image: alpine/helm:latest
+  environment:
+    name: production
+  before_script:
+    - apk add --no-cache bash curl kubectl
+    - curl -LO
+      "https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64.tar.gz"
+    - tar -xzf helmfile_*.tar.gz && mv helmfile /usr/local/bin/
+    - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - cd helm
+    - helmfile --environment production sync
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  artifacts:
+    paths:
+      - helm/*.log
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# HELM RELEASE VALIDATION
+# ============================================================================
+
+helm:validate:releases:
+  stage: verify
+  image: alpine/helm:latest
+  before_script:
+    - apk add --no-cache bash kubectl
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      # Validate all Helm releases are in good state
+      helm list --all-namespaces --output json > helm-releases.json
+
+      # Check for failed releases
+      failed_releases=$(helm list --all-namespaces --failed --short)
+      if [ -n "$failed_releases" ]; then
+        echo "Failed Helm releases found:"
+        echo "$failed_releases"
+        exit 1
+      fi
+
+      # Check for pending releases
+      pending_releases=$(helm list --all-namespaces --pending --short)
+      if [ -n "$pending_releases" ]; then
+        echo "Pending Helm releases found:"
+        echo "$pending_releases"
+        echo "Manual intervention may be required"
+      fi
+
+      echo "All Helm releases are in good state"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    paths:
+      - helm-releases.json
+    expire_in: 1 week
+  tags:
+    - homelab
+
+# ============================================================================
+# HELM ROLLBACK CAPABILITIES
+# ============================================================================
+
+helm:rollback:staging:
+  stage: deploy-staging
+  image: alpine/helm:latest
+  environment:
+    name: staging
+  before_script:
+    - apk add --no-cache bash kubectl
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      if [ -z "$RELEASE_NAME" ] || [ -z "$REVISION" ]; then
+        echo "Error: RELEASE_NAME and REVISION variables must be set"
+        exit 1
+      fi
+
+      echo "Rolling back release $RELEASE_NAME to revision $REVISION"
+      helm rollback "$RELEASE_NAME" "$REVISION" --namespace "$NAMESPACE"
+
+      # Verify rollback
+      helm status "$RELEASE_NAME" --namespace "$NAMESPACE"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: manual
+      allow_failure: false
+  variables:
+    RELEASE_NAME: ""
+    REVISION: ""
+    NAMESPACE: "default"
+  tags:
+    - homelab
+
+helm:rollback:production:
+  stage: deploy-production
+  image: alpine/helm:latest
+  environment:
+    name: production
+  before_script:
+    - apk add --no-cache bash kubectl
+    - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+  script:
+    - |
+      if [ -z "$RELEASE_NAME" ] || [ -z "$REVISION" ]; then
+        echo "Error: RELEASE_NAME and REVISION variables must be set"
+        exit 1
+      fi
+
+      echo "Rolling back release $RELEASE_NAME to revision $REVISION"
+      helm rollback "$RELEASE_NAME" "$REVISION" --namespace "$NAMESPACE"
+
+      # Verify rollback
+      helm status "$RELEASE_NAME" --namespace "$NAMESPACE"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  variables:
+    RELEASE_NAME: ""
+    REVISION: ""
+    NAMESPACE: "default"
+  tags:
+    - homelab

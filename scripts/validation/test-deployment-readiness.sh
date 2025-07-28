@@ -72,7 +72,7 @@ required_files=(
   "ansible/inventory/hosts.yml"
   "ansible/playbooks/create-vm.yml"
   "ansible/playbooks/deploy-k3s.yml"
-  "scripts/deploy-homelab.sh"
+  "scripts/deployment/deploy-homelab.sh"
 )
 
 for file in "${required_files[@]}"; do
@@ -192,10 +192,10 @@ echo "   • vm-test: Create VM and test deployment"
 echo "   • bare-metal: Deploy directly to server"
 echo ""
 echo "🚀 To start VM testing:"
-echo "   ./scripts/deploy-homelab.sh vm-test"
+echo "   ./scripts/deployment/deploy-homelab.sh vm-test"
 echo ""
 echo "💡 For verbose output:"
-echo "   VERBOSE=true ./scripts/deploy-homelab.sh vm-test"
+echo "   VERBOSE=true ./scripts/deployment/deploy-homelab.sh vm-test"
 echo ""
 
 print_success "All prerequisites checked! Ready for deployment."

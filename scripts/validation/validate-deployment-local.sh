@@ -160,8 +160,8 @@ print_header "🚀 Testing Deployment Scripts"
 echo ""
 
 SCRIPTS=(
-  "scripts/deploy-homelab.sh"
-  "scripts/deploy-gitlab-keycloak.sh"
+  "scripts/deployment/deploy-homelab.sh"
+  "scripts/deployment/deploy-gitlab-keycloak.sh"
 )
 
 for script in "${SCRIPTS[@]}"; do
@@ -226,7 +226,7 @@ for phase in "${PHASES[@]}"; do
   print_info "Testing phase: $phase"
 
   # Test if phase is recognized in deployment script
-  if grep -q "$phase" scripts/deploy-homelab.sh; then
+  if grep -q "$phase" scripts/deployment/deploy-homelab.sh; then
     print_success "Phase '$phase' is supported"
   else
     print_error "Phase '$phase' not found in deployment script"
@@ -251,8 +251,8 @@ echo "🚀 Ready for deployment when server is accessible:"
 echo ""
 echo "   1. Configure server IP in ansible/inventory/hosts.yml"
 echo "   2. Set up SSH key access: ssh-copy-id kang@SERVER_IP"
-echo "   3. Run readiness check: ./scripts/test-deployment-readiness.sh"
-echo "   4. Start deployment: ./scripts/deploy-homelab.sh vm-test"
+echo "   3. Run readiness check: ./scripts/validation/test-deployment-readiness.sh"
+echo "   4. Start deployment: ./scripts/deployment/deploy-homelab.sh vm-test"
 echo ""
 
 print_success "All local validation tests passed! 🎉"
@@ -260,4 +260,4 @@ echo ""
 echo "💡 To proceed with actual deployment:"
 echo "   • Ensure server connectivity"
 echo "   • Update inventory with real server IP"
-echo "   • Run: VERBOSE=true ./scripts/deploy-homelab.sh vm-test"
+echo "   • Run: VERBOSE=true ./scripts/deployment/deploy-homelab.sh vm-test"

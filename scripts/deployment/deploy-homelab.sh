@@ -48,8 +48,8 @@ sync_private_config() {
   echo "===================================="
 
   # Run the private config sync script if it exists
-  if [ -f "$PROJECT_ROOT/scripts/sync-private-config.sh" ]; then
-    "$PROJECT_ROOT/scripts/sync-private-config.sh" sync
+  if [ -f "$PROJECT_ROOT/scripts/maintenance/sync-private-config.sh" ]; then
+    "$PROJECT_ROOT/scripts/maintenance/sync-private-config.sh" sync
   else
     print_warning "Private config sync script not found"
     print_status "Skipping private configuration sync"
@@ -229,7 +229,7 @@ show_post_deployment_info() {
       echo "  3. Configure Keycloak SSO (see documentation)"
       echo ""
       echo "  4. Test the deployment:"
-      echo "     ./scripts/test-sso-flow.sh"
+      echo "     ./scripts/validation/test-sso-flow.sh"
       echo ""
       echo "  5. When ready for production:"
       echo "     $0 bare-metal"
@@ -248,7 +248,7 @@ show_post_deployment_info() {
       echo "  kubectl get nodes                    # Check cluster status"
       echo "  kubectl get pods -A                  # View all pods"
       echo "  kubectl get svc -A                   # View services"
-      echo "  ./scripts/test-sso-flow.sh          # Test functionality"
+      echo "  ./scripts/validation/test-sso-flow.sh          # Test functionality"
       ;;
     "cleanup-vm")
       print_success "Test VM cleaned up successfully"
@@ -266,7 +266,7 @@ show_post_deployment_info() {
   echo ""
   print_status "For troubleshooting, check:"
   echo "  • kubectl logs -n <namespace> <pod-name>"
-  echo "  • ./scripts/cleanup-failed.sh (for stuck resources)"
+  echo "  • ./scripts/utilities/cleanup-failed.sh (for stuck resources)"
   echo "  • Documentation in docs/ directory"
   echo ""
 }

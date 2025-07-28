@@ -1,8 +1,49 @@
 #!/bin/bash
+
+# MIT License
+#
+# Copyright (c) 2025 Tyler Zervas
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # Enhanced Deployment Script with Comprehensive Validation
 # Deploys homelab infrastructure and performs thorough validation
+#
+# USAGE:
+#   ./deploy-and-validate.sh <deployment-phase> [options]
+#
+# PHASES:
+#   vm-test           Deploy to test VM and validate
+#   bare-metal        Deploy to bare metal and validate
+#   validation-only   Skip deployment, only run validation
+#
+# ENVIRONMENT VARIABLES:
+#   SKIP_DEPLOYMENT   Skip deployment phase (default: false)
+#   VALIDATION_ONLY   Only perform validation (default: false)
+#   VERBOSE           Enable verbose logging (default: false)
+#   ENV_REQUIRED      Require .env file for deployment (default: true)
+#
+# EXIT CODES:
+#   0: Success
+#   1: Validation failed or deployment error
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -13,35 +54,34 @@ SKIP_DEPLOYMENT="${SKIP_DEPLOYMENT:-false}"
 VALIDATION_ONLY="${VALIDATION_ONLY:-false}"
 VERBOSE="${VERBOSE:-false}"
 
+# Logging functions
+log_info() {
+    echo -e "\033[0;34m[INFO]\033[0m $*" >&2
+}
+
+log_success() {
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" >&2
+}
+
+log_warning() {
+    echo -e "\033[1;33m[WARNING]\033[0m $*" >&2
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" >&2
+}
+
+log_header() {
+    echo -e "\033[0;35m$*\033[0m" >&2
+}
+
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m'
-
-# Logging functions
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-  echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_header() {
-  echo -e "${PURPLE}$1${NC}"
-}
 
 show_usage() {
   cat <<EOF
@@ -181,12 +221,15 @@ wait_for_deployment_ready() {
     # Check if kubectl is accessible
     if kubectl cluster-info &>/dev/null; then
       # Check for any pods in crash/error state
-      local problem_pods=$(kubectl get pods -A --no-headers | grep -E "(Error|CrashLoopBackOff|ImagePullBackOff)" | wc -l)
+      local problem_pods
+      problem_pods=$(kubectl get pods -A --no-headers | grep -cE "(Error|CrashLoopBackOff|ImagePullBackOff)" || echo 0)
 
       if [[ $problem_pods -eq 0 ]]; then
         # Check if most pods are running
-        local total_pods=$(kubectl get pods -A --no-headers | wc -l)
-        local running_pods=$(kubectl get pods -A --no-headers | grep "Running" | wc -l)
+        local total_pods
+        local running_pods
+        total_pods=$(kubectl get pods -A --no-headers | wc -l)
+        running_pods=$(kubectl get pods -A --no-headers | grep -c "Running" || echo 0)
 
         if [[ $total_pods -gt 0 && $running_pods -gt $((total_pods * 70 / 100)) ]]; then
           log_success "Deployment appears stable (${running_pods}/${total_pods} pods running)"
@@ -261,7 +304,8 @@ generate_deployment_summary() {
 
   log_header "📊 Deployment Summary"
 
-  local summary_file="$PROJECT_ROOT/deployment-summary-$(date +%Y%m%d-%H%M%S).md"
+  local summary_file
+  summary_file="$PROJECT_ROOT/deployment-summary-$(date +%Y%m%d-%H%M%S).md"
 
   cat >"$summary_file" <<EOF
 # Homelab Infrastructure Deployment Summary
@@ -293,7 +337,7 @@ $(kubectl get pods -A --field-selector=status.phase=Running 2>/dev/null | head -
 
 $(if kubectl get ingress -A --no-headers 2>/dev/null | head -10; then
     echo "#### Available Services"
-    kubectl get ingress -A --no-headers 2>/dev/null | while read ns name class hosts addr ports age; do
+    kubectl get ingress -A --no-headers 2>/dev/null | while read -r ns name _ hosts _ _ _; do
       echo "- **$name** ($ns): https://$hosts"
     done
   else
@@ -382,7 +426,7 @@ EOF
 
 # Main execution function
 main() {
-  local start_time=$SECONDS
+  # Track script duration (start_time implicitly tracked by SECONDS)
 
   # Handle help and validation-only modes
   if [[ $1 == "-h" || $1 == "--help" ]]; then

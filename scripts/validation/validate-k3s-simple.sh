@@ -37,7 +37,7 @@ check_dependencies() {
 
 # Cleanup function
 cleanup() {
-    echo "\nCleaning up test resources..."
+    printf "\nCleaning up test resources...\n"
     kubectl delete pod dns-test test-server test-client -n default --ignore-not-found=true &>/dev/null || true
     kubectl delete service test-service -n default --ignore-not-found=true &>/dev/null || true
 }
@@ -190,7 +190,9 @@ EOF
 echo "Waiting for pods to be ready..."
 if kubectl wait --for=condition=Ready pod/test-server pod/test-client -n default --timeout=120s &>/dev/null; then
     # Wait for service endpoints to be ready
-    local service_ready=false timeout=30 elapsed=0
+    service_ready=false
+    timeout=30
+    elapsed=0
     while [[ $elapsed -lt $timeout ]]; do
         if kubectl get endpoints test-service -n default -o jsonpath='{.subsets[0].addresses[0].ip}' &>/dev/null; then
             service_ready=true

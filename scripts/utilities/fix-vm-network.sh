@@ -1,8 +1,47 @@
 #!/bin/bash
+
+# MIT License
+#
+# Copyright (c) 2025 Tyler Zervas
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # Script to fix VM network connectivity and SSH access
 # This ensures proper routing and SSH proxying through the homelab server
+#
+# USAGE:
+#   ./fix-vm-network.sh
+#
+# DESCRIPTION:
+#   Checks VM status, obtains IP address, configures SSH proxy jump,
+#   tests connectivity, and creates Ansible inventory for deployment.
+#
+# ENVIRONMENT VARIABLES:
+#   HOMELAB_SERVER   Homelab server IP (default: 192.168.16.26)
+#   HOMELAB_USER     Username for homelab server (default: kang)
+#   VM_NAME          VM name to manage (default: homelab-test-vm)
+#
+# EXIT CODES:
+#   0: Success
+#   1: VM not found, connectivity failed, or setup error
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -17,6 +56,23 @@ HOMELAB_SERVER="${HOMELAB_SERVER:-192.168.16.26}"
 HOMELAB_USER="${HOMELAB_USER:-kang}"
 VM_NAME="${VM_NAME:-homelab-test-vm}"
 
+# Logging functions
+log_info() {
+    echo -e "\033[0;34m[INFO]\033[0m $*" >&2
+}
+
+log_success() {
+    echo -e "\033[0;32m[SUCCESS]\033[0m $*" >&2
+}
+
+log_warning() {
+    echo -e "\033[1;33m[WARNING]\033[0m $*" >&2
+}
+
+log_error() {
+    echo -e "\033[0;31m[ERROR]\033[0m $*" >&2
+}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -24,27 +80,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-  echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
 # Function to check if VM exists and is running
 check_vm_status() {
   log_info "Checking VM status on homelab server..."
 
-  local vm_status=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domstate ${VM_NAME} 2>/dev/null || echo 'not-found'")
+  local vm_status
+  vm_status=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domstate '${VM_NAME}' 2>/dev/null || echo 'not-found'")
 
   if [[ "$vm_status" == "not-found" ]]; then
     log_error "VM ${VM_NAME} not found on homelab server"
@@ -52,7 +93,7 @@ check_vm_status() {
   elif [[ "$vm_status" != "running" ]]; then
     log_warning "VM ${VM_NAME} is in state: $vm_status"
     log_info "Starting VM..."
-    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system start ${VM_NAME}"
+    ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system start '${VM_NAME}'"
     sleep 10
   else
     log_success "VM ${VM_NAME} is running"
@@ -70,7 +111,7 @@ get_vm_ip() {
   local vm_ip=""
 
   while [[ $attempt -lt $max_attempts ]]; do
-    vm_ip=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domifaddr ${VM_NAME} 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1")
+    vm_ip=$(ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system domifaddr '${VM_NAME}' 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1")
 
     if [[ -n "$vm_ip" ]]; then
       log_success "VM IP address: $vm_ip"
@@ -135,7 +176,7 @@ test_ssh_connectivity() {
 
   # Test if homelab server can reach the VM
   log_info "Testing VM connectivity from homelab server..."
-  if ! ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "ping -c 1 -W 2 $vm_ip" >/dev/null 2>&1; then
+  if ! ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "ping -c 1 -W 2 '$vm_ip'" >/dev/null 2>&1; then
     log_error "Homelab server cannot reach VM at $vm_ip"
     log_info "Checking libvirt network status..."
     ssh "${HOMELAB_USER}@${HOMELAB_SERVER}" "virsh -c qemu:///system net-list --all"

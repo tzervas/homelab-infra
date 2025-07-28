@@ -79,7 +79,7 @@ ssh your-username@192.168.1.100 'echo "SSH works!"'
 
 ```bash
 # Test with a virtual machine first
-./scripts/deploy-homelab.sh vm-test
+./scripts/deployment/deploy-homelab.sh vm-test
 ```
 
 This will:
@@ -109,7 +109,7 @@ Once VM testing succeeds:
 
 ```bash
 # Deploy to bare metal
-./scripts/deploy-homelab.sh bare-metal
+./scripts/deployment/deploy-homelab.sh bare-metal
 ```
 
 ## 🌐 Access Your Services

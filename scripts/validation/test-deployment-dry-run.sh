@@ -68,7 +68,7 @@ REQUIRED_FILES=(
   "ansible/inventory/hosts.yml"
   "ansible/playbooks/create-vm.yml"
   "ansible/playbooks/deploy-k3s.yml"
-  "scripts/deploy-homelab.sh"
+  "scripts/deployment/deploy-homelab.sh"
 )
 
 for file in "${REQUIRED_FILES[@]}"; do
@@ -99,7 +99,7 @@ fi
 cd "$PROJECT_ROOT"
 
 print_step "Validating Kubernetes manifests..."
-if ./scripts/validate-k8s-manifests.sh >/tmp/k8s-validation.log 2>&1; then
+if ./scripts/validation/validate-k8s-manifests.sh >/tmp/k8s-validation.log 2>&1; then
   MANIFEST_COUNT=$(grep -c "Valid Kubernetes manifest" /tmp/k8s-validation.log)
   print_success "$MANIFEST_COUNT Kubernetes manifests validated"
 else

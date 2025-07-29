@@ -124,7 +124,7 @@ class CertificateMonitor:
                 "-A",
                 "-o",
                 "json",
-            ]
+            ],
         )
 
         if exit_code != 0:
@@ -168,7 +168,7 @@ class CertificateMonitor:
                             namespace,
                             "-o",
                             "json",
-                        ]
+                        ],
                     )
 
                     if secret_exit_code == 0:
@@ -187,7 +187,7 @@ class CertificateMonitor:
                                         not_after=cert_info["not_after"],
                                         dns_names=spec.get("dnsNames", []),
                                         days_until_expiry=self._calculate_days_until_expiry(
-                                            cert_info["not_after"]
+                                            cert_info["not_after"],
                                         ),
                                         is_ca=spec.get("isCA", False),
                                         secret_name=secret_name,
@@ -530,7 +530,7 @@ class CertificateMonitor:
                 logger.info("Webhook alert sent successfully")
                 return True
             logger.error(
-                f"Webhook alert failed with status {response.status_code}: {response.text}"
+                f"Webhook alert failed with status {response.status_code}: {response.text}",
             )
             return False
 
@@ -585,7 +585,7 @@ class CertificateMonitor:
                     else "WARNING"
                 )
                 logger.warning(
-                    f"{severity}: {cert.name} in {cert.namespace} expires in {cert.days_until_expiry} days"
+                    f"{severity}: {cert.name} in {cert.namespace} expires in {cert.days_until_expiry} days",
                 )
         else:
             logger.info("No certificates require alerts")

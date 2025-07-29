@@ -96,6 +96,12 @@ homelab-integration = "scripts.testing.integration_tester:main"
 homelab = "homelab_orchestrator.cli:main"
 homelab-orchestrator = "homelab_orchestrator.cli:main"
 
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "ruff>=0.12.5",
+]
+
 # Ruff configuration (replaces black, isort, flake8, etc.)
 [tool.ruff]
 line-length = 100

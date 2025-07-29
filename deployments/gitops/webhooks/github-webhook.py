@@ -187,7 +187,7 @@ def github_webhook():
                 {
                     "status": "success",
                     "message": "No applications affected by changes",
-                }
+                },
             )
 
         # Trigger sync for affected applications
@@ -198,7 +198,7 @@ def github_webhook():
                 {
                     "application": app,
                     "result": result,
-                }
+                },
             )
 
         return jsonify(
@@ -207,7 +207,7 @@ def github_webhook():
                 "message": f"Processed push event for {len(affected_apps)} applications",
                 "affected_applications": affected_apps,
                 "sync_results": sync_results,
-            }
+            },
         )
 
     # Handle pull request events
@@ -225,7 +225,7 @@ def github_webhook():
                 {
                     "status": "success",
                     "message": f"Pull request #{pr_number} {action} - validation triggered",
-                }
+                },
             )
         return None
 
@@ -235,7 +235,7 @@ def github_webhook():
         {
             "status": "ignored",
             "message": f"Event type {event_type} not processed",
-        }
+        },
     )
 
 
@@ -256,7 +256,7 @@ def drift_notification():
         {
             "status": "received",
             "message": "Drift notification processed",
-        }
+        },
     )
 
 
@@ -269,14 +269,14 @@ def health_notification():
         abort(400)
 
     logger.warning(
-        f"Health issue in application: {payload.get('application')} - {payload.get('health')}"
+        f"Health issue in application: {payload.get('application')} - {payload.get('health')}",
     )
 
     return jsonify(
         {
             "status": "received",
             "message": "Health notification processed",
-        }
+        },
     )
 
 
@@ -288,7 +288,7 @@ def health_check():
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
             "version": "1.0.0",
-        }
+        },
     )
 
 

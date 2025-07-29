@@ -86,7 +86,7 @@ class SecurityComplianceChecker:
                     policy=policy,
                     passed=passed,
                     output=output,
-                )
+                ),
             )
 
         return compliance_results
@@ -95,7 +95,11 @@ class SecurityComplianceChecker:
         """Execute a compliance check command."""
         try:
             result = subprocess.run(
-                policy.check_command, capture_output=True, text=True, timeout=30, check=False
+                policy.check_command,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
             )
             passed = policy.expected_output in result.stdout
             return passed, result.stdout
@@ -133,7 +137,8 @@ class SecurityComplianceChecker:
         logger.info(f"Compliance report saved to {report_path}")
 
     def run_compliance_checks(
-        self, report_file: str = "/var/log/security-compliance-report.txt"
+        self,
+        report_file: str = "/var/log/security-compliance-report.txt",
     ) -> None:
         """Run compliance checks and save report."""
         logger.info("Starting security policy compliance checks")
@@ -161,7 +166,9 @@ def main() -> None:
         help="Configuration file path",
     )
     parser.add_argument(
-        "--report", default="/var/log/security-compliance-report.txt", help="Report file path"
+        "--report",
+        default="/var/log/security-compliance-report.txt",
+        help="Report file path",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 

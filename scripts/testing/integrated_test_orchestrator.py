@@ -173,6 +173,7 @@ class IntegratedTestOrchestrator:
 
             result = subprocess.run(
                 cmd,
+                check=False,
                 cwd=self.k3s_validation_dir,
                 capture_output=True,
                 text=True,

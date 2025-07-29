@@ -87,13 +87,10 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "homelab-ca-issuer"
-<<<<<<< HEAD
     # OAuth2 Proxy annotations
     nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth"
     nginx.ingress.kubernetes.io/auth-signin: "https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri"
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 spec:
   ingressClassName: nginx
   tls:

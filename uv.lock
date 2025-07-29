@@ -939,6 +939,12 @@ test = [
     { name = "pytest-mock" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.8.0" },
@@ -978,6 +984,12 @@ requires-dist = [
     { name = "yamllint", marker = "extra == 'lint'", specifier = ">=1.35.0" },
 ]
 provides-extras = ["dev", "test", "lint"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.17.0" },
+    { name = "ruff", specifier = ">=0.12.5" },
+]
 
 [[package]]
 name = "httpcore"

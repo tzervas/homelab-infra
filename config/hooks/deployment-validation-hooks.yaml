@@ -1,0 +1,182 @@
+# Deployment Validation Hooks Configuration
+# Defines automated testing and validation hooks for all deployment phases
+
+hooks:
+  # Pre-deployment validation hook
+  pre-deployment-infrastructure-check:
+    type: pre-deployment
+    description: "Validate infrastructure readiness before deployment"
+    config:
+      enabled: true
+      timeout: 300
+      retry_count: 3
+      retry_delay: 10
+      failure_threshold: 0.8
+      critical: true
+      environment_specific:
+        pre-deployment:
+          enabled: true
+        continuous:
+          enabled: false
+        rollback:
+          enabled: true
+
+  pre-deployment-security-check:
+    type: pre-deployment
+    description: "Validate security requirements before deployment"
+    config:
+      enabled: true
+      timeout: 180
+      retry_count: 2
+      retry_delay: 5
+      failure_threshold: 0.9
+      critical: true
+      environment_specific:
+        pre-deployment:
+          enabled: true
+        upgrade:
+          enabled: true
+
+  # Post-deployment validation hooks
+  post-deployment-comprehensive-test:
+    type: post-deployment
+    description: "Comprehensive testing after deployment"
+    config:
+      enabled: true
+      timeout: 900
+      retry_count: 2
+      retry_delay: 30
+      failure_threshold: 0.8
+      critical: true
+      environment_specific:
+        post-deployment:
+          enabled: true
+        upgrade:
+          enabled: true
+
+  post-deployment-integration-test:
+    type: post-deployment
+    description: "Integration and connectivity testing"
+    config:
+      enabled: true
+      timeout: 600
+      retry_count: 1
+      retry_delay: 15
+      failure_threshold: 0.9
+      critical: false
+      environment_specific:
+        post-deployment:
+          enabled: true
+
+  # Continuous monitoring hooks
+  continuous-health-monitor:
+    type: continuous
+    description: "Continuous health and availability monitoring"
+    config:
+      enabled: true
+      timeout: 300
+      retry_count: 1
+      retry_delay: 60
+      failure_threshold: 0.7
+      critical: false
+      environment_specific:
+        continuous:
+          enabled: true
+        post-deployment:
+          enabled: false
+
+  continuous-security-monitor:
+    type: continuous
+    description: "Continuous security compliance monitoring"
+    config:
+      enabled: true
+      timeout: 240
+      retry_count: 1
+      retry_delay: 30
+      failure_threshold: 0.8
+      critical: false
+      environment_specific:
+        continuous:
+          enabled: true
+
+  continuous-performance-monitor:
+    type: continuous
+    description: "Continuous performance and SLA monitoring"
+    config:
+      enabled: true
+      timeout: 180
+      retry_count: 1
+      retry_delay: 15
+      failure_threshold: 0.75
+      critical: false
+      environment_specific:
+        continuous:
+          enabled: true
+
+# Environment-specific configurations
+environments:
+  development:
+    global_config:
+      failure_tolerance: 0.7 # More lenient for dev
+      timeout_multiplier: 1.0
+    hook_overrides:
+      continuous-performance-monitor:
+        enabled: false # Skip performance monitoring in dev
+
+  staging:
+    global_config:
+      failure_tolerance: 0.8
+      timeout_multiplier: 1.2
+    hook_overrides:
+      continuous-performance-monitor:
+        failure_threshold: 0.8
+
+  production:
+    global_config:
+      failure_tolerance: 0.9
+      timeout_multiplier: 1.5
+    hook_overrides:
+      pre-deployment-security-check:
+        failure_threshold: 1.0 # Zero tolerance for security issues
+      continuous-security-monitor:
+        critical: true # Security issues block in production
+
+# Default context for hook execution
+default_context:
+  min_cpu_cores: 2
+  min_memory_gb: 4
+  config_paths:
+    - "helm/environments"
+    - "kubernetes/base"
+    - "ansible/inventory"
+  prerequisites:
+    - type: namespace
+      name: kube-system
+    - type: storageclass
+      name: longhorn
+  security_requirements:
+    require_network_policies: true
+    require_pod_security_standards: true
+  include_workstation_tests: false
+
+# Notification settings
+notifications:
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channels:
+      critical: "#infrastructure-alerts"
+      warnings: "#infrastructure-monitoring"
+  email:
+    enabled: false
+    smtp_server: "${SMTP_SERVER}"
+    recipients:
+      - "${ADMIN_EMAIL}"
+
+# Reporting configuration
+reporting:
+  formats:
+    - json
+    - markdown
+  retention_days: 30
+  archive_location: "test_results/hooks/archive"

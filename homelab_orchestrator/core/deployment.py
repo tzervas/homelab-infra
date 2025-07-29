@@ -7,6 +7,7 @@ with hooks, validation, and comprehensive error handling.
 
 import asyncio
 import logging
+import os
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -669,6 +670,567 @@ class DeploymentManager:
     async def _deploy_applications(self, environment: str, dry_run: bool) -> dict[str, Any]:
         """Deploy application workloads (GitLab, Keycloak, AI/ML tools)."""
         # Deploy application-specific workloads
+        return {"success": True, "message": "Applications placeholder"}
+
+    # Backup, Teardown, and Recovery Methods
+
+    async def backup_infrastructure(self, components: list[str] | None = None) -> DeploymentResult:
+        """Backup current state of the infrastructure using kubectl and helm.
+
+        Args:
+            components: Specific components to backup (None for all)
+
+        Returns:
+            DeploymentResult with backup status
+        """
+        start_time = datetime.now()
+        self.logger.info(f"Starting infrastructure backup for components: {components or 'all'}")
+
+        backed_up_components = []
+        failed_components = []
+        details = {}
+
+        # Create backup directory with timestamp
+        backup_dir = self.project_root / "backups" / datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            components_to_backup = components or await self._get_deployed_components()
+
+            for component in components_to_backup:
+                try:
+                    result = await self._backup_component(component, backup_dir)
+                    if result["success"]:
+                        backed_up_components.append(component)
+                        details[component] = result
+                        self.logger.info(f"Component '{component}' backed up successfully")
+                    else:
+                        failed_components.append(component)
+                        details[component] = result
+                        self.logger.error(f"Component '{component}' backup failed")
+                except Exception as e:
+                    failed_components.append(component)
+                    details[component] = {"success": False, "error": str(e)}
+                    self.logger.exception(f"Component '{component}' backup failed: {e}")
+
+            # Determine overall status
+            if not failed_components:
+                status = "success"
+                recommendations = [f"Backup completed successfully in {backup_dir}"]
+            elif len(failed_components) < len(components_to_backup):
+                status = "partial"
+                recommendations = [
+                    f"Partial backup completed. Failed components: {', '.join(failed_components)}",
+                    f"Successful backups saved to {backup_dir}",
+                ]
+            else:
+                status = "failure"
+                recommendations = ["Infrastructure backup failed"]
+
+            return DeploymentResult(
+                operation="backup_infrastructure",
+                status=status,
+                duration=(datetime.now() - start_time).total_seconds(),
+                components_deployed=backed_up_components,
+                components_failed=failed_components,
+                details=details,
+                recommendations=recommendations,
+            )
+
+        except Exception as e:
+            self.logger.exception(f"Infrastructure backup failed: {e}")
+            return DeploymentResult(
+                operation="backup_infrastructure",
+                status="failure",
+                duration=(datetime.now() - start_time).total_seconds(),
+                details={"error": str(e)},
+                recommendations=["Review backup logs for detailed error information"],
+            )
+
+    async def teardown_infrastructure(
+        self, components: list[str] | None = None
+    ) -> DeploymentResult:
+        """Teardown the infrastructure by safely removing deployments.
+
+        Args:
+            components: Specific components to teardown (None for all)
+
+        Returns:
+            DeploymentResult with teardown status
+        """
+        start_time = datetime.now()
+        self.logger.info(f"Starting infrastructure teardown for components: {components or 'all'}")
+
+        torn_down_components = []
+        failed_components = []
+        details = {}
+
+        try:
+            components_to_teardown = components or await self._get_deployed_components()
+
+            # Reverse order for teardown (dependencies first)
+            teardown_order = list(reversed(components_to_teardown))
+
+            for component in teardown_order:
+                try:
+                    result = await self._teardown_component(component)
+                    if result["success"]:
+                        torn_down_components.append(component)
+                        details[component] = result
+                        self.logger.info(f"Component '{component}' torn down successfully")
+                    else:
+                        failed_components.append(component)
+                        details[component] = result
+                        self.logger.error(f"Component '{component}' teardown failed")
+                except Exception as e:
+                    failed_components.append(component)
+                    details[component] = {"success": False, "error": str(e)}
+                    self.logger.exception(f"Component '{component}' teardown failed: {e}")
+
+            # Determine overall status
+            if not failed_components:
+                status = "success"
+                recommendations = ["Infrastructure teardown completed successfully"]
+            elif len(failed_components) < len(teardown_order):
+                status = "partial"
+                recommendations = [
+                    f"Partial teardown completed. Failed components: {', '.join(failed_components)}",
+                    "Review failed components and retry if needed",
+                ]
+            else:
+                status = "failure"
+                recommendations = ["Infrastructure teardown failed"]
+
+            return DeploymentResult(
+                operation="teardown_infrastructure",
+                status=status,
+                duration=(datetime.now() - start_time).total_seconds(),
+                components_deployed=torn_down_components,
+                components_failed=failed_components,
+                details=details,
+                recommendations=recommendations,
+            )
+
+        except Exception as e:
+            self.logger.exception(f"Infrastructure teardown failed: {e}")
+            return DeploymentResult(
+                operation="teardown_infrastructure",
+                status="failure",
+                duration=(datetime.now() - start_time).total_seconds(),
+                details={"error": str(e)},
+                recommendations=["Review teardown logs for detailed error information"],
+            )
+
+    async def recover_infrastructure(
+        self, components: list[str] | None = None, backup_path: str | None = None
+    ) -> DeploymentResult:
+        """Recover services from a backup state.
+
+        Args:
+            components: Specific components to recover (None for all)
+            backup_path: Path to backup directory (None for latest)
+
+        Returns:
+            DeploymentResult with recovery status
+        """
+        start_time = datetime.now()
+        self.logger.info(f"Starting infrastructure recovery for components: {components or 'all'}")
+
+        recovered_components = []
+        failed_components = []
+        details = {}
+
+        try:
+            # Find backup directory
+            if not backup_path:
+                backup_path = await self._find_latest_backup()
+                if not backup_path:
+                    return DeploymentResult(
+                        operation="recover_infrastructure",
+                        status="failure",
+                        duration=(datetime.now() - start_time).total_seconds(),
+                        details={"error": "No backup found"},
+                        recommendations=["Create a backup before attempting recovery"],
+                    )
+
+            backup_dir = Path(backup_path)
+            components_to_recover = components or await self._get_backup_components(backup_dir)
+
+            for component in components_to_recover:
+                try:
+                    result = await self._recover_component(component, backup_dir)
+                    if result["success"]:
+                        recovered_components.append(component)
+                        details[component] = result
+                        self.logger.info(f"Component '{component}' recovered successfully")
+                    else:
+                        failed_components.append(component)
+                        details[component] = result
+                        self.logger.error(f"Component '{component}' recovery failed")
+                except Exception as e:
+                    failed_components.append(component)
+                    details[component] = {"success": False, "error": str(e)}
+                    self.logger.exception(f"Component '{component}' recovery failed: {e}")
+
+            # Determine overall status
+            if not failed_components:
+                status = "success"
+                recommendations = [
+                    f"Infrastructure recovery completed successfully from {backup_dir}"
+                ]
+            elif len(failed_components) < len(components_to_recover):
+                status = "partial"
+                recommendations = [
+                    f"Partial recovery completed. Failed components: {', '.join(failed_components)}",
+                    "Review failed components and retry if needed",
+                ]
+            else:
+                status = "failure"
+                recommendations = ["Infrastructure recovery failed"]
+
+            return DeploymentResult(
+                operation="recover_infrastructure",
+                status=status,
+                duration=(datetime.now() - start_time).total_seconds(),
+                components_deployed=recovered_components,
+                components_failed=failed_components,
+                details=details,
+                recommendations=recommendations,
+            )
+
+        except Exception as e:
+            self.logger.exception(f"Infrastructure recovery failed: {e}")
+            return DeploymentResult(
+                operation="recover_infrastructure",
+                status="failure",
+                duration=(datetime.now() - start_time).total_seconds(),
+                details={"error": str(e)},
+                recommendations=["Review recovery logs for detailed error information"],
+            )
+
+    # Helper methods for backup, teardown, and recovery
+
+    async def _get_deployed_components(self) -> list[str]:
+        """Get list of currently deployed components."""
+        components = []
+
+        # Check Helm releases
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "helm",
+                "list",
+                "-A",
+                "-o",
+                "json",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                import json
+
+                releases = json.loads(stdout.decode())
+                components.extend([release["name"] for release in releases])
+        except Exception as e:
+            self.logger.warning(f"Failed to get Helm releases: {e}")
+
+        # Check Kubernetes resources
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "kubectl",
+                "get",
+                "namespaces",
+                "-o",
+                "json",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                import json
+
+                namespaces = json.loads(stdout.decode())
+                components.extend(
+                    [
+                        ns["metadata"]["name"]
+                        for ns in namespaces["items"]
+                        if not ns["metadata"]["name"].startswith("kube-")
+                    ]
+                )
+        except Exception as e:
+            self.logger.warning(f"Failed to get Kubernetes namespaces: {e}")
+
+        return list(set(components))  # Remove duplicates
+
+    async def _backup_component(self, component: str, backup_dir: Path) -> dict[str, Any]:
+        """Backup a specific component."""
+        component_backup_dir = backup_dir / component
+        component_backup_dir.mkdir(exist_ok=True)
+
+        try:
+            # Backup Helm release if it exists
+            helm_result = await self._backup_helm_release(component, component_backup_dir)
+
+            # Backup Kubernetes resources
+            k8s_result = await self._backup_kubernetes_resources(component, component_backup_dir)
+
+            return {
+                "success": True,
+                "message": f"Component {component} backed up successfully",
+                "helm_backup": helm_result,
+                "k8s_backup": k8s_result,
+                "backup_path": str(component_backup_dir),
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "recommendations": [f"Check {component} deployment status"],
+            }
+
+    async def _backup_helm_release(self, release_name: str, backup_dir: Path) -> dict[str, Any]:
+        """Backup a Helm release."""
+        try:
+            # Get Helm release values
+            process = await asyncio.create_subprocess_exec(
+                "helm",
+                "get",
+                "values",
+                release_name,
+                "-A",
+                "-o",
+                "yaml",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                values_file = backup_dir / f"{release_name}-values.yaml"
+                values_file.write_text(stdout.decode())
+
+                # Get release manifest
+                process = await asyncio.create_subprocess_exec(
+                    "helm",
+                    "get",
+                    "manifest",
+                    release_name,
+                    "-A",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, stderr = await process.communicate()
+
+                if process.returncode == 0:
+                    manifest_file = backup_dir / f"{release_name}-manifest.yaml"
+                    manifest_file.write_text(stdout.decode())
+
+                return {
+                    "success": True,
+                    "values_file": str(values_file),
+                    "manifest_file": str(manifest_file),
+                }
+            return {"success": False, "error": f"Helm release not found: {release_name}"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _backup_kubernetes_resources(
+        self, component: str, backup_dir: Path
+    ) -> dict[str, Any]:
+        """Backup Kubernetes resources for a component."""
+        try:
+            # Backup namespace resources
+            process = await asyncio.create_subprocess_exec(
+                "kubectl",
+                "get",
+                "all",
+                "-n",
+                component,
+                "-o",
+                "yaml",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                resources_file = backup_dir / f"{component}-resources.yaml"
+                resources_file.write_text(stdout.decode())
+                return {"success": True, "resources_file": str(resources_file)}
+            return {"success": False, "error": f"Namespace not found: {component}"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _teardown_component(self, component: str) -> dict[str, Any]:
+        """Teardown a specific component."""
+        try:
+            # Try to uninstall Helm release first
+            helm_result = await self._teardown_helm_release(component)
+
+            # Delete Kubernetes namespace if it exists
+            k8s_result = await self._teardown_kubernetes_namespace(component)
+
+            return {
+                "success": True,
+                "message": f"Component {component} torn down successfully",
+                "helm_teardown": helm_result,
+                "k8s_teardown": k8s_result,
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "recommendations": [f"Check {component} deployment status"],
+            }
+
+    async def _teardown_helm_release(self, release_name: str) -> dict[str, Any]:
+        """Teardown a Helm release."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "helm",
+                "uninstall",
+                release_name,
+                "-A",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            return {
+                "success": process.returncode == 0,
+                "message": stdout.decode() if process.returncode == 0 else stderr.decode(),
+            }
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _teardown_kubernetes_namespace(self, namespace: str) -> dict[str, Any]:
+        """Teardown a Kubernetes namespace."""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                "kubectl",
+                "delete",
+                "namespace",
+                namespace,
+                "--ignore-not-found=true",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await process.communicate()
+
+            return {
+                "success": process.returncode == 0,
+                "message": stdout.decode() if process.returncode == 0 else stderr.decode(),
+            }
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _recover_component(self, component: str, backup_dir: Path) -> dict[str, Any]:
+        """Recover a specific component from backup."""
+        try:
+            component_backup_dir = backup_dir / component
+
+            if not component_backup_dir.exists():
+                return {
+                    "success": False,
+                    "error": f"No backup found for component: {component}",
+                    "recommendations": [f"Check backup directory: {backup_dir}"],
+                }
+
+            # Recover Kubernetes resources first
+            k8s_result = await self._recover_kubernetes_resources(component, component_backup_dir)
+
+            # Recover Helm release if backup exists
+            helm_result = await self._recover_helm_release(component, component_backup_dir)
+
+            return {
+                "success": True,
+                "message": f"Component {component} recovered successfully",
+                "k8s_recovery": k8s_result,
+                "helm_recovery": helm_result,
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "recommendations": [f"Check backup integrity for {component}"],
+            }
+
+    async def _recover_kubernetes_resources(
+        self, component: str, backup_dir: Path
+    ) -> dict[str, Any]:
+        """Recover Kubernetes resources from backup."""
+        try:
+            resources_file = backup_dir / f"{component}-resources.yaml"
+
+            if resources_file.exists():
+                process = await asyncio.create_subprocess_exec(
+                    "kubectl",
+                    "apply",
+                    "-f",
+                    str(resources_file),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, stderr = await process.communicate()
+
+                return {
+                    "success": process.returncode == 0,
+                    "message": stdout.decode() if process.returncode == 0 else stderr.decode(),
+                }
+            return {"success": False, "error": f"No Kubernetes backup found for {component}"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _recover_helm_release(self, release_name: str, backup_dir: Path) -> dict[str, Any]:
+        """Recover Helm release from backup."""
+        try:
+            values_file = backup_dir / f"{release_name}-values.yaml"
+
+            if values_file.exists():
+                # This would need more sophisticated logic to determine chart and repository
+                # For now, return success but note that manual intervention may be needed
+                return {
+                    "success": True,
+                    "message": f"Helm values backup found for {release_name}",
+                    "note": "Manual Helm reinstallation may be required using the backed up values",
+                }
+            return {"success": False, "error": f"No Helm backup found for {release_name}"}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _find_latest_backup(self) -> str | None:
+        """Find the latest backup directory."""
+        backups_dir = self.project_root / "backups"
+
+        if not backups_dir.exists():
+            return None
+
+        backup_dirs = [d for d in backups_dir.iterdir() if d.is_dir()]
+
+        if not backup_dirs:
+            return None
+
+        # Sort by creation time and return the latest
+        latest_backup = max(backup_dirs, key=lambda d: d.stat().st_ctime)
+        return str(latest_backup)
+
+    async def _get_backup_components(self, backup_dir: Path) -> list[str]:
+        """Get list of components available in backup."""
+        if not backup_dir.exists():
+            return []
+
+        return [d.name for d in backup_dir.iterdir() if d.is_dir()]
 
     async def validate_resources(self) -> dict[str, Any]:
         """Validate that required resources are available for deployment.

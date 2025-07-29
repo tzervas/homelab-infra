@@ -1,8 +1,14 @@
 # Homelab Infrastructure Documentation
 
-Welcome to the comprehensive documentation for the GitLab + Keycloak Homelab Infrastructure project. This documentation provides everything you need to understand, deploy, customize, and maintain your homelab environment.
+Welcome to the comprehensive documentation for the refactored Homelab Infrastructure project. This documentation provides everything you need to understand, deploy, customize, and maintain your modern homelab environment with unified testing, enhanced deployment interfaces, and standardized processes.
 
 ## 📚 Documentation Overview
+
+### 🎯 New Enhanced Documentation
+
+- **[Comprehensive User Guide](comprehensive-user-guide.md)** - ⭐ **Complete guide to refactored homelab infrastructure**
+- **[Interfaces and Process Guide](interfaces-and-processes.md)** - ⭐ **Detailed documentation of refactored interfaces and new processes**
+- **[Testing Guide](testing-guide.md)** - ⭐ **Complete guide to unified testing framework and procedures**
 
 ### 🚀 Getting Started
 
@@ -113,6 +119,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for 
 ## 📚 Additional Resources
 
 ### Project Structure Documentation
+
 - **[Scripts Directory](../scripts/README.md)** - Automation and utility scripts
 - **[Testing Framework](../testing/k3s-validation/README.md)** - Comprehensive testing suite
 - **[Configuration Directory](../config/README.md)** - Configuration management structure
@@ -120,6 +127,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for 
 - **[Tools Directory](../tools/README.md)** - Development and operational tools
 
 ### Project Organization
+
 - **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** - Complete project structure overview
 - **[Main README](../README.md)** - Project overview and quick start
 

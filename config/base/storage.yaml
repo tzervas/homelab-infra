@@ -1,0 +1,187 @@
+# Storage Configuration
+# Centralized storage settings for persistent volumes and storage classes
+
+storage:
+  # Storage Classes
+  classes:
+    # Primary storage class (Longhorn)
+    longhorn:
+      name: "longhorn"
+      provisioner: "driver.longhorn.io"
+      reclaimPolicy: "Retain"
+      allowVolumeExpansion: true
+      volumeBindingMode: "Immediate"
+      parameters:
+        numberOfReplicas: "3"
+        staleReplicaTimeout: "2880" # 48 hours
+        fromBackup: ""
+        fsType: "ext4"
+        dataLocality: "disabled"
+
+    # Local path storage (for single-node or testing)
+    local-path:
+      name: "local-path"
+      provisioner: "rancher.io/local-path"
+      reclaimPolicy: "Delete"
+      allowVolumeExpansion: false
+      volumeBindingMode: "WaitForFirstConsumer"
+      parameters:
+        path: "/opt/local-path-provisioner"
+        nodePath: "/opt/local-path-provisioner"
+
+    # Fast SSD storage (if available)
+    fast-ssd:
+      name: "fast-ssd"
+      provisioner: "driver.longhorn.io"
+      reclaimPolicy: "Retain"
+      allowVolumeExpansion: true
+      volumeBindingMode: "Immediate"
+      parameters:
+        numberOfReplicas: "2"
+        diskSelector: "ssd"
+        nodeSelector: "storage-optimized"
+        fsType: "ext4"
+
+  # Default Storage Sizes
+  # These are base sizes that can be overridden per environment
+  sizes:
+    # Core Infrastructure
+    cert_manager_certs: "1Gi"
+    ingress_nginx_cache: "2Gi"
+
+    # Monitoring Stack
+    prometheus_data: "20Gi"
+    prometheus_config: "1Gi"
+    grafana_data: "10Gi"
+    loki_data: "50Gi"
+    alertmanager_data: "5Gi"
+
+    # Application Services
+    gitlab_data: "50Gi"
+    gitlab_config: "5Gi"
+    gitlab_logs: "10Gi"
+    gitlab_registry: "100Gi"
+    keycloak_data: "5Gi"
+
+    # AI/ML Services
+    jupyter_notebooks: "20Gi"
+    jupyter_datasets: "100Gi"
+    ollama_models: "200Gi"
+
+    # Database Defaults
+    postgresql_small: "10Gi"
+    postgresql_medium: "50Gi"
+    postgresql_large: "200Gi"
+    redis_data: "5Gi"
+
+  # Backup Configuration
+  backup:
+    # Backup schedules
+    schedules:
+      daily: "0 2 * * *" # 2 AM daily
+      weekly: "0 3 * * 0" # 3 AM Sunday
+      monthly: "0 4 1 * *" # 4 AM 1st of month
+
+    # Retention policies
+    retention:
+      daily_backups: 7
+      weekly_backups: 4
+      monthly_backups: 12
+
+    # Backup storage locations
+    destinations:
+      local:
+        enabled: true
+        path: "/backup/local"
+        storage_class: "longhorn"
+        size: "500Gi"
+
+      s3:
+        enabled: false
+        bucket: "homelab-backups-{{ .Values.environment }}"
+        region: "us-east-1"
+        encryption: true
+
+      nfs:
+        enabled: false
+        server: "{{ .Values.backup.nfs.server }}"
+        path: "/backup/homelab"
+
+  # Volume Templates
+  # Reusable PVC templates for common use cases
+  templates:
+    # Standard application data volume
+    app_data:
+      accessModes: ["ReadWriteOnce"]
+      storageClass: "longhorn"
+      size: '{{ .Values.storage.sizes.default | default "10Gi" }}'
+      selector: {}
+
+    # Shared data volume (ReadWriteMany)
+    shared_data:
+      accessModes: ["ReadWriteMany"]
+      storageClass: "longhorn"
+      size: '{{ .Values.storage.sizes.shared | default "20Gi" }}'
+      selector: {}
+
+    # Cache volume (fast, ephemeral)
+    cache:
+      accessModes: ["ReadWriteOnce"]
+      storageClass: "fast-ssd"
+      size: '{{ .Values.storage.sizes.cache | default "5Gi" }}'
+      selector: {}
+
+    # Backup volume
+    backup:
+      accessModes: ["ReadWriteOnce"]
+      storageClass: "longhorn"
+      size: '{{ .Values.storage.sizes.backup | default "100Gi" }}'
+      selector: {}
+
+# Node Storage Configuration
+node_storage:
+  # Local path configuration
+  local_paths:
+    data: "/opt/homelab/data"
+    logs: "/opt/homelab/logs"
+    cache: "/opt/homelab/cache"
+    backup: "/opt/homelab/backup"
+
+  # Mount options
+  mount_options:
+    default: "defaults,noatime"
+    performance: "defaults,noatime,nobarrier"
+    backup: "defaults,sync"
+
+  # Disk requirements per node type
+  requirements:
+    master:
+      min_disk_size: "50Gi"
+      recommended_disk_size: "100Gi"
+      required_free_space: "20%"
+
+    worker:
+      min_disk_size: "100Gi"
+      recommended_disk_size: "500Gi"
+      required_free_space: "15%"
+
+    storage:
+      min_disk_size: "200Gi"
+      recommended_disk_size: "1Ti"
+      required_free_space: "10%"
+
+# Performance Tuning
+performance:
+  # I/O Scheduler
+  io_scheduler: "mq-deadline"
+
+  # Filesystem settings
+  filesystem:
+    default: "ext4"
+    options: "noatime,data=ordered"
+
+  # Cache settings
+  cache:
+    dirty_ratio: 15
+    dirty_background_ratio: 5
+    vfs_cache_pressure: 50

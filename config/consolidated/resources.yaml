@@ -1,0 +1,319 @@
+# Centralized Resource Configuration
+# Single source of truth for CPU, memory, and scaling settings
+
+resources:
+  # Default Resource Limits and Requests
+  defaults:
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+
+  # Tier-based resource allocation
+  tiers:
+    # Micro services (lightweight utilities)
+    micro:
+      limits:
+        cpu: "50m"
+        memory: "64Mi"
+      requests:
+        cpu: "10m"
+        memory: "32Mi"
+
+    # Small services (basic applications)
+    small:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "50m"
+        memory: "128Mi"
+
+    # Medium services (standard applications)
+    medium:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+
+    # Large services (resource-intensive applications)
+    large:
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+
+    # XLarge services (databases, heavy workloads)
+    xlarge:
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+
+  # Service-specific resource allocations
+  services:
+    # Infrastructure Components
+    infrastructure:
+      metallb_controller:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "100Mi"
+        requests:
+          cpu: "50m"
+          memory: "50Mi"
+
+      metallb_speaker:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "100Mi"
+        requests:
+          cpu: "50m"
+          memory: "50Mi"
+
+      cert_manager:
+        controller:
+          tier: "small"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        webhook:
+          tier: "micro"
+          limits:
+            cpu: "50m"
+            memory: "64Mi"
+          requests:
+            cpu: "10m"
+            memory: "32Mi"
+        cainjector:
+          tier: "small"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+
+      ingress_nginx:
+        controller:
+          tier: "medium"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        admission_webhook:
+          tier: "micro"
+          limits:
+            cpu: "50m"
+            memory: "64Mi"
+          requests:
+            cpu: "10m"
+            memory: "32Mi"
+
+      sealed_secrets:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+
+    # Storage
+    storage:
+      longhorn_manager:
+        tier: "medium"
+        limits:
+          cpu: "200m"
+          memory: "512Mi"
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+      longhorn_driver:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+
+    # Monitoring Stack
+    monitoring:
+      prometheus:
+        tier: "large"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+      grafana:
+        tier: "medium"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+      alertmanager:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+      loki:
+        tier: "large"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+      promtail:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+
+    # Applications
+    applications:
+      gitlab:
+        webservice:
+          tier: "xlarge"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        sidekiq:
+          tier: "large"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+        gitaly:
+          tier: "large"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+
+      keycloak:
+        tier: "medium"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+
+      oauth2_proxy:
+        tier: "small"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+
+      jupyter:
+        tier: "large"
+        limits:
+          cpu: "2000m"
+          memory: "4Gi"
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+
+      ollama:
+        tier: "xlarge"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+
+  # Environment-specific resource scaling
+  environments:
+    development:
+      # Scale down for development
+      scaling_factor: 0.5
+      max_replicas: 1
+
+    staging:
+      # Moderate scaling for staging
+      scaling_factor: 0.75
+      max_replicas: 2
+
+    production:
+      # Full scaling for production
+      scaling_factor: 1.0
+      max_replicas: 3
+
+# Horizontal Pod Autoscaler (HPA) defaults
+autoscaling:
+  enabled: false # Enable per-service as needed
+
+  defaults:
+    min_replicas: 1
+    max_replicas: 3
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
+
+  # Service-specific HPA settings
+  services:
+    nginx_ingress:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 5
+      target_cpu_utilization: 60
+
+    gitlab_webservice:
+      enabled: false # Enable in production
+      min_replicas: 2
+      max_replicas: 10
+      target_cpu_utilization: 70
+
+# Quality of Service Classes
+qos_classes:
+  # Guaranteed QoS (requests == limits)
+  guaranteed:
+    - "database"
+    - "storage"
+
+  # Burstable QoS (requests < limits)
+  burstable:
+    - "web"
+    - "api"
+    - "worker"
+
+  # BestEffort QoS (no requests/limits)
+  best_effort:
+    - "batch"
+    - "cron"

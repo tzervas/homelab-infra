@@ -1,0 +1,79 @@
+# Centralized Networking Configuration
+# Single source of truth for all network-related settings
+
+networking:
+  # Cluster Networking
+  cluster:
+    cidr: "10.42.0.0/16"
+    service_cidr: "10.43.0.0/16"
+    dns_service_ip: "10.43.0.10"
+
+  # Load Balancer Configuration
+  metallb:
+    enabled: true
+    protocol: "layer2"
+
+    # Environment-specific IP pools
+    ip_pools:
+      development:
+        addresses: "192.168.25.200-192.168.25.210"
+        name: "dev-pool"
+      staging:
+        addresses: "192.168.25.211-192.168.25.220"
+        name: "staging-pool"
+      production:
+        addresses: "192.168.25.221-192.168.25.230"
+        name: "prod-pool"
+
+    # Default pool (fallback)
+    default_pool:
+      addresses: "192.168.25.200-192.168.25.210"
+      name: "default"
+
+  # Ingress Configuration
+  ingress:
+    nginx:
+      enabled: true
+      service_type: "LoadBalancer"
+      replica_count: 2
+
+      # Configuration overrides
+      config:
+        use_forwarded_headers: "true"
+        compute_full_forwarded_for: "true"
+        use_proxy_protocol: "false"
+        proxy_body_size: "0"
+        proxy_read_timeout: "600"
+        proxy_send_timeout: "600"
+
+      # Default TLS configuration
+      tls:
+        enabled: true
+        redirect_https: true
+
+    # Default ingress class
+    default_class: "nginx"
+
+  # Network Policies
+  policies:
+    default_deny:
+      enabled: true
+
+    allow_dns:
+      enabled: true
+
+    allow_kube_api:
+      enabled: true
+
+    # Namespace-specific policies
+    namespace_isolation:
+      enabled: true
+      exceptions:
+        - "kube-system"
+        - "metallb-system"
+        - "cert-manager"
+
+# Service Mesh (Future)
+service_mesh:
+  enabled: false
+  provider: "istio" # Options: istio, linkerd, consul-connect

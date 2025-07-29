@@ -1,0 +1,59 @@
+# Centralized Domain Configuration
+# Single source of truth for all domain-related settings
+
+domains:
+  base:
+    primary: "homelab.local"
+    tld: "local"
+
+  # Service subdomains - automatically generate URLs
+  services:
+    auth: "auth.homelab.local"
+    homelab: "homelab.local"
+    grafana: "grafana.homelab.local"
+    prometheus: "prometheus.homelab.local"
+    ollama: "ollama.homelab.local"
+    jupyter: "jupyter.homelab.local"
+    gitlab: "gitlab.homelab.local"
+    keycloak: "keycloak.homelab.local"
+
+  # Environment-specific overrides
+  environments:
+    development:
+      suffix: "dev"
+      base: "dev.homelab.local"
+    staging:
+      suffix: "staging"
+      base: "staging.homelab.local"
+    production:
+      suffix: ""
+      base: "homelab.local"
+
+# DNS Configuration
+dns:
+  cluster_dns: "10.43.0.10"
+  search_domains:
+    - "homelab.local"
+    - "svc.cluster.local"
+    - "cluster.local"
+
+# Certificate Management
+certificates:
+  issuer:
+    email: "admin@homelab.local"
+    staging_server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+    production_server: "https://acme-v02.api.letsencrypt.org/directory"
+
+  defaults:
+    duration: "2160h" # 90 days
+    renewBefore: "360h" # 15 days
+    algorithm: "RSA"
+    size: 2048
+
+  ca:
+    common_name: "Homelab CA"
+    organization: "Homelab"
+    organizational_unit: "Homelab Infrastructure"
+    country: "US"
+    province: "Home"
+    locality: "Lab"

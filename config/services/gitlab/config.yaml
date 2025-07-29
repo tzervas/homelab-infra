@@ -1,0 +1,299 @@
+# GitLab Service Configuration
+# Centralized GitLab settings across all environments
+
+gitlab:
+  # Image configuration
+  image:
+    repository: "gitlab/gitlab-ce"
+    tag: "16.7.0-ce.0"
+    pullPolicy: "{{ .Values.global.registry.pullPolicy }}"
+
+  # Service configuration
+  service:
+    type: "ClusterIP"
+    ports:
+      http: 80
+      https: 443
+      ssh: 22
+      registry: 5050
+
+  # Ingress configuration
+  ingress:
+    enabled: true
+    className: "{{ .Values.networking.ingress.class }}"
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Values.security.tls.issuer }}"
+      nginx.ingress.kubernetes.io/proxy-body-size: "2048m"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    tls:
+      enabled: true
+      secretName: "gitlab-tls"
+    hosts:
+      - host: "gitlab.{{ .Values.global.domain.base }}"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+
+  # GitLab configuration
+  config:
+    external_url: "https://gitlab.{{ .Values.global.domain.base }}"
+
+    # GitLab Rails configuration
+    gitlab_rails:
+      # Time zone
+      time_zone: "UTC"
+
+      # Email settings
+      gitlab_email_enabled: true
+      gitlab_email_from: "gitlab@{{ .Values.global.domain.base }}"
+      gitlab_email_display_name: "GitLab ({{ .Values.environment }})"
+      gitlab_email_reply_to: "noreply@{{ .Values.global.domain.base }}"
+
+      # SMTP configuration (uses secrets)
+      smtp_enable: true
+      smtp_address: "{{ .Values.secrets.gitlab.smtp.address }}"
+      smtp_port: "{{ .Values.secrets.gitlab.smtp.port }}"
+      smtp_user_name: "{{ .Values.secrets.gitlab.smtp.username }}"
+      smtp_password: "{{ .Values.secrets.gitlab.smtp.password }}"
+      smtp_domain: "{{ .Values.secrets.gitlab.smtp.domain }}"
+      smtp_authentication: "login"
+      smtp_enable_starttls_auto: true
+      smtp_tls: false
+      smtp_openssl_verify_mode: "peer"
+
+      # Object storage (future)
+      object_store:
+        enabled: false
+        connection:
+          provider: "AWS"
+          region: "us-east-1"
+
+      # Backup configuration
+      backup:
+        keep_time: 604800 # 7 days
+        upload:
+          connection:
+            provider: "AWS"
+            region: "us-east-1"
+
+      # Security settings
+      initial_root_password: "{{ .Values.secrets.gitlab.root_password }}"
+
+      # OAuth settings
+      omniauth:
+        enabled: true
+        allow_single_sign_on: ["saml", "openid_connect"]
+        block_auto_created_users: false
+        auto_link_saml_user: true
+        providers:
+          - name: "openid_connect"
+            label: "Keycloak SSO"
+            args:
+              name: "openid_connect"
+              scope: ["openid", "profile", "email"]
+              response_type: "code"
+              issuer: "https://auth.{{ .Values.global.domain.base }}/realms/homelab"
+              client_auth_method: "query"
+              discovery: true
+              uid_field: "preferred_username"
+              client_options:
+                identifier: "{{ .Values.secrets.keycloak.clients.gitlab.client_id }}"
+                secret: "{{ .Values.secrets.keycloak.clients.gitlab.client_secret }}"
+                redirect_uri:
+                  "https://gitlab.{{ .Values.global.domain.base
+                  }}/users/auth/openid_connect/callback"
+
+  # PostgreSQL configuration
+  postgresql:
+    enabled: true
+    image:
+      repository: "postgres"
+      tag: "15.5-alpine"
+    auth:
+      username: "{{ .Values.secrets.gitlab.postgresql.username }}"
+      password: "{{ .Values.secrets.gitlab.postgresql.password }}"
+      database: "{{ .Values.secrets.gitlab.postgresql.database }}"
+    primary:
+      persistence:
+        enabled: true
+        storageClass: "{{ .Values.storage.classes.longhorn.name }}"
+        size: "{{ .Values.storage.sizes.gitlab_data }}"
+      resources: "{{ .Values.resources.services.gitlab.postgresql }}"
+
+  # Redis configuration
+  redis:
+    enabled: true
+    image:
+      repository: "redis"
+      tag: "7.2-alpine"
+    auth:
+      enabled: true
+      password: "{{ .Values.secrets.gitlab.redis.password }}"
+    master:
+      persistence:
+        enabled: true
+        storageClass: "{{ .Values.storage.classes.longhorn.name }}"
+        size: "5Gi"
+      resources:
+        "{{ .Values.resources.services.gitlab.redis | default .Values.resources.profiles.medium }}"
+
+  # GitLab Runner configuration
+  runner:
+    enabled: true
+    image:
+      repository: "gitlab/gitlab-runner"
+      tag: "v16.7.0"
+
+    # Runner configuration
+    config: |
+      concurrent = 4
+      check_interval = 0
+
+      [session_server]
+        session_timeout = 1800
+
+      [[runners]]
+        name = "gitlab-runner-{{ .Values.environment }}"
+        url = "https://gitlab.{{ .Values.global.domain.base }}/"
+        token = "{{ .Values.secrets.gitlab.runner.registration_token }}"
+        executor = "kubernetes"
+
+        [runners.kubernetes]
+          namespace = "gitlab"
+          image = "ubuntu:22.04"
+          privileged = false
+          cpu_limit = "1"
+          memory_limit = "2Gi"
+          service_cpu_limit = "200m"
+          service_memory_limit = "256Mi"
+          helper_cpu_limit = "200m"
+          helper_memory_limit = "256Mi"
+
+          [[runners.kubernetes.volumes.empty_dir]]
+            name = "docker-certs"
+            mount_path = "/certs/client"
+            medium = "Memory"
+
+  # Container Registry configuration
+  registry:
+    enabled: true
+    image:
+      repository: "registry"
+      tag: "2.8.3"
+
+    # Registry configuration
+    config:
+      storage:
+        filesystem:
+          rootdirectory: "/var/lib/registry"
+      http:
+        addr: ":5000"
+        host: "https://registry.{{ .Values.global.domain.base }}"
+      auth:
+        token:
+          realm: "https://gitlab.{{ .Values.global.domain.base }}/jwt/auth"
+          service: "container_registry"
+          issuer: "gitlab-issuer"
+          rootcertbundle: "/etc/docker/registry/certs/registry-auth.crt"
+
+    # Ingress for registry
+    ingress:
+      enabled: true
+      className: "{{ .Values.networking.ingress.class }}"
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.security.tls.issuer }}"
+        nginx.ingress.kubernetes.io/proxy-body-size: "2048m"
+      tls:
+        enabled: true
+        secretName: "gitlab-registry-tls"
+      hosts:
+        - host: "registry.{{ .Values.global.domain.base }}"
+          paths:
+            - path: "/"
+              pathType: "Prefix"
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: "{{ .Values.storage.classes.longhorn.name }}"
+    accessMode: "ReadWriteOnce"
+
+    # Volume mounts
+    volumes:
+      config:
+        size: "{{ .Values.storage.sizes.gitlab_config }}"
+        mountPath: "/etc/gitlab"
+      data:
+        size: "{{ .Values.storage.sizes.gitlab_data }}"
+        mountPath: "/var/opt/gitlab"
+      logs:
+        size: "{{ .Values.storage.sizes.gitlab_logs }}"
+        mountPath: "/var/log/gitlab"
+      registry:
+        size: "{{ .Values.storage.sizes.gitlab_registry }}"
+        mountPath: "/var/lib/registry"
+
+  # Resource allocation
+  resources: "{{ .Values.resources.services.gitlab.webservice }}"
+
+  # Replica configuration
+  replicaCount: "{{ .Values.services.gitlab.replicas | default 1 }}"
+
+  # Security context
+  securityContext: "{{ .Values.security.pod_security.default_context }}"
+
+  # Node affinity and tolerations
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # Pod disruption budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: "/-/health"
+      port: 80
+    initialDelaySeconds:
+      '{{ .Values.health_checks.initial_delay | default "120s" | replace "s" "" }}'
+    periodSeconds: '{{ .Values.health_checks.period | default "30s" | replace "s" "" }}'
+    timeoutSeconds: '{{ .Values.health_checks.timeout | default "10s" | replace "s" "" }}'
+    failureThreshold: "{{ .Values.health_checks.failure_threshold | default 3 }}"
+
+  readinessProbe:
+    httpGet:
+      path: "/-/readiness"
+      port: 80
+    initialDelaySeconds:
+      '{{ .Values.health_checks.readiness.initial_delay | default "60s" | replace "s" "" }}'
+    periodSeconds: '{{ .Values.health_checks.readiness.period | default "10s" | replace "s" "" }}'
+    timeoutSeconds: '{{ .Values.health_checks.readiness.timeout | default "5s" | replace "s" "" }}'
+    failureThreshold: "{{ .Values.health_checks.readiness.failure_threshold | default 3 }}"
+
+  # Monitoring configuration
+  monitoring:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: "30s"
+      path: "/-/metrics"
+      port: "http"
+
+  # GitLab Pages configuration (optional)
+  pages:
+    enabled: "{{ .Values.services.gitlab.pages.enabled | default false }}"
+    domain:
+      '{{ .Values.services.gitlab.pages.domain | default "pages." + .Values.global.domain.base }}'
+    ingress:
+      enabled: true
+      className: "{{ .Values.networking.ingress.class }}"
+      annotations:
+        cert-manager.io/cluster-issuer: "{{ .Values.security.tls.issuer }}"
+      tls:
+        enabled: true
+        secretName: "gitlab-pages-tls"

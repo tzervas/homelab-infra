@@ -322,6 +322,84 @@ def manage_recover(
 
 @cli.group()
 @click.pass_context
+def manage(ctx: click.Context) -> None:
+    """Backup, Teardown, and Recovery operations."""
+
+
+@manage.command("backup")
+@click.option("--components", multiple=True, help="Specific components to backup")
+@click.pass_context
+def manage_backup(ctx: click.Context, components: list[str]) -> None:
+    """Backup infrastructure components."""
+
+    async def _backup() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            result = await orchestrator.deployment_manager.backup_infrastructure(components)
+            _display_deployment_result(result)
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_backup())
+
+
+@manage.command("teardown")
+@click.option("--components", multiple=True, help="Specific components to teardown")
+@click.pass_context
+def manage_teardown(ctx: click.Context, components: list[str]) -> None:
+    """Teardown infrastructure components."""
+
+    async def _teardown() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            result = await orchestrator.deployment_manager.teardown_infrastructure(components)
+            _display_deployment_result(result)
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_teardown())
+
+
+@manage.command("recover")
+@click.option("--components", multiple=True, help="Specific components to recover")
+@click.pass_context
+def manage_recover(ctx: click.Context, components: list[str]) -> None:
+    """Recover infrastructure components from backup."""
+
+    async def _recover() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            result = await orchestrator.deployment_manager.recover_infrastructure(components)
+            _display_deployment_result(result)
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_recover())
+
+
+@cli.group()
+@click.pass_context
 def health(ctx: click.Context) -> None:
     """Health monitoring and validation."""
 

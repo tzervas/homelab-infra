@@ -67,6 +67,7 @@ spec:
             gitlab_rails['env'] = {
               'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
             }
+<<<<<<< HEAD
 
             # Keycloak OAuth2 Integration
             gitlab_rails['omniauth_enabled'] = true
@@ -98,6 +99,8 @@ spec:
 
             # Allow automatic user creation from Keycloak
             gitlab_rails['omniauth_external_providers'] = ['openid_connect']
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         volumeMounts:
         - name: gitlab-data
           mountPath: /var/opt/gitlab
@@ -151,10 +154,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
     cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+<<<<<<< HEAD
     # OAuth2 Proxy annotations
     nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth"
     nginx.ingress.kubernetes.io/auth-signin: "https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri"
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 spec:
   ingressClassName: nginx
   tls:

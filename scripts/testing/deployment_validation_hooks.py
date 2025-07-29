@@ -247,7 +247,7 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                 message=f"Pre-deployment validation error: {e!s}",
                 details={"error": str(e)},
                 recommendations=[
-                    "Review pre-deployment validation logs and fix configuration issues"
+                    "Review pre-deployment validation logs and fix configuration issues",
                 ],
             )
 
@@ -474,7 +474,7 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                         "message": "Pod Security Standards configured"
                         if pss_enabled
                         else "Pod Security Standards not configured",
-                    }
+                    },
                 )
             except Exception:
                 security_checks.append(
@@ -482,11 +482,7 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                         "name": "pod_security_standards",
                         "success": False,
                         "message": "Failed to check Pod Security Standards",
-<<<<<<< HEAD
                     },
-=======
-                    }
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
                 )
 
             # Check for NetworkPolicies if required
@@ -504,10 +500,14 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                             if has_policies
                             else "No network policies found",
 <<<<<<< HEAD
+<<<<<<< HEAD
                         },
 =======
                         }
 >>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        },
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
                 except Exception:
                     security_checks.append(
@@ -516,10 +516,14 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                             "success": False,
                             "message": "Failed to check network policies",
 <<<<<<< HEAD
+<<<<<<< HEAD
                         },
 =======
                         }
 >>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        },
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
 
             success_count = sum(1 for check in security_checks if check["success"])
@@ -552,11 +556,7 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                     recommendations.append("Verify kubectl configuration and cluster accessibility")
                 elif name == "resource_availability":
                     recommendations.append(
-<<<<<<< HEAD
                         "Ensure sufficient CPU and memory resources are available",
-=======
-                        "Ensure sufficient CPU and memory resources are available"
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
                     )
                 elif name == "prerequisites":
                     recommendations.append("Create required namespaces and storage classes")
@@ -631,11 +631,7 @@ class PostDeploymentValidationHook(DeploymentValidationHook):
                 message=f"Post-deployment validation error: {e!s}",
                 details={"error": str(e)},
                 recommendations=[
-<<<<<<< HEAD
                     "Review post-deployment validation logs and verify service deployments",
-=======
-                    "Review post-deployment validation logs and verify service deployments"
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
                 ],
             )
 
@@ -876,12 +872,8 @@ class ContinuousValidationHook(DeploymentValidationHook):
             }
 
     def _generate_continuous_recommendations(
-<<<<<<< HEAD
         self,
         validation_results: list[dict[str, Any]],
-=======
-        self, validation_results: list[dict[str, Any]]
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
     ) -> list[str]:
         """Generate recommendations for continuous monitoring issues."""
         recommendations = []
@@ -893,28 +885,24 @@ class ContinuousValidationHook(DeploymentValidationHook):
                 if name == "infrastructure_health":
                     recommendations.append(
 <<<<<<< HEAD
+<<<<<<< HEAD
                         "Investigate infrastructure health issues and check node resources",
 =======
                         "Investigate infrastructure health issues and check node resources"
 >>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        "Investigate infrastructure health issues and check node resources",
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
                 elif name == "service_availability":
                     recommendations.append("Review failing services and check pod logs for errors")
                 elif name == "security_compliance":
                     recommendations.append(
-<<<<<<< HEAD
                         "Address security compliance violations and update policies",
                     )
                 elif name == "performance_metrics":
                     recommendations.append(
                         "Investigate performance degradation and optimize resource allocation",
-=======
-                        "Address security compliance violations and update policies"
-                    )
-                elif name == "performance_metrics":
-                    recommendations.append(
-                        "Investigate performance degradation and optimize resource allocation"
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
                     )
 
         return recommendations
@@ -1082,11 +1070,7 @@ class DeploymentValidationHookManager:
 
                     if hook.should_block_on_failure():
                         self.logger.exception(
-<<<<<<< HEAD
                             f"Critical hook {hook_name} failed, blocking deployment",
-=======
-                            f"Critical hook {hook_name} failed, blocking deployment"
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
                         )
                         break
             else:

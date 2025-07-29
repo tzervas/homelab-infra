@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Unified Networking Configuration
 # Single source of truth for all network-related settings
 # Consolidated from config/base/networking.yaml and config/base/metallb.yaml
@@ -23,10 +24,24 @@ networking:
         - "cluster.local"
 
   # MetalLB Load Balancer Configuration (consolidated)
+=======
+# Centralized Networking Configuration
+# Single source of truth for all network-related settings
+
+networking:
+  # Cluster Networking
+  cluster:
+    cidr: "10.42.0.0/16"
+    service_cidr: "10.43.0.0/16"
+    dns_service_ip: "10.43.0.10"
+
+  # Load Balancer Configuration
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
   metallb:
     enabled: true
     protocol: "layer2"
 
+<<<<<<< HEAD
     # Controller configuration (from base/metallb.yaml)
     controller:
       image:
@@ -73,6 +88,24 @@ networking:
       addresses: "192.168.16.100-192.168.16.110"
       name: "default"
       protocol: "layer2"
+=======
+    # Environment-specific IP pools
+    ip_pools:
+      development:
+        addresses: "192.168.25.200-192.168.25.210"
+        name: "dev-pool"
+      staging:
+        addresses: "192.168.25.211-192.168.25.220"
+        name: "staging-pool"
+      production:
+        addresses: "192.168.25.221-192.168.25.230"
+        name: "prod-pool"
+
+    # Default pool (fallback)
+    default_pool:
+      addresses: "192.168.25.200-192.168.25.210"
+      name: "default"
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
   # Ingress Configuration
   ingress:

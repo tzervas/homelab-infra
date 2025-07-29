@@ -507,7 +507,11 @@ class SecurityManager:
             ]
 
             for setting, error_msg in required_settings:
+<<<<<<< HEAD
                 if setting not in security_config:
+=======
+                if setting not in security_config.get("security", {}):
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
                     validation_errors.append(error_msg)
 
         # Validate certificate configuration

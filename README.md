@@ -365,10 +365,20 @@ python3 scripts/testing/validate_deployment.py
 
 ## 📚 Documentation
 
+### 🎯 New Enhanced Documentation
+
+- **[Comprehensive User Guide](docs/comprehensive-user-guide.md)** - ⭐ Complete guide to refactored homelab infrastructure
+- **[Interfaces and Process Guide](docs/interfaces-and-processes.md)** - ⭐ Detailed documentation of refactored interfaces and new processes  
+- **[Testing Guide](docs/testing-guide.md)** - ⭐ Complete guide to unified testing framework and procedures
+
+### 🚀 Essential Documentation
+
 - **[Rootless Deployment Guide](docs/rootless-deployment-guide.md)**: Comprehensive security-hardened deployment
 - **[Deployment Checklist](docs/deployment-checklist.md)**: Step-by-step validation checklist
 - **[Architecture Overview](docs/architecture.md)**: System design and component relationships
 - **[Security Guide](docs/security.md)**: Security practices and hardening
+
+**[📚 Full Documentation Index](docs/README.md)**
 
 ## Deployment Commands
 

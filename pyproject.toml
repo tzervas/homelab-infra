@@ -33,16 +33,18 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "jsonschema>=4.19.0",
-    "ansible-core>=2.16.0",  # Required by ansible-lint
-    "python-dotenv>=1.0.0",  # For environment variable management
+    "ansible-core>=2.16.0", # Required by ansible-lint
+    "python-dotenv>=1.0.0", # For environment variable management
     # Unified orchestrator dependencies
-    "rich>=13.0.0",  # CLI and console output
-    "aiohttp>=3.8.0",  # Async HTTP client
-    "asyncio-mqtt>=0.16.0",  # MQTT client for webhooks
-    "click>=8.0.0",  # CLI framework
-    "dataclasses-json>=0.5.0",  # JSON serialization for dataclasses
-    "keyring>=24.0.0",  # Secure credential storage
-    "paramiko>=3.0.0",  # SSH client for remote cluster management
+    "rich>=13.0.0", # CLI and console output
+    "aiohttp>=3.8.0", # Async HTTP client
+    "asyncio-mqtt>=0.16.0", # MQTT client for webhooks
+    "click>=8.0.0", # CLI framework
+    "dataclasses-json>=0.5.0", # JSON serialization for dataclasses
+    "keyring>=24.0.0", # Secure credential storage
+    "paramiko>=3.0.0", # SSH client for remote cluster management
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
 ]
 
 [project.optional-dependencies]

@@ -28,7 +28,7 @@
 set -euo pipefail
 
 # Configuration
-CONFIG_FILE=".claude/config.json"
+CONFIG_FILE="/home/vector_weight/Documents/projects/homelab/homelab-infra/.claude/config.json"
 PROJECT_ROOT="/home/vector_weight/Documents/projects/homelab/homelab-infra"
 
 # Load configuration

@@ -1,0 +1,359 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Security Dashboard",
+    "tags": ["security", "authentication", "certificates", "homelab", "rbac"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 0,
+    "version": 1,
+    "panels": [
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 5 },
+                { "color": "red", "value": 10 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+        "id": 1,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.0.0",
+        "targets": [
+          {
+            "expr": "sum(kube_certificate_expiry_days < 30)",
+            "legendFormat": "Expiring Soon",
+            "refId": "A"
+          }
+        ],
+        "title": "Certificates Expiring < 30 Days",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "green", "value": 1 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+        "id": 2,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.0.0",
+        "targets": [
+          {
+            "expr": "sum(cert_manager_certificate_ready_status)",
+            "legendFormat": "Ready Certificates",
+            "refId": "A"
+          }
+        ],
+        "title": "Ready Certificates",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 5 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+        "id": 3,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.0.0",
+        "targets": [
+          {
+            "expr": "sum(increase(apiserver_audit_total[5m]))",
+            "legendFormat": "API Audit Events",
+            "refId": "A"
+          }
+        ],
+        "title": "API Server Audit Events (5m)",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 10 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+        "id": 4,
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "auto"
+        },
+        "pluginVersion": "8.0.0",
+        "targets": [
+          {
+            "expr": "sum(increase(apiserver_audit_total{verb=\"create\", objectRef_apiVersion=\"rbac.authorization.k8s.io/v1\"}[1h]))",
+            "legendFormat": "RBAC Changes (1h)",
+            "refId": "A"
+          }
+        ],
+        "title": "RBAC Changes (1h)",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": { "group": "A", "mode": "none" },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "id": 5,
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "expr": "increase(apiserver_audit_total{verb!=\"get\", verb!=\"list\", verb!=\"watch\"}[5m])",
+            "legendFormat": "{{verb}} - {{objectRef_namespace}}",
+            "refId": "A"
+          }
+        ],
+        "title": "API Server Write Operations",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": { "group": "A", "mode": "none" },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "id": 6,
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "expr": "cert_manager_certificate_expiration_timestamp_seconds - time()",
+            "legendFormat": "{{name}} - {{namespace}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Certificate Expiry Time (seconds)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": { "group": "A", "mode": "none" },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+        "id": 7,
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "expr": "kube_pod_container_status_running{namespace!=\"kube-system\"} and on(pod, namespace) kube_pod_spec_containers{container=~\".*\", image=~\".*:latest\"}",
+            "legendFormat": "{{namespace}}/{{pod}} - {{container}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Containers Running with 'latest' Tag (Security Risk)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": { "legend": false, "tooltip": false, "vis": false },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": { "type": "linear" },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": { "group": "A", "mode": "none" },
+              "thresholdsStyle": { "mode": "off" }
+            },
+            "mappings": [],
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+        "id": 8,
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "targets": [
+          {
+            "expr": "kube_pod_container_status_running and on(pod, namespace) kube_pod_spec_containers_security_context_privileged",
+            "legendFormat": "{{namespace}}/{{pod}} - {{container}}",
+            "refId": "A"
+          }
+        ],
+        "title": "Privileged Containers (Security Risk)",
+        "type": "timeseries"
+      }
+    ]
+  }
+}

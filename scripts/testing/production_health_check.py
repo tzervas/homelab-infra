@@ -197,7 +197,7 @@ class ProductionHealthChecker:
         logger.info("Checking deployment health...")
 
         success, output = self.run_kubectl_command(
-            ["get", "deployments", "--all-namespaces", "-o", "json"]
+            ["get", "deployments", "--all-namespaces", "-o", "json"],
         )
         if not success:
             return {
@@ -239,7 +239,7 @@ class ProductionHealthChecker:
                             "namespace": namespace,
                             "desired": desired_replicas,
                             "ready": ready_replicas,
-                        }
+                        },
                     )
 
             all_healthy = deployment_summary["unhealthy"] == 0
@@ -285,7 +285,7 @@ class ProductionHealthChecker:
                         namespace,
                         "-o",
                         "json",
-                    ]
+                    ],
                 )
 
                 if not success:
@@ -330,7 +330,7 @@ class ProductionHealthChecker:
                 "ingress-nginx",
                 "-o",
                 "json",
-            ]
+            ],
         )
 
         if not success:
@@ -383,7 +383,7 @@ class ProductionHealthChecker:
                 "--all-namespaces",
                 "-o",
                 "json",
-            ]
+            ],
         )
 
         if not success:
@@ -471,7 +471,7 @@ class ProductionHealthChecker:
                     "monitoring",
                     "-o",
                     "json",
-                ]
+                ],
             )
 
             if not success:
@@ -617,7 +617,7 @@ class ProductionHealthChecker:
         print(
             f'<testsuite name="ProductionHealthCheck" tests="{self.results["summary"]["total_checks"]}" '
             f'failures="{self.results["summary"]["failed_checks"]}" '
-            f'errors="0" skipped="{self.results["summary"]["warning_checks"]}">'
+            f'errors="0" skipped="{self.results["summary"]["warning_checks"]}">',
         )
 
         for check_name, check_result in self.results["checks"].items():
@@ -641,7 +641,7 @@ class ProductionHealthChecker:
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Production Health Check for Homelab Infrastructure"
+        description="Production Health Check for Homelab Infrastructure",
     )
     parser.add_argument(
         "--output-format",

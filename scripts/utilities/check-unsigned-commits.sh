@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 # Quick check for unsigned commits across all branches
-# 
+#
 # USAGE:
 #   ./check-unsigned-commits.sh
 #

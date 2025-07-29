@@ -22,22 +22,26 @@ helm/
 ## Key Components
 
 ### Helmfile Configuration (`helmfile.yaml`)
+
 - Main orchestration file for all Helm releases
 - Defines release dependencies and order
 - Environment-specific configurations
 - Integration with external value files
 
 ### Repository Definitions (`repositories.yaml`)
+
 - Helm repository configurations
 - Chart source definitions
 - Authentication and access settings
 
 ### Custom Charts (`charts/`)
+
 - **core-infrastructure**: Essential cluster components
 - **monitoring**: Observability stack
 - **storage**: Persistent storage solutions
 
 ### Environment Values (`environments/`)
+
 - **development**: Minimal resources, single replicas
 - **staging**: Production-like testing environment  
 - **production**: Full resources, high availability
@@ -45,6 +49,7 @@ helm/
 ## Usage
 
 ### Deploy All Services
+
 ```bash
 # Deploy to development environment
 helmfile --environment development apply
@@ -54,6 +59,7 @@ helmfile --environment production apply
 ```
 
 ### Deploy Specific Services
+
 ```bash
 # Deploy only monitoring stack
 helmfile --environment production --selector name=prometheus apply
@@ -63,6 +69,7 @@ helmfile --environment production --selector category=infrastructure apply
 ```
 
 ### Environment Management
+
 ```bash
 # Check differences
 helmfile --environment production diff
@@ -77,16 +84,19 @@ helmfile --environment production sync --selector name=gitlab
 ## Integration with Project Structure
 
 ### Configuration Integration
+
 - Works with `../config/` directory for environment-specific settings
 - Loads values from `../config/environments/{env}/`
 - References secrets from encrypted storage
 
 ### Script Integration
+
 - Deployed via `../scripts/deployment/deploy.sh`
 - Validated with `../scripts/validation/validate-k8s-manifests.sh`
 - Monitored through `../scripts/testing/` framework
 
 ### Deployment Integration
+
 - Complements `../deployments/` directory structure
 - Provides declarative deployment definitions
 - Supports GitOps workflows
@@ -94,18 +104,21 @@ helmfile --environment production sync --selector name=gitlab
 ## Best Practices
 
 ### Chart Development
+
 - Follow Helm best practices for chart structure
 - Include comprehensive documentation
 - Implement proper templating and validation
 - Support multiple environments
 
 ### Value Management
+
 - Use environment-specific value files
 - Avoid hardcoded configurations
 - Implement secure secret management
 - Support configuration overrides
 
 ### Release Management
+
 - Use semantic versioning for charts
 - Implement proper dependency management
 - Test deployments in development first
@@ -121,6 +134,7 @@ helmfile --environment production sync --selector name=gitlab
 ## Migration Notes
 
 This Helm-based approach replaced individual Ansible playbooks to:
+
 - Simplify deployment management
 - Enable declarative state management
 - Improve rollback and update capabilities

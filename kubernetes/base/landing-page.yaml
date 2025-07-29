@@ -1,0 +1,323 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homelab-portal
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-page-config
+  namespace: homelab-portal
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Homelab Portal</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+
+            .container {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                padding: 40px;
+                max-width: 1200px;
+                width: 100%;
+            }
+
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+
+            .header h1 {
+                color: #333;
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+            }
+
+            .header p {
+                color: #666;
+                font-size: 1.1rem;
+            }
+
+            .services-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+
+            .service-card {
+                background: #f8f9fa;
+                border-radius: 15px;
+                padding: 25px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+
+            .service-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-color: #667eea;
+            }
+
+            .service-icon {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+                display: block;
+            }
+
+            .service-title {
+                font-size: 1.3rem;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+            }
+
+            .service-description {
+                color: #666;
+                font-size: 0.95rem;
+                line-height: 1.4;
+                margin-bottom: 15px;
+            }
+
+            .service-status {
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                text-transform: uppercase;
+            }
+
+            .status-running {
+                background: #d4edda;
+                color: #155724;
+            }
+
+            .status-starting {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .footer {
+                text-align: center;
+                padding-top: 30px;
+                border-top: 1px solid #eee;
+                color: #666;
+                font-size: 0.9rem;
+            }
+
+            .cluster-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+                padding: 20px;
+                background: #f1f3f4;
+                border-radius: 10px;
+            }
+
+            .info-item {
+                text-align: center;
+            }
+
+            .info-label {
+                font-size: 0.8rem;
+                color: #666;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+            }
+
+            .info-value {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏠 Homelab Portal</h1>
+                <p>Your self-hosted infrastructure dashboard</p>
+            </div>
+
+            <div class="cluster-info">
+                <div class="info-item">
+                    <div class="info-label">Cluster</div>
+                    <div class="info-value">MicroK8s</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Load Balancer</div>
+                    <div class="info-value">192.168.16.100</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">SSL</div>
+                    <div class="info-value">CA Secured</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Services</div>
+                    <div class="info-value">5</div>
+                </div>
+            </div>
+
+            <div class="services-grid">
+                <a href="https://grafana.homelab.local" class="service-card">
+                    <span class="service-icon">📊</span>
+                    <div class="service-title">Grafana</div>
+                    <div class="service-description">Data visualization and monitoring dashboards with Prometheus integration</div>
+                    <span class="service-status status-running">Running</span>
+                </a>
+
+                <a href="https://prometheus.homelab.local" class="service-card">
+                    <span class="service-icon">🔍</span>
+                    <div class="service-title">Prometheus</div>
+                    <div class="service-description">Metrics collection and monitoring system for cluster observability</div>
+                    <span class="service-status status-running">Running</span>
+                </a>
+
+                <a href="https://ollama.homelab.local" class="service-card">
+                    <span class="service-icon">🤖</span>
+                    <div class="service-title">Ollama + Open-WebUI</div>
+                    <div class="service-description">Local LLM hosting with web interface for AI model interactions</div>
+                    <span class="service-status status-running">Running</span>
+                </a>
+
+                <a href="https://jupyter.homelab.local" class="service-card">
+                    <span class="service-icon">📓</span>
+                    <div class="service-title">JupyterLab</div>
+                    <div class="service-description">Interactive development environment for data science and machine learning</div>
+                    <span class="service-status status-running">Running</span>
+                </a>
+
+                <a href="https://gitlab.homelab.local" class="service-card">
+                    <span class="service-icon">🚀</span>
+                    <div class="service-title">GitLab</div>
+                    <div class="service-description">Self-hosted Git repository with CI/CD pipelines and project management</div>
+                    <span class="service-status status-starting">Initializing</span>
+                </a>
+            </div>
+
+            <div class="footer">
+                <p>Homelab Infrastructure • Kubernetes-powered • HTTPS Secured</p>
+                <p style="margin-top: 10px; font-size: 0.8rem;">
+                    Add <code>192.168.16.100 homelab.local</code> to your /etc/hosts file to access this portal
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-page
+  namespace: homelab-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-page
+  template:
+    metadata:
+      labels:
+        app: landing-page
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: landing-page-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+      volumes:
+      - name: landing-page-content
+        configMap:
+          name: landing-page-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-page
+  namespace: homelab-portal
+spec:
+  selector:
+    app: landing-page
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homelab-portal-ingress
+  namespace: homelab-portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+    # OAuth2 Proxy annotations
+    nginx.ingress.kubernetes.io/auth-url: "https://homelab.local/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - homelab.local
+    secretName: homelab-portal-tls-cert
+  rules:
+  - host: homelab.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: landing-page
+            port:
+              number: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-portal-tls-cert
+  namespace: homelab-portal
+spec:
+  secretName: homelab-portal-tls-cert
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: homelab.local
+  dnsNames:
+  - homelab.local

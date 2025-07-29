@@ -5,7 +5,13 @@
 # Author: Homelab Infrastructure Team
 # Version: 2.0
 
-set -e
+set -euo pipefail
+
+# Include centralized environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$PROJECT_ROOT/scripts/common/environment.sh"
+load_environment
 
 # Color codes
 RED='\033[0;31m'
@@ -16,17 +22,13 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # Configuration
-METALLB_IP="192.168.16.100"
-HOMELAB_SERVER="192.168.16.26"
-ANSIBLE_INVENTORY="ansible/inventory/hosts.yml"
 CA_CERT_PATH="/tmp/homelab-ca.crt"
 BACKUP_BASE_DIR="/tmp/homelab-backups"
+ANSIBLE_INVENTORY="${SCRIPT_DIR}/ansible/inventory/hosts.yml"
 
-# Service definitions
-SERVICES=("grafana" "prometheus" "longhorn" "alertmanager")
-
-# Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Service definitions - Extended with SSO services
+SERVICES=("auth" "homelab" "grafana" "prometheus" "ollama" "jupyter" "gitlab")
+SSO_SERVICES=("keycloak" "oauth2-proxy")
 
 show_banner() {
     echo -e "${BOLD}${BLUE}"
@@ -117,8 +119,8 @@ check_prerequisites() {
     fi
 
     # Check network connectivity
-    if ! ping -c 1 -W 3 "$HOMELAB_SERVER" &>/dev/null; then
-        error "Cannot reach homelab server: $HOMELAB_SERVER"
+    if ! ping -c 1 -W 3 "$HOMELAB_SERVER_IP" &>/dev/null; then
+        error "Cannot reach homelab server: $HOMELAB_SERVER_IP"
     fi
 
     success "Prerequisites check passed"
@@ -166,7 +168,7 @@ create_backup() {
 
 **Created**: $(date)
 **Backup Directory**: $backup_dir
-**Homelab Server**: $HOMELAB_SERVER
+**Homelab Server**: $HOMELAB_SERVER_IP
 **MetalLB IP**: $METALLB_IP
 
 ## Backup Contents
@@ -245,6 +247,21 @@ complete_teardown() {
 
 deploy_infrastructure() {
     log "Starting complete infrastructure deployment..."
+
+    # Check if cluster already exists and is accessible
+    if kubectl get nodes &>/dev/null; then
+        log "Kubernetes cluster already exists and is accessible"
+        local node_count=$(kubectl get nodes --no-headers | wc -l)
+        success "Found existing K3s cluster with $node_count node(s)"
+
+        # Skip to infrastructure components deployment
+        deploy_infrastructure_components
+        return $?
+    fi
+
+    # Synchronize and pull the latest configuration files
+    git pull origin main
+    success "Configuration synchronized."
 
     confirm_action "This will deploy the complete homelab infrastructure."
 
@@ -365,101 +382,75 @@ EOF
     kubectl wait --for=condition=ready certificate homelab-ca-cert -n cert-manager --timeout=300s
     success "CA certificate ready"
 
-    # Step 5: Deploy minimal services
-    log "Deploying application services..."
+    # Step 5: Deploy all homelab services
+    log "Deploying complete homelab service stack..."
 
-    # Create minimal Grafana if not exists
-    if [[ ! -f "/tmp/minimal-grafana.yaml" ]]; then
-        cat > /tmp/minimal-grafana.yaml << 'EOF'
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: monitoring
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grafana
-  namespace: monitoring
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: grafana
-  template:
-    metadata:
-      labels:
-        app: grafana
-    spec:
-      containers:
-      - name: grafana
-        image: grafana/grafana:11.1.3
-        ports:
-        - containerPort: 3000
-        env:
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin"
-        volumeMounts:
-        - name: grafana-storage
-          mountPath: /var/lib/grafana
-      volumes:
-      - name: grafana-storage
-        emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grafana
-  namespace: monitoring
-spec:
-  ports:
-  - port: 80
-    targetPort: 3000
-  selector:
-    app: grafana
-EOF
+    # Deploy Keycloak (SSO Provider)
+    log "Deploying Keycloak SSO..."
+    kubectl apply -f kubernetes/base/keycloak-deployment.yaml
+    kubectl apply -f kubernetes/base/keycloak-realm-enhanced.yaml
+    success "Keycloak deployed"
+
+    # Deploy OAuth2 Proxy (Authentication Gateway)
+    log "Deploying OAuth2 Proxy..."
+    kubectl apply -f kubernetes/base/oauth2-proxy.yaml
+    success "OAuth2 Proxy deployed"
+
+    # Deploy monitoring stack
+    log "Deploying monitoring services..."
+    if [[ -f "helm/charts/monitoring/Chart.yaml" ]]; then
+        helm upgrade --install monitoring ./helm/charts/monitoring \
+            --namespace monitoring --create-namespace \
+            --values helm/environments/values-default.yaml \
+            --wait --timeout=300s
+    else
+        # Fallback to direct manifests
+        kubectl apply -f kubernetes/monitoring/
     fi
+    success "Monitoring stack deployed"
 
-    kubectl apply -f /tmp/minimal-grafana.yaml
-
-    # Create HTTPS ingress if not exists
-    if [[ ! -f "/tmp/minimal-https-ingress.yaml" ]]; then
-        cat > /tmp/minimal-https-ingress.yaml << 'EOF'
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: grafana-https-ingress
-  namespace: monitoring
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - grafana.homelab.local
-    secretName: grafana-tls-cert
-  rules:
-  - host: grafana.homelab.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: grafana
-            port:
-              number: 80
-EOF
+    # Deploy GitLab
+    log "Deploying GitLab..."
+    if [[ -f "kubernetes/gitlab/gitlab-deployment.yaml" ]]; then
+        kubectl apply -f kubernetes/gitlab/
     fi
+    success "GitLab deployed"
 
-    kubectl apply -f /tmp/minimal-https-ingress.yaml
+    # Deploy AI/ML Tools (Ollama)
+    log "Deploying AI/ML tools..."
+    if [[ -f "kubernetes/ai-tools/ollama-deployment.yaml" ]]; then
+        kubectl apply -f kubernetes/ai-tools/
+    fi
+    success "AI/ML tools deployed"
 
-    # Wait for service certificate
-    log "Waiting for service certificates..."
-    kubectl wait --for=condition=ready certificate grafana-tls-cert -n monitoring --timeout=300s
-    success "Service certificates ready"
+    # Deploy JupyterLab
+    log "Deploying JupyterLab..."
+    if [[ -f "kubernetes/jupyter/jupyter-deployment.yaml" ]]; then
+        kubectl apply -f kubernetes/jupyter/
+    fi
+    success "JupyterLab deployed"
+
+    # Deploy Landing Portal
+    log "Deploying homelab portal..."
+    if [[ -f "kubernetes/homelab-portal/portal-deployment.yaml" ]]; then
+        kubectl apply -f kubernetes/homelab-portal/
+    fi
+    success "Homelab portal deployed"
+
+    # Wait for all certificates to be ready
+    log "Waiting for all service certificates..."
+    local cert_namespaces=("monitoring" "gitlab" "ai-tools" "jupyter" "homelab-portal" "keycloak" "oauth2-proxy")
+    for ns in "${cert_namespaces[@]}"; do
+        if kubectl get namespace "$ns" &>/dev/null; then
+            local certs=$(kubectl get certificates -n "$ns" -o name 2>/dev/null || echo "")
+            if [[ -n "$certs" ]]; then
+                for cert in $certs; do
+                    kubectl wait --for=condition=ready "$cert" -n "$ns" --timeout=300s || warning "Certificate $cert in $ns timed out"
+                done
+            fi
+        fi
+    done
+    success "All certificates processed"
 
     # Step 6: Verify MetalLB IP assignment
     log "Verifying MetalLB configuration..."
@@ -484,6 +475,20 @@ EOF
     fi
 
     success "Infrastructure deployment complete"
+
+    # Step 7: Run comprehensive health monitoring
+    log "Running comprehensive health monitoring..."
+    if [[ -f "scripts/health-monitor.sh" ]]; then
+        bash scripts/health-monitor.sh continuous 30
+        if [[ $? -eq 0 ]]; then
+            success "All services are healthy and operational"
+        else
+            warning "Some services may still be initializing"
+        fi
+    else
+        warning "Health monitor script not found, running basic verification"
+        sleep 30  # Give services time to start
+    fi
 
     # Automatically configure local access unless skipped
     if [[ "$SKIP_LOCAL" != "true" ]]; then
@@ -719,10 +724,10 @@ run_connectivity_tests() {
     echo -e "${BLUE}🌐 Network Connectivity Tests${NC}"
     echo "=============================="
 
-    if ping -c 1 -W 3 "$HOMELAB_SERVER" &>/dev/null; then
-        success "Homelab server ($HOMELAB_SERVER) reachable"
+    if ping -c 1 -W 3 "$HOMELAB_SERVER_IP" &>/dev/null; then
+        success "Homelab server ($HOMELAB_SERVER_IP) reachable"
     else
-        error "Cannot reach homelab server ($HOMELAB_SERVER)"
+        error "Cannot reach homelab server ($HOMELAB_SERVER_IP)"
     fi
 
     if timeout 3 bash -c "echo > /dev/tcp/$METALLB_IP/80" 2>/dev/null; then
@@ -854,9 +859,9 @@ case "$COMMAND" in
         echo -e "${BOLD}🚀 COMPLETE HOMELAB DEPLOYMENT${NC}"
         echo "================================"
         check_prerequisites
-        deploy_infrastructure
+deploy_infrastructure || error "Initial deployment check failed or infrastructure already exists"
         echo ""
-        success "Deployment completed successfully!"
+        success "Deployment completed successfully or already in place!"
         ;;
     "teardown")
         show_banner

@@ -11,11 +11,16 @@ import json
 import logging
 import sys
 from pathlib import Path
+<<<<<<< HEAD
 from typing import TYPE_CHECKING, Any
+=======
+from typing import Any
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 import click
 from rich.console import Console
 from rich.panel import Panel
+<<<<<<< HEAD
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
@@ -27,6 +32,13 @@ from .core.ui import console, progress_bar
 
 if TYPE_CHECKING:
     from .core.orchestrator import HomelabOrchestrator
+=======
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
+from .core.config_manager import ConfigContext, ConfigManager
+from .core.orchestrator import HomelabOrchestrator
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 console = Console()
@@ -65,7 +77,10 @@ def setup_logging(level: str) -> None:
     help="Cluster deployment type",
 )
 @click.option("--project-root", type=click.Path(exists=True), help="Project root directory")
+<<<<<<< HEAD
 @click.version_option(version=__version__, prog_name="Homelab Orchestrator")
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -105,12 +120,17 @@ def deploy(ctx: click.Context) -> None:
 @click.option("--components", multiple=True, help="Specific components to deploy")
 @click.option("--dry-run", is_flag=True, help="Perform validation without deployment")
 @click.option("--skip-hooks", is_flag=True, help="Skip deployment hooks")
+<<<<<<< HEAD
 @with_orchestrator
+=======
+@click.pass_context
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def deploy_infrastructure(
     ctx: click.Context,
     components: list[str],
     dry_run: bool,
     skip_hooks: bool,
+<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy complete homelab infrastructure."""
@@ -128,6 +148,48 @@ def deploy_infrastructure(
 
         # Display results
         _display_deployment_result(result)
+=======
+) -> None:
+    """Deploy complete homelab infrastructure."""
+
+    async def _deploy() -> None:
+        config_manager = ctx.obj["config_manager"]
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Initializing orchestrator...", total=None)
+
+            orchestrator = HomelabOrchestrator(
+                config_manager=config_manager,
+                project_root=ctx.obj["project_root"],
+                log_level=ctx.obj["log_level"],
+            )
+
+            try:
+                progress.update(task, description="Starting orchestrator...")
+                await orchestrator.start()
+
+                progress.update(task, description="Deploying infrastructure...")
+                result = await orchestrator.deploy_full_infrastructure(
+                    environment=config_manager.context.environment,
+                    components=list(components) if components else None,
+                    dry_run=dry_run,
+                )
+
+                progress.update(task, description="Deployment completed", completed=100)
+
+                # Display results
+                _display_deployment_result(result)
+
+            finally:
+                progress.update(task, description="Cleaning up...")
+                await orchestrator.stop()
+
+    asyncio.run(_deploy())
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @deploy.command("service")
@@ -135,12 +197,16 @@ def deploy_infrastructure(
 @click.option("--namespace", help="Target namespace")
 @click.option("--dry-run", is_flag=True, help="Validate without deployment")
 @click.pass_context
+<<<<<<< HEAD
 @with_orchestrator
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def deploy_service(
     ctx: click.Context,
     service_name: str,
     namespace: str | None,
     dry_run: bool,
+<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy specific service."""
@@ -241,6 +307,17 @@ def manage_recover(
 
         progress.update(task, description="Recovery completed", completed=100)
         _display_deployment_result(result)
+=======
+) -> None:
+    """Deploy specific service."""
+    console.print(f"[yellow]Deploying service: {service_name}[/yellow]")
+
+    if dry_run:
+        console.print("[blue]Dry run mode - no actual deployment[/blue]")
+
+    # Implementation for service deployment
+    console.print(f"[green]Service {service_name} deployment completed[/green]")
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @cli.group()
@@ -254,12 +331,16 @@ def health(ctx: click.Context) -> None:
 @click.option("--component", multiple=True, help="Check specific components")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
+<<<<<<< HEAD
 @with_orchestrator
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def health_check(
     ctx: click.Context,
     comprehensive: bool,
     component: list[str],
     output_format: str,
+<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check system health status."""
@@ -272,6 +353,41 @@ def health_check(
 
         progress.update(task, description="Health check completed", completed=100)
         _display_health_result(result, output_format)
+=======
+) -> None:
+    """Check system health status."""
+
+    async def _check_health() -> None:
+        config_manager = ctx.obj["config_manager"]
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Running health checks...", total=None)
+
+            orchestrator = HomelabOrchestrator(
+                config_manager=config_manager,
+                project_root=ctx.obj["project_root"],
+                log_level=ctx.obj["log_level"],
+            )
+
+            try:
+                await orchestrator.start()
+
+                result = await orchestrator.validate_system_health()
+
+                progress.update(task, description="Health check completed", completed=100)
+
+                # Display results
+                _display_health_result(result, output_format)
+
+            finally:
+                await orchestrator.stop()
+
+    asyncio.run(_check_health())
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @health.command("monitor")
@@ -381,6 +497,7 @@ def gpu(ctx: click.Context) -> None:
 @gpu.command("discover")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
+<<<<<<< HEAD
 @with_orchestrator
 def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Discover available GPU resources."""
@@ -393,11 +510,37 @@ def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOr
 
         progress.update(task, description="GPU discovery completed", completed=100)
         _display_gpu_result(result, output_format)
+=======
+def gpu_discover(ctx: click.Context, output_format: str) -> None:
+    """Discover available GPU resources."""
+
+    async def _discover() -> None:
+        config_manager = ctx.obj["config_manager"]
+
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+
+            result = await orchestrator.manage_gpu_resources("discover")
+
+            _display_gpu_result(result, output_format)
+
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_discover())
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @gpu.command("status")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
+<<<<<<< HEAD
 @with_orchestrator
 def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Show GPU resource status."""
@@ -410,6 +553,31 @@ def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrch
 
         progress.update(task, description="GPU status check completed", completed=100)
         _display_gpu_result(result, output_format)
+=======
+def gpu_status(ctx: click.Context, output_format: str) -> None:
+    """Show GPU resource status."""
+
+    async def _status() -> None:
+        config_manager = ctx.obj["config_manager"]
+
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+
+            result = await orchestrator.manage_gpu_resources("monitor")
+
+            _display_gpu_result(result, output_format)
+
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_status())
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @cli.group()
@@ -430,6 +598,7 @@ def webhook_start(ctx: click.Context, host: str, port: int) -> None:
     console.print("[green]Webhook server started[/green]")
 
 
+<<<<<<< HEAD
 @cli.group()
 @click.pass_context
 def certificates(ctx: click.Context) -> None:
@@ -631,6 +800,38 @@ def status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestr
         console.print(json.dumps(system_status, indent=2, default=str))
     else:
         _display_system_status(system_status)
+=======
+@cli.command("status")
+@click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
+@click.pass_context
+def status(ctx: click.Context, output_format: str) -> None:
+    """Show overall system status."""
+
+    async def _status() -> None:
+        config_manager = ctx.obj["config_manager"]
+
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+
+            # Get system status
+            system_status = orchestrator.get_system_status()
+
+            if output_format == "json":
+                console.print(json.dumps(system_status, indent=2, default=str))
+            else:
+                _display_system_status(system_status)
+
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_status())
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 # Display helper functions
@@ -652,6 +853,7 @@ def _display_deployment_result(result: Any) -> None:
         ),
     )
 
+<<<<<<< HEAD
     # Display comprehensive validation results if available
     if hasattr(result, "details") and "comprehensive_validation" in result.details:
         validation = result.details["comprehensive_validation"]
@@ -659,6 +861,9 @@ def _display_deployment_result(result: Any) -> None:
             _display_validation_details(validation["validation_details"])
 
     if hasattr(result, "components_deployed") and result.components_deployed:
+=======
+    if result.components_deployed:
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         table = Table(title="Deployed Components")
         table.add_column("Component", style="green")
         table.add_column("Status", style="bold")
@@ -668,7 +873,11 @@ def _display_deployment_result(result: Any) -> None:
 
         console.print(table)
 
+<<<<<<< HEAD
     if hasattr(result, "components_failed") and result.components_failed:
+=======
+    if result.components_failed:
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         table = Table(title="Failed Components")
         table.add_column("Component", style="red")
         table.add_column("Status", style="bold")
@@ -684,6 +893,7 @@ def _display_deployment_result(result: Any) -> None:
             console.print(f"  {i}. {rec}")
 
 
+<<<<<<< HEAD
 def _display_teardown_result(result: Any) -> None:
     """Display teardown results in a nice format."""
     status_color = {
@@ -744,6 +954,8 @@ def _display_validation_details(validation_details: dict[str, Any]) -> None:
     console.print(table)
 
 
+=======
+>>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def _display_health_result(result: Any, output_format: str) -> None:
     """Display health check results."""
     if output_format == "json":

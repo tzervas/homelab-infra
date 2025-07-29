@@ -670,10 +670,6 @@ class DeploymentManager:
     async def _deploy_applications(self, environment: str, dry_run: bool) -> dict[str, Any]:
         """Deploy application workloads (GitLab, Keycloak, AI/ML tools)."""
         # Deploy application-specific workloads
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
         return {"success": True, "message": "Applications placeholder"}
 
     # Backup, Teardown, and Recovery Methods
@@ -752,7 +748,8 @@ class DeploymentManager:
             )
 
     async def teardown_infrastructure(
-        self, components: list[str] | None = None
+        self,
+        components: list[str] | None = None,
     ) -> DeploymentResult:
         """Teardown the infrastructure by safely removing deployments.
 
@@ -826,7 +823,9 @@ class DeploymentManager:
             )
 
     async def recover_infrastructure(
-        self, components: list[str] | None = None, backup_path: str | None = None
+        self,
+        components: list[str] | None = None,
+        backup_path: str | None = None,
     ) -> DeploymentResult:
         """Recover services from a backup state.
 
@@ -880,7 +879,7 @@ class DeploymentManager:
             if not failed_components:
                 status = "success"
                 recommendations = [
-                    f"Infrastructure recovery completed successfully from {backup_dir}"
+                    f"Infrastructure recovery completed successfully from {backup_dir}",
                 ]
             elif len(failed_components) < len(components_to_recover):
                 status = "partial"
@@ -961,7 +960,7 @@ class DeploymentManager:
                         ns["metadata"]["name"]
                         for ns in namespaces["items"]
                         if not ns["metadata"]["name"].startswith("kube-")
-                    ]
+                    ],
                 )
         except Exception as e:
             self.logger.warning(f"Failed to get Kubernetes namespaces: {e}")
@@ -1043,13 +1042,7 @@ class DeploymentManager:
             return {"success": False, "error": str(e)}
 
     async def _backup_kubernetes_resources(
-<<<<<<< HEAD
-        self,
-        component: str,
-        backup_dir: Path,
-=======
         self, component: str, backup_dir: Path
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
     ) -> dict[str, Any]:
         """Backup Kubernetes resources for a component."""
         try:
@@ -1175,7 +1168,9 @@ class DeploymentManager:
             }
 
     async def _recover_kubernetes_resources(
-        self, component: str, backup_dir: Path
+        self,
+        component: str,
+        backup_dir: Path,
     ) -> dict[str, Any]:
         """Recover Kubernetes resources from backup."""
         try:

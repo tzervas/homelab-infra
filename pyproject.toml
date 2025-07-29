@@ -145,6 +145,12 @@ dev = [
 =======
 >>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "ruff>=0.12.5",
+]
+
 # Ruff configuration (replaces black, isort, flake8, etc.)
 [tool.ruff]
 line-length = 100

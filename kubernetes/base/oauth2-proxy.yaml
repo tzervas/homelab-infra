@@ -104,12 +104,12 @@ spec:
         - name: config
           mountPath: /etc/oauth2-proxy
         resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
         livenessProbe:
           httpGet:
             path: /ping

@@ -452,14 +452,9 @@ class IntegratedTestOrchestrator:
                 # Recommendations
                 if results.recommendations:
                     f.write("## Recommendations\\n\\n")
-<<<<<<< Updated upstream
                     f.writelines(
                         f"{i}. {rec}\\n" for i, rec in enumerate(results.recommendations, 1)
                     )
-=======
-                    for i, rec in enumerate(results.recommendations, 1):
-                        f.write(f"{i}. {rec}\\n")
->>>>>>> Stashed changes
 
             self.logger.info(f"📄 Integrated Markdown report exported to: {filepath}")
             return str(filepath)

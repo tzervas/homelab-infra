@@ -77,14 +77,11 @@ certificates:
     province: Home
     locality: Lab
 
-# Image Registry Settings (from global.yaml)
 registry:
-  default: "docker.io"
-  pullPolicy: "IfNotPresent"
+  default: docker.io
+  pullPolicy: IfNotPresent
   pullSecrets: []
-
-# Common Annotations
 annotations:
   deployment.kubernetes.io/revision: '{{ .Values.revision | default "1" }}'
-  homelab.local/managed-by: "centralized-config"
+  homelab.local/managed-by: centralized-config
   homelab.local/last-updated: '{{ now | date "2006-01-02T15:04:05Z" }}'

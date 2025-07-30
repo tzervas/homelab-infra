@@ -4,12 +4,21 @@ This directory contains Ansible configurations and playbooks for the homelab inf
 
 ## Current Status
 
+<<<<<<< Updated upstream
 ⚠️ **Note**: This project maintains Ansible playbooks for system-level configuration and provisioning tasks only. All application deployments have transitioned to Helm-based management. The Ansible directory is now focused on:
 
 - Initial server provisioning playbooks
 - System-level configuration (network, storage, kernel parameters)
 - Bootstrap tasks for Terraform/Helm prerequisites
 - Infrastructure validation and health checks
+=======
+⚠️ **Note**: This project has migrated from Ansible-based deployment to a Helm/Helmfile approach. The Ansible directory is maintained for:
+
+- Legacy compatibility
+- Specific system-level configurations not handled by Kubernetes
+- Infrastructure bootstrapping tasks
+
+>>>>>>> Stashed changes
 
 ## Structure
 
@@ -62,7 +71,18 @@ Ansible is now used for:
 
 ## Usage
 
+<<<<<<< Updated upstream
+
 ### Complete System Provisioning
+
+=======
+
+### System Bootstrap
+
+```bash
+# Bootstrap homelab server
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml
+>>>>>>> Stashed changes
 
 ```bash
 # Run complete system provisioning (recommended)
@@ -72,7 +92,15 @@ ansible-playbook -i inventory/hosts.yml site.yml
 ansible-playbook -i inventory/hosts.yml site.yml -e "system_components=['bootstrap','k3s']"
 ```
 
+<<<<<<< Updated upstream
+
 ### Individual System Tasks
+
+=======
+
+### Validation
+>>>>>>>
+>>>>>>> Stashed changes
 
 ```bash
 # Bootstrap system prerequisites

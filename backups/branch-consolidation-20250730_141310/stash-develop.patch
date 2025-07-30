@@ -1,0 +1,2076 @@
+diff --git a/PROJECT_STRUCTURE.md b/PROJECT_STRUCTURE.md
+index 8b3cff1..fe833e0 100644
+--- a/PROJECT_STRUCTURE.md
++++ b/PROJECT_STRUCTURE.md
+@@ -102,6 +102,7 @@ homelab-infra/
+ ## 📋 Documentation Update Summary
+
+ ### ✅ Main Documentation Files Updated
++
+ - `README.md` - Updated with new directory structure awareness
+ - `PROJECT_STRUCTURE.md` - Enhanced with migration status and completion
+ - `docs/README.md` - Added references to new directory structure
+@@ -109,17 +110,20 @@ homelab-infra/
+ - `docs/deployment/README.md` - Updated script references
+
+ ### ✅ New Directory READMEs Created
++
+ - `config/README.md` - Configuration management structure and usage
+ - `deployments/README.md` - Deployment strategy and organization
+ - `tools/README.md` - Development and operational tools overview
+ - `scripts/README.md` - Enhanced with new structure integration
+
+ ### ✅ Script Path Updates
++
+ - All documentation now references correct script paths under new structure
+ - Cross-references between directories established
+ - Navigation paths updated throughout documentation
+
+ ### ✅ Integration Documentation
++
+ - Added cross-directory integration explanations
+ - Documented workflow between different directory structures
+ - Enhanced with usage examples and best practices
+diff --git a/SCRIPT_REFACTORING_SUMMARY.md b/SCRIPT_REFACTORING_SUMMARY.md
+index 7c55d96..2bad2b7 100644
+--- a/SCRIPT_REFACTORING_SUMMARY.md
++++ b/SCRIPT_REFACTORING_SUMMARY.md
+@@ -1,23 +1,28 @@
+ # Script Refactoring for Consistency - Summary
+
+ ## Overview
++
+ Successfully refactored shell scripts throughout the project to standardize headers, error handling, logging, and code quality. This addresses Step 3 of the broader homelab infrastructure improvement plan.
+
+ ## Changes Implemented
+
+ ### 1. Standardized MIT License Headers
++
+ - Added consistent MIT license headers to all shell scripts
+ - Copyright holder: Tyler Zervas (2025)
+ - Ensures legal compliance and consistent licensing
+
+ ### 2. Enhanced Error Handling
++
+ - Implemented `set -euo pipefail` across scripts for robust error handling:
+   - `-e`: Exit on any command failure
+   - `-u`: Exit on undefined variable usage
+   - `-o pipefail`: Fail pipeline if any command in pipeline fails
+
+ ### 3. Consistent Logging Functions
++
+ - Standardized logging functions in all scripts:
++
+   ```bash
+   log_info()    # Blue [INFO] messages to stderr
+   log_success() # Green [SUCCESS] messages to stderr
+@@ -26,6 +31,7 @@ Successfully refactored shell scripts throughout the project to standardize head
+   ```
+
+ ### 4. Fixed Shellcheck Warnings
++
+ - Resolved major shellcheck issues including:
+   - Proper variable quoting to prevent word splitting
+   - Fixed array declarations using `mapfile -t` instead of deprecated syntax
+@@ -35,6 +41,7 @@ Successfully refactored shell scripts throughout the project to standardize head
+   - Removed unused variables and improved `read` usage
+
+ ### 5. Enhanced Documentation
++
+ - Added comprehensive usage documentation to script headers including:
+   - Clear usage syntax
+   - Description of functionality
+@@ -44,13 +51,15 @@ Successfully refactored shell scripts throughout the project to standardize head
+   - Examples
+
+ ### 6. Consistent Naming Conventions
++
+ - Ensured function names use underscores (snake_case)
+ - Variable names follow consistent patterns
+ - Script filenames follow kebab-case convention
+
+ ## Scripts Refactored
+
+-### Primary Scripts Completed:
++### Primary Scripts Completed
++
+ 1. `scripts/utilities/check-unsigned-commits.sh`
+ 2. `scripts/deployment/deploy.sh`
+ 3. `scripts/validation/validate-k3s-simple.sh`
+@@ -60,14 +69,17 @@ Successfully refactored shell scripts throughout the project to standardize head
+ 7. `scripts/deployment/deploy-gitlab-keycloak.sh`
+ 8. `scripts/setup/setup_ssh.sh` (already had MIT license)
+
+-### Quality Improvements Achieved:
++### Quality Improvements Achieved
++
+ - **Before**: 100+ shellcheck warnings across scripts
+ - **After**: Significantly reduced to mainly unused variable warnings and minor issues
+ - All major error-prone patterns fixed
+ - Consistent code style established
+
+ ## Template Created
++
+ Created `/tmp/script_refactor_template.sh` as a standardized template for future scripts with:
++
+ - MIT license header
+ - Proper error handling setup
+ - Standardized logging functions
+@@ -75,19 +87,23 @@ Created `/tmp/script_refactor_template.sh` as a standardized template for future
+ - Argument parsing template
+
+ ## Remaining Scripts
++
+ The following scripts in the project still need refactoring using the established patterns:
+
+-### Testing Framework Scripts:
++### Testing Framework Scripts
++
+ - `testing/k3s-validation/modules/**/*.sh` (25+ test modules)
+ - `testing/k3s-validation/orchestrator.sh`
+ - `testing/k3s-validation/test-deployment.sh`
+
+-### Utility Scripts:
++### Utility Scripts
++
+ - `scripts/utilities/analyze-and-test-develop.sh`
+ - `scripts/utilities/claude-task.sh`
+ - `scripts/utilities/code-quality.sh`
+
+-### Deployment Scripts:
++### Deployment Scripts
++
+ - `scripts/deployment/deploy-ai-ml.sh`
+ - `scripts/deployment/deploy-and-adjust-network.sh`
+ - `scripts/deployment/deploy-homelab.sh`
+@@ -95,7 +111,8 @@ The following scripts in the project still need refactoring using the establishe
+ - `scripts/deployment/deploy-with-privileges.sh`
+ - `scripts/deployment/setup-secure-deployment.sh`
+
+-### Validation Scripts:
++### Validation Scripts
++
+ - `scripts/validation/test-deployment-dry-run.sh`
+ - `scripts/validation/test-deployment-readiness.sh`
+ - `scripts/validation/test-ssh-readiness.sh`
+@@ -104,19 +121,23 @@ The following scripts in the project still need refactoring using the establishe
+ - `scripts/validation/validate-k3s-cluster.sh`
+ - `scripts/validation/validate-k8s-manifests.sh`
+
+-### Maintenance Scripts:
++### Maintenance Scripts
++
+ - `scripts/maintenance/sync-private-config.sh`
+ - `scripts/maintenance/sync_private_docs.sh`
+ - `scripts/maintenance/sync_untracked.sh`
+
+-### Setup Scripts:
++### Setup Scripts
++
+ - `scripts/setup/setup-k3s-access.sh`
+ - `scripts/setup/setup-vm-auth.sh`
+
+-### Root Level Scripts:
++### Root Level Scripts
++
+ - `check-env-vars.sh`
+
+ ## Next Steps
++
+ 1. Apply the refactoring template to remaining scripts
+ 2. Run comprehensive shellcheck validation on all scripts
+ 3. Test refactored scripts to ensure functionality is preserved
+@@ -124,6 +145,7 @@ The following scripts in the project still need refactoring using the establishe
+ 5. Consider creating a pre-commit hook to enforce script standards
+
+ ## Benefits Achieved
++
+ - **Consistency**: All scripts now follow the same patterns
+ - **Reliability**: Robust error handling prevents silent failures
+ - **Maintainability**: Clear logging and documentation
+diff --git a/TESTING_INTEGRATION_COMPLETE.md b/TESTING_INTEGRATION_COMPLETE.md
+index 8f46e8f..7d0bbb9 100644
+--- a/TESTING_INTEGRATION_COMPLETE.md
++++ b/TESTING_INTEGRATION_COMPLETE.md
+@@ -9,6 +9,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 1. Unified Testing Architecture
+
+ **Created Integrated Test Orchestrator**: `scripts/testing/integrated_test_orchestrator.py`
++
+ - Bridges Python-based testing framework with bash-based K3s validation framework
+ - Provides unified entry point for all testing operations
+ - Supports selective framework execution (Python-only, K3s-only, or integrated)
+@@ -17,6 +18,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 2. Cross-Framework Compatibility
+
+ **Python Framework Integration** (`scripts/testing/`):
++
+ - Configuration validation (YAML/JSON, Ansible inventory, Helm values)
+ - Infrastructure health monitoring (cluster connectivity, node status, resources)
+ - Service deployment validation (pod readiness, application-specific checks)
+@@ -25,6 +27,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ - Comprehensive issue tracking and reporting
+
+ **K3s Validation Framework Integration** (`testing/k3s-validation/`):
++
+ - Core Kubernetes functionality tests (API server, nodes, DNS, storage)
+ - K3s-specific component validation (Traefik, ServiceLB, local-path provisioner)
+ - Performance benchmarking (load testing, network throughput, storage I/O)
+@@ -35,6 +38,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 3. Enhanced Library Support
+
+ **Completed Missing K3s Framework Libraries**:
++
+ - `testing/k3s-validation/lib/common.sh`: Common functions for bash testing framework
+ - `testing/k3s-validation/lib/debug.sh`: Debug and error recovery mechanisms
+ - Proper integration with existing orchestrator script
+@@ -43,6 +47,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 4. Unified Entry Points
+
+ **Convenience Wrapper Script**: `run-tests.sh`
++
+ - Single command for all testing scenarios
+ - Intelligent framework detection and prerequisite checking
+ - Flexible test scope selection (quick, comprehensive, custom)
+@@ -50,6 +55,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ - Built-in troubleshooting guidance
+
+ **Direct Framework Access**:
++
+ - `python scripts/testing/integrated_test_orchestrator.py` - Integrated testing
+ - `python scripts/testing/test_reporter.py` - Python framework only
+ - `./testing/k3s-validation/orchestrator.sh` - K3s validation only
+@@ -57,12 +63,14 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 5. Cross-Reference Updates
+
+ **Documentation Updates**:
++
+ - Updated `scripts/testing/README.md` with integrated orchestrator usage
+ - Enhanced main `README.md` with comprehensive testing guidance
+ - Updated project structure documentation
+ - Provided migration paths from legacy validation scripts
+
+ **Script Integration**:
++
+ - Legacy validation scripts now reference new framework locations
+ - Proper deprecation notices with migration guidance
+ - Maintained backward compatibility where possible
+@@ -85,12 +93,14 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ### 7. Reporting and Analytics
+
+ **Multi-Format Reporting**:
++
+ - Console output with color-coded results and issue summaries
+ - JSON reports for programmatic processing and CI/CD integration
+ - Markdown reports for documentation and sharing
+ - Integrated issue tracking with severity classification and prioritization
+
+ **Comprehensive Metrics**:
++
+ - Test success rates and duration analysis
+ - Framework-specific performance metrics
+ - Cross-framework consistency validation
+@@ -99,6 +109,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ## Usage Examples
+
+ ### Quick Start
++
+ ```bash
+ # Run complete integrated test suite
+ ./run-tests.sh
+@@ -111,6 +122,7 @@ The testing framework in `scripts/testing/` has been successfully integrated wit
+ ```
+
+ ### Advanced Usage
++
+ ```bash
+ # Python framework with workstation perspective
+ ./run-tests.sh --python-only --include-workstation
+@@ -126,6 +138,7 @@ python scripts/testing/integrated_test_orchestrator.py \
+ ```
+
+ ### Framework-Specific Testing
++
+ ```bash
+ # Individual framework execution
+ python scripts/testing/test_reporter.py --output-format json
+@@ -135,21 +148,25 @@ python scripts/testing/test_reporter.py --output-format json
+ ## Integration Benefits
+
+ ### 1. Comprehensive Coverage
++
+ - **Complete Testing Spectrum**: From configuration validation to production readiness
+ - **Multi-Perspective Validation**: Both application-level and cluster-level testing
+ - **Cross-Framework Consistency**: Unified reporting and issue tracking
+
+ ### 2. Operational Excellence
++
+ - **Simplified Workflow**: Single command for complete infrastructure validation
+ - **Flexible Execution**: Run specific frameworks or test categories as needed
+ - **Automated Integration**: CI/CD ready with multiple report formats
+
+ ### 3. Enhanced Reliability
++
+ - **Robust Error Handling**: Safe execution modes and error recovery
+ - **Comprehensive Logging**: Debug capabilities across both frameworks
+ - **Issue Prioritization**: Intelligent severity classification and recommendations
+
+ ### 4. Developer Experience
++
+ - **Intuitive Interface**: Clear usage patterns and helpful error messages
+ - **Comprehensive Documentation**: Updated guides and examples
+ - **Migration Support**: Smooth transition from legacy validation scripts
+@@ -208,6 +225,7 @@ homelab-infra/
+ | `scripts/testing/test_reporter.py` | `./run-tests.sh --python-only` | Python Framework |
+
+ ### Backward Compatibility
++
+ - Legacy scripts maintain functionality with deprecation notices
+ - Clear migration guidance provided in each deprecated script
+ - Gradual migration path available for existing workflows
+@@ -231,16 +249,19 @@ python scripts/testing/integrated_test_orchestrator.py --help
+ ## Next Steps and Recommendations
+
+ ### 1. Adoption Strategy
++
+ - **Phase 1**: Begin using `./run-tests.sh` for daily operations
+ - **Phase 2**: Integrate into CI/CD pipelines using the integrated orchestrator
+ - **Phase 3**: Deprecate direct usage of individual framework scripts
+
+ ### 2. Continuous Improvement
++
+ - **Monitoring**: Track test execution patterns and performance metrics
+ - **Enhancement**: Add new test categories based on operational needs
+ - **Automation**: Develop scheduled testing workflows for continuous validation
+
+ ### 3. Documentation Maintenance
++
+ - **Living Documentation**: Keep test documentation synchronized with code changes
+ - **Training Materials**: Develop user guides for different personas (operators, developers, SREs)
+ - **Best Practices**: Document optimal testing patterns and troubleshooting procedures
+diff --git a/ansible/README.md b/ansible/README.md
+index 46f1754..502e2d3 100644
+--- a/ansible/README.md
++++ b/ansible/README.md
+@@ -5,6 +5,7 @@ This directory contains Ansible configurations and playbooks for the homelab inf
+ ## Current Status
+
+ ⚠️ **Note**: This project has migrated from Ansible-based deployment to a Helm/Helmfile approach. The Ansible directory is maintained for:
++
+ - Legacy compatibility
+ - Specific system-level configurations not handled by Kubernetes
+ - Infrastructure bootstrapping tasks
+@@ -24,6 +25,7 @@ ansible/
+ ## Migration Status
+
+ ### ✅ Migrated to Helm/Helmfile
++
+ The following functionality has been successfully migrated to Helm-based deployment:
+
+ - **Service Deployments**: GitLab, Keycloak, monitoring stack
+@@ -32,6 +34,7 @@ The following functionality has been successfully migrated to Helm-based deploym
+ - **Monitoring Stack**: Prometheus, Grafana, alerting
+
+ ### 🔄 Current Ansible Usage
++
+ Ansible is now used for:
+
+ - **System Bootstrapping**: Initial server setup and configuration
+@@ -42,11 +45,13 @@ Ansible is now used for:
+ ## Integration with New Structure
+
+ ### Configuration Integration
++
+ - Uses configuration from `../config/environments/` for environment-specific settings
+ - Integrates with `.env` and `.env.private.local` for host definitions
+ - Complements rather than conflicts with Helm deployments
+
+ ### Script Integration
++
+ - Called by setup scripts in `../scripts/setup/`
+ - Used for initial system preparation before K3s deployment
+ - Supports the overall deployment workflow
+@@ -54,6 +59,7 @@ Ansible is now used for:
+ ## Usage
+
+ ### System Bootstrap
++
+ ```bash
+ # Bootstrap homelab server
+ ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml
+@@ -63,6 +69,7 @@ ansible-playbook -i inventory/hosts.yml playbooks/setup-ssh.yml
+ ```
+
+ ### Validation
++
+ ```bash
+ # Validate system readiness
+ ansible-playbook -i inventory/hosts.yml playbooks/validate-system.yml
+@@ -74,13 +81,16 @@ ansible all -i inventory/hosts.yml -m ping
+ ## Future Direction
+
+ ### Planned Evolution
++
+ - **Reduce Scope**: Focus on system-level tasks only
+ - **Complement Helm**: Work alongside, not replace, Helm deployments
+ - **Bootstrap Focus**: Primarily for initial system preparation
+ - **Validation Role**: System health and readiness checks
+
+ ### Migration Benefits
++
+ The migration to Helm provides:
++
+ - **Declarative Management**: Better state management for applications
+ - **Rollback Capabilities**: Easy rollback and update procedures
+ - **Kubernetes Native**: Better integration with K3s cluster
+diff --git a/config/README.md b/config/README.md
+index abe237d..3b14c79 100644
+--- a/config/README.md
++++ b/config/README.md
+@@ -19,18 +19,21 @@ config/
+ ## Environment Configurations
+
+ ### Development Environment (`environments/development/`)
++
+ - Minimal resource allocation
+ - Single replica deployments
+ - Self-signed certificates for internal testing
+ - Relaxed security policies for development ease
+
+ ### Staging Environment (`environments/staging/`)
++
+ - Production-like configuration for testing
+ - Let's Encrypt staging certificates
+ - Resource allocation closer to production
+ - Full feature testing capabilities
+
+ ### Production Environment (`environments/production/`)
++
+ - Full resource allocation
+ - High availability configurations
+ - Let's Encrypt production certificates
+@@ -39,13 +42,17 @@ config/
+ ## Usage
+
+ ### Environment Variables
++
+ Configuration files in this directory work in conjunction with:
++
+ - `.env` - Public defaults and template values
+ - `.env.private.local` - Private overrides for local development
+ - `helm/environments/` - Helm-specific values files
+
+ ### Deployment Integration
++
+ These configurations are automatically loaded by:
++
+ - `./scripts/deployment/deploy.sh` - Main deployment script
+ - `./scripts/deployment/deploy-with-privileges.sh` - Privileged deployment operations
+ - Helmfile configurations in `helm/environments/`
+@@ -83,17 +90,20 @@ Planned subdirectories for specialized configurations:
+ ## Quick Start
+
+ 1. Copy environment template:
++
+    ```bash
+    cp -r examples/private-config-template/* config/
+    ```
+
+ 2. Customize for your environment:
++
+    ```bash
+    # Edit development settings
+    nano config/environments/development/.env
+    ```
+
+ 3. Deploy with specific environment:
++
+    ```bash
+    ./scripts/deployment/deploy.sh -e development
+    ```
+diff --git a/deployments/README.md b/deployments/README.md
+index 44fb554..4ef4ecc 100644
+--- a/deployments/README.md
++++ b/deployments/README.md
+@@ -16,7 +16,9 @@ deployments/
+ ## Current Implementation
+
+ ### K3s Deployment (`k3s/`)
++
+ Contains K3s cluster-specific deployment configurations:
++
+ - Cluster initialization scripts
+ - Node configuration files
+ - Network policy definitions
+@@ -25,20 +27,26 @@ Contains K3s cluster-specific deployment configurations:
+ ### Planned Directories
+
+ #### Applications (`applications/`)
++
+ Will contain application-specific deployment manifests:
++
+ - GitLab deployment configurations
+ - Keycloak identity management
+ - Monitoring stack deployments
+ - Custom application manifests
+
+ #### Infrastructure (`infrastructure/`)
++
+ Will house Infrastructure as Code configurations:
++
+ - Terraform modules for infrastructure provisioning
+ - Ansible playbooks for system configuration
+ - Cloud-native infrastructure definitions
+
+ #### Helm Charts (`helm-charts/`)
++
+ Will contain custom Helm charts developed for this homelab:
++
+ - Custom application charts
+ - Infrastructure component charts
+ - Shared library charts
+@@ -47,6 +55,7 @@ Will contain custom Helm charts developed for this homelab:
+ ## Deployment Strategy
+
+ ### Current Approach
++
+ The project currently uses a hybrid deployment approach:
+
+ 1. **Helm-based Deployment**: Primary deployment method using Helmfile
+@@ -60,7 +69,9 @@ The project currently uses a hybrid deployment approach:
+    - Specialized scripts: `deploy-homelab.sh`, `deploy-gitlab-keycloak.sh`
+
+ ### Future Migration
++
+ This `deployments/` directory is structured to support:
++
+ - Migration from script-based to declarative deployments
+ - Better separation of concerns
+ - Environment-specific deployment strategies
+@@ -69,7 +80,9 @@ This `deployments/` directory is structured to support:
+ ## Integration with Existing System
+
+ ### Script Integration
++
+ Current deployment scripts automatically work with this structure:
++
+ ```bash
+ # Main deployment script
+ ./scripts/deployment/deploy.sh -e production
+@@ -82,7 +95,9 @@ Current deployment scripts automatically work with this structure:
+ ```
+
+ ### Helm Integration
++
+ Helmfile configurations reference deployment artifacts:
++
+ ```bash
+ # Deploy using Helmfile
+ helmfile --environment production apply
+@@ -94,18 +109,21 @@ helmfile --environment development sync
+ ## Environment Management
+
+ ### Development Deployments
++
+ - Minimal resource requirements
+ - Single-node configurations
+ - Development-specific networking
+ - Rapid iteration capabilities
+
+ ### Staging Deployments
++
+ - Production-like configurations
+ - Multi-node testing capabilities
+ - Integration testing environments
+ - Performance validation setups
+
+ ### Production Deployments
++
+ - High availability configurations
+ - Security-hardened deployments
+ - Monitoring and alerting enabled
+@@ -114,12 +132,14 @@ helmfile --environment development sync
+ ## Security Considerations
+
+ ### Manifest Security
++
+ - No hardcoded secrets in deployment files
+ - Use of Kubernetes secrets and ConfigMaps
+ - Sealed secrets for encrypted storage
+ - RBAC configurations for access control
+
+ ### Network Security
++
+ - Network policies for traffic control
+ - TLS termination at ingress
+ - Service mesh considerations (future)
+@@ -128,11 +148,13 @@ helmfile --environment development sync
+ ## Automation and CI/CD
+
+ ### Current Automation
++
+ - Script-based deployment automation
+ - Environment-specific configurations
+ - Validation and testing integration
+
+ ### Future CI/CD Integration
++
+ - GitOps workflow implementation
+ - Automated deployment pipelines
+ - Progressive delivery strategies
+@@ -141,12 +163,14 @@ helmfile --environment development sync
+ ## Monitoring and Observability
+
+ ### Deployment Monitoring
++
+ - Health checks for deployed applications
+ - Resource utilization monitoring
+ - Performance metrics collection
+ - Log aggregation and analysis
+
+ ### Deployment Validation
++
+ - Pre-deployment testing
+ - Post-deployment verification
+ - Integration testing automation
+@@ -155,6 +179,7 @@ helmfile --environment development sync
+ ## Usage Examples
+
+ ### Deploy Specific Environment
++
+ ```bash
+ # Development environment
+ ./scripts/deployment/deploy.sh -e development
+@@ -165,6 +190,7 @@ helmfile --environment development sync
+ ```
+
+ ### Check Deployment Status
++
+ ```bash
+ # Overall system status
+ ./scripts/deployment/deploy-with-privileges.sh status
+@@ -175,6 +201,7 @@ kubectl get ingress -A
+ ```
+
+ ### Troubleshooting Deployments
++
+ ```bash
+ # View deployment logs
+ kubectl logs -n kube-system -l app=k3s
+@@ -207,6 +234,7 @@ When adding new deployment configurations:
+ ## Migration Notes
+
+ This structure supports the ongoing migration from:
++
+ - **From**: Script-heavy deployment approaches
+ - **To**: Declarative, Infrastructure as Code methodologies
+
+diff --git a/docs/README.md b/docs/README.md
+index 516af6b..8c1cc32 100644
+--- a/docs/README.md
++++ b/docs/README.md
+@@ -113,6 +113,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for
+ ## 📚 Additional Resources
+
+ ### Project Structure Documentation
++
+ - **[Scripts Directory](../scripts/README.md)** - Automation and utility scripts
+ - **[Testing Framework](../testing/k3s-validation/README.md)** - Comprehensive testing suite
+ - **[Configuration Directory](../config/README.md)** - Configuration management structure
+@@ -120,6 +121,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for
+ - **[Tools Directory](../tools/README.md)** - Development and operational tools
+
+ ### Project Organization
++
+ - **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** - Complete project structure overview
+ - **[Main README](../README.md)** - Project overview and quick start
+
+diff --git a/helm/README.md b/helm/README.md
+index 1ee20b3..32cffcd 100644
+--- a/helm/README.md
++++ b/helm/README.md
+@@ -22,22 +22,26 @@ helm/
+ ## Key Components
+
+ ### Helmfile Configuration (`helmfile.yaml`)
++
+ - Main orchestration file for all Helm releases
+ - Defines release dependencies and order
+ - Environment-specific configurations
+ - Integration with external value files
+
+ ### Repository Definitions (`repositories.yaml`)
++
+ - Helm repository configurations
+ - Chart source definitions
+ - Authentication and access settings
+
+ ### Custom Charts (`charts/`)
++
+ - **core-infrastructure**: Essential cluster components
+ - **monitoring**: Observability stack
+ - **storage**: Persistent storage solutions
+
+ ### Environment Values (`environments/`)
++
+ - **development**: Minimal resources, single replicas
+ - **staging**: Production-like testing environment
+ - **production**: Full resources, high availability
+@@ -45,6 +49,7 @@ helm/
+ ## Usage
+
+ ### Deploy All Services
++
+ ```bash
+ # Deploy to development environment
+ helmfile --environment development apply
+@@ -54,6 +59,7 @@ helmfile --environment production apply
+ ```
+
+ ### Deploy Specific Services
++
+ ```bash
+ # Deploy only monitoring stack
+ helmfile --environment production --selector name=prometheus apply
+@@ -63,6 +69,7 @@ helmfile --environment production --selector category=infrastructure apply
+ ```
+
+ ### Environment Management
++
+ ```bash
+ # Check differences
+ helmfile --environment production diff
+@@ -77,16 +84,19 @@ helmfile --environment production sync --selector name=gitlab
+ ## Integration with Project Structure
+
+ ### Configuration Integration
++
+ - Works with `../config/` directory for environment-specific settings
+ - Loads values from `../config/environments/{env}/`
+ - References secrets from encrypted storage
+
+ ### Script Integration
++
+ - Deployed via `../scripts/deployment/deploy.sh`
+ - Validated with `../scripts/validation/validate-k8s-manifests.sh`
+ - Monitored through `../scripts/testing/` framework
+
+ ### Deployment Integration
++
+ - Complements `../deployments/` directory structure
+ - Provides declarative deployment definitions
+ - Supports GitOps workflows
+@@ -94,18 +104,21 @@ helmfile --environment production sync --selector name=gitlab
+ ## Best Practices
+
+ ### Chart Development
++
+ - Follow Helm best practices for chart structure
+ - Include comprehensive documentation
+ - Implement proper templating and validation
+ - Support multiple environments
+
+ ### Value Management
++
+ - Use environment-specific value files
+ - Avoid hardcoded configurations
+ - Implement secure secret management
+ - Support configuration overrides
+
+ ### Release Management
++
+ - Use semantic versioning for charts
+ - Implement proper dependency management
+ - Test deployments in development first
+@@ -121,6 +134,7 @@ helmfile --environment production sync --selector name=gitlab
+ ## Migration Notes
+
+ This Helm-based approach replaced individual Ansible playbooks to:
++
+ - Simplify deployment management
+ - Enable declarative state management
+ - Improve rollback and update capabilities
+diff --git a/run-tests.sh b/run-tests.sh
+index 59a73f2..feffea7 100755
+--- a/run-tests.sh
++++ b/run-tests.sh
+@@ -146,25 +146,25 @@ parse_arguments() {
+ # Check prerequisites
+ check_prerequisites() {
+     log_info "Checking prerequisites..."
+-
++
+     # Check Python
+     if ! command -v python3 >/dev/null 2>&1; then
+         log_error "Python 3 is required but not installed"
+         return 1
+     fi
+-
++
+     # Check kubectl
+     if ! command -v kubectl >/dev/null 2>&1 && ! command -v k3s >/dev/null 2>&1; then
+         log_warning "Neither kubectl nor k3s command found"
+         log_warning "Some tests may fail without cluster access"
+     fi
+-
++
+     # Check if integrated orchestrator exists
+     if [[ "$FRAMEWORK" == "integrated" ]] && [[ ! -f "$SCRIPT_DIR/scripts/testing/integrated_test_orchestrator.py" ]]; then
+         log_error "Integrated orchestrator not found: $SCRIPT_DIR/scripts/testing/integrated_test_orchestrator.py"
+         return 1
+     fi
+-
++
+     # Check if K3s validation framework exists
+     if [[ "$FRAMEWORK" == "k3s" || "$FRAMEWORK" == "integrated" ]] && [[ ! -f "$SCRIPT_DIR/testing/k3s-validation/orchestrator.sh" ]]; then
+         log_warning "K3s validation framework not found: $SCRIPT_DIR/testing/k3s-validation/orchestrator.sh"
+@@ -173,18 +173,18 @@ check_prerequisites() {
+             return 1
+         fi
+     fi
+-
++
+     log_success "Prerequisites check completed"
+ }
+
+ # Build command arguments
+ build_command() {
+     local cmd=()
+-
++
+     case "$FRAMEWORK" in
+         "integrated")
+             cmd=("python3" "$SCRIPT_DIR/scripts/testing/integrated_test_orchestrator.py")
+-
++
+             # Add K3s categories based on test scope
+             case "$TEST_SCOPE" in
+                 "quick")
+@@ -195,27 +195,27 @@ build_command() {
+                     ;;
+                 # default: let integrated orchestrator decide
+             esac
+-
++
+             if [[ "$INCLUDE_WORKSTATION" == true ]]; then
+                 cmd+=("--include-workstation")
+             fi
+-
++
+             if [[ "$PARALLEL_K3S" == true ]]; then
+                 cmd+=("--parallel-k3s")
+             fi
+             ;;
+-
++
+         "python")
+             cmd=("python3" "$SCRIPT_DIR/scripts/testing/test_reporter.py")
+-
++
+             if [[ "$INCLUDE_WORKSTATION" == true ]]; then
+                 cmd+=("--include-workstation")
+             fi
+             ;;
+-
++
+         "k3s")
+             cmd=("$SCRIPT_DIR/testing/k3s-validation/orchestrator.sh")
+-
++
+             # Add categories based on test scope
+             case "$TEST_SCOPE" in
+                 "quick")
+@@ -228,30 +228,30 @@ build_command() {
+                     cmd+=("--all")
+                     ;;
+             esac
+-
++
+             if [[ "$PARALLEL_K3S" == true ]]; then
+                 cmd+=("--parallel")
+             fi
+-
++
+             cmd+=("--report-format" "json")
+             ;;
+     esac
+-
++
+     # Add common options
+     cmd+=("--output-format" "$OUTPUT_FORMAT")
+-
++
+     if [[ -n "$OUTPUT_FILE" ]]; then
+         cmd+=("--output-file" "$OUTPUT_FILE")
+     fi
+-
++
+     if [[ -n "$LOG_LEVEL" && "$FRAMEWORK" != "k3s" ]]; then
+         cmd+=("--log-level" "$LOG_LEVEL")
+     fi
+-
++
+     if [[ -n "$KUBECONFIG" ]]; then
+         cmd+=("--kubeconfig" "$KUBECONFIG")
+     fi
+-
++
+     echo "${cmd[@]}"
+ }
+
+@@ -259,22 +259,22 @@ build_command() {
+ run_tests() {
+     local cmd_array
+     IFS=' ' read -ra cmd_array <<< "$(build_command)"
+-
++
+     log_info "Running $FRAMEWORK testing framework..."
+     log_info "Test scope: $TEST_SCOPE"
+     log_info "Output format: $OUTPUT_FORMAT"
+-
++
+     if [[ "$DRY_RUN" == true ]]; then
+         log_info "DRY RUN - Command that would be executed:"
+         echo "  ${cmd_array[*]}"
+         return 0
+     fi
+-
++
+     log_info "Executing: ${cmd_array[*]}"
+-
++
+     # Change to script directory for relative path resolution
+     cd "$SCRIPT_DIR"
+-
++
+     # Execute the command
+     if "${cmd_array[@]}"; then
+         log_success "Test execution completed successfully"
+@@ -289,7 +289,7 @@ run_tests() {
+ # Generate summary based on framework
+ show_summary() {
+     log_info "Test execution summary:"
+-
++
+     case "$FRAMEWORK" in
+         "integrated")
+             echo "  Framework: Integrated (Python + K3s validation)"
+@@ -301,29 +301,29 @@ show_summary() {
+             echo "  Framework: K3s validation framework only"
+             ;;
+     esac
+-
++
+     echo "  Test Scope: $TEST_SCOPE"
+     echo "  Include Workstation: $INCLUDE_WORKSTATION"
+-
++
+     if [[ "$FRAMEWORK" != "python" ]]; then
+         echo "  Parallel K3s: $PARALLEL_K3S"
+     fi
+-
++
+     echo "  Output Format: $OUTPUT_FORMAT"
+-
++
+     if [[ -n "$OUTPUT_FILE" ]]; then
+         echo "  Output File: $OUTPUT_FILE"
+     fi
+-
++
+     # Show where results can be found
+     if [[ "$OUTPUT_FORMAT" == "json" || "$OUTPUT_FORMAT" == "all" ]]; then
+         echo "  JSON reports will be saved to: test_results/"
+     fi
+-
++
+     if [[ "$OUTPUT_FORMAT" == "markdown" || "$OUTPUT_FORMAT" == "all" ]]; then
+         echo "  Markdown reports will be saved to: test_results/"
+     fi
+-
++
+     if [[ "$FRAMEWORK" == "k3s" || "$FRAMEWORK" == "integrated" ]]; then
+         echo "  K3s validation reports will be saved to: testing/k3s-validation/reports/"
+     fi
+@@ -333,27 +333,27 @@ show_summary() {
+ main() {
+     echo -e "${BLUE}🏠 Homelab Infrastructure Test Suite Launcher${NC}"
+     echo -e "${BLUE}===========================================${NC}"
+-
++
+     # Parse arguments
+     parse_arguments "$@"
+-
++
+     # Show summary of what will be executed
+     show_summary
+     echo
+-
++
+     # Check prerequisites
+     if ! check_prerequisites; then
+         log_error "Prerequisites check failed"
+         exit 1
+     fi
+-
++
+     echo
+-
++
+     # Run the tests
+     if run_tests; then
+         echo
+         log_success "🎉 Test suite execution completed successfully!"
+-
++
+         # Show next steps
+         echo
+         log_info "Next steps:"
+@@ -361,7 +361,7 @@ main() {
+         echo "  - Check generated report files (if any)"
+         echo "  - Address any failed tests or warnings"
+         echo "  - Set up automated testing schedule"
+-
++
+     else
+         echo
+         log_error "❌ Test suite execution failed!"
+@@ -371,7 +371,7 @@ main() {
+         echo "  - Verify prerequisites are installed"
+         echo "  - Run with --log-level DEBUG for more details"
+         echo "  - Try individual framework tests: --python-only or --k3s-only"
+-
++
+         exit 1
+     fi
+ }
+diff --git a/scripts/README.md b/scripts/README.md
+index 5ef84f1..2103a0b 100644
+--- a/scripts/README.md
++++ b/scripts/README.md
+@@ -18,23 +18,31 @@ scripts/
+ ## Script Categories
+
+ ### Setup Scripts (`setup/`)
++
+ Initial setup and configuration scripts for system components:
++
+ - `setup-k3s-access.sh` - Configure port forwarding and kubectl access for K3s
+ - `setup-vm-auth.sh` - Set up SSH authentication for homelab test VMs
+ - `setup_ssh.sh` - SSH configuration and key management
+
+ ### Maintenance Scripts (`maintenance/`)
++
+ Scripts for ongoing maintenance and synchronization:
++
+ - `sync-private-config.sh` - Sync private configuration repository
+ - `sync_private_docs.sh` - Sync private documentation across git branches
+ - `sync_untracked.sh` - Sync untracked files across branches
+
+ ### Backup Scripts (`backup/`)
++
+ Backup and restore functionality:
++
+ - *(Directory ready for backup/restore scripts)*
+
+ ### Utility Scripts (`utilities/`)
++
+ General-purpose utilities and development tools:
++
+ - `analyze-and-test-develop.sh` - Development branch analysis and testing
+ - `check-unsigned-commits.sh` - Verify commit signatures
+ - `claude-task.sh` - AI-assisted task automation
+@@ -42,7 +50,9 @@ General-purpose utilities and development tools:
+ - `fix-vm-network.sh` - Fix VM network connectivity and SSH access
+
+ ### Deployment Scripts (`deployment/`)
++
+ Deployment orchestration and automation:
++
+ - `deploy-homelab.sh` - Comprehensive GitLab + Keycloak homelab deployment
+ - `deploy-ai-ml.sh` - AI/ML workload deployment
+ - `deploy-and-adjust-network.sh` - Network-aware deployment with adjustments
+@@ -54,7 +64,9 @@ Deployment orchestration and automation:
+ - `setup-secure-deployment.sh` - Security-focused deployment setup
+
+ ### Validation Scripts (`validation/`)
++
+ Testing, validation, and readiness checks:
++
+ - `validate-k3s-cluster.sh` - K3s cluster health validation (legacy)
+ - `validate-k3s-simple.sh` - Simple K3s validation checks
+ - `validate-k8s-manifests.sh` - Kubernetes manifest validation
+@@ -66,7 +78,9 @@ Testing, validation, and readiness checks:
+ - `test-ssh-readiness.sh` - SSH connectivity testing
+
+ ### Testing Framework (`testing/`)
++
+ Comprehensive testing framework with modules for:
++
+ - Core infrastructure testing
+ - Integration testing
+ - Network security validation
+@@ -79,7 +93,9 @@ See `testing/README.md` for detailed information about the testing framework.
+ ## Usage Guidelines
+
+ ### Script Execution
++
+ All scripts should be executed from the project root directory:
++
+ ```bash
+ # From project root
+ ./scripts/setup/setup-k3s-access.sh
+@@ -88,19 +104,25 @@ All scripts should be executed from the project root directory:
+ ```
+
+ ### Environment Variables
++
+ Many scripts support configuration through environment variables:
++
+ - Load from `.env` file in project root
+ - Override with `.env.private.local` for local customization
+ - Use script-specific environment variables where documented
+
+ ### Error Handling
++
+ Scripts follow consistent error handling patterns:
++
+ - Exit codes: 0 (success), non-zero (failure)
+ - Colored output for status messages
+ - Comprehensive logging where appropriate
+
+ ### Dependencies
++
+ Scripts may require:
++
+ - SSH access to homelab infrastructure
+ - kubectl/k3s for Kubernetes operations
+ - Ansible for automation playbooks
+@@ -110,6 +132,7 @@ Scripts may require:
+ ## Migration Notes
+
+ This reorganization was completed as part of PROJECT_STRUCTURE.md implementation:
++
+ - ✅ All existing functionality preserved
+ - ✅ Path references updated where necessary
+ - ✅ Testing framework reorganized and enhanced
+@@ -120,6 +143,7 @@ This reorganization was completed as part of PROJECT_STRUCTURE.md implementation
+ ## Development Guidelines
+
+ When adding new scripts:
++
+ 1. Place in appropriate subdirectory based on function
+ 2. Follow existing naming conventions
+ 3. Include proper error handling and logging
+@@ -129,6 +153,7 @@ When adding new scripts:
+ ## Script Integration with New Structure
+
+ ### Integration Points
++
+ Scripts in this directory integrate seamlessly with the new project structure:
+
+ - **Configuration**: Uses configs from `../config/` directory
+@@ -138,6 +163,7 @@ Scripts in this directory integrate seamlessly with the new project structure:
+ - **Testing**: Integrates with `../testing/` framework
+
+ ### Environment Integration
++
+ ```bash
+ # Scripts automatically detect and use:
+ # - .env (project root) - Base configuration
+@@ -147,7 +173,9 @@ Scripts in this directory integrate seamlessly with the new project structure:
+ ```
+
+ ### Path Resolution
++
+ All scripts use relative paths from project root:
++
+ ```bash
+ # Always run scripts from project root
+ cd /path/to/homelab-infra
+@@ -158,6 +186,7 @@ cd /path/to/homelab-infra
+ ## Quality Standards
+
+ ### Script Standards
++
+ - ✅ Consistent error handling and logging
+ - ✅ Environment variable support
+ - ✅ Comprehensive documentation headers
+@@ -165,6 +194,7 @@ cd /path/to/homelab-infra
+ - ✅ Colored output for status messages
+
+ ### Security Standards
++
+ - ✅ No hardcoded credentials or secrets
+ - ✅ Proper input validation and sanitization
+ - ✅ Secure temporary file handling
+diff --git a/scripts/testing/__init__.py b/scripts/testing/__init__.py
+index d44154e..cc6672e 100644
+--- a/scripts/testing/__init__.py
++++ b/scripts/testing/__init__.py
+@@ -15,15 +15,15 @@ __email__ = "tz-dev@vectorweight.com"
+ try:
+     from .config_validator import ConfigValidator, ValidationResult
+     from .infrastructure_health import ClusterHealth, InfrastructureHealthMonitor
+-    from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
+-    from .network_security import NetworkSecurityValidator, SecurityStatus
+-    from .service_checker import ServiceDeploymentChecker, ServiceStatus
+-    from .test_reporter import HomelabTestReporter, TestSuiteResult
+     from .integrated_test_orchestrator import (
+         IntegratedTestOrchestrator,
+         IntegratedTestResults,
+         K3sValidationResult,
+     )
++    from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
++    from .network_security import NetworkSecurityValidator, SecurityStatus
++    from .service_checker import ServiceDeploymentChecker, ServiceStatus
++    from .test_reporter import HomelabTestReporter, TestSuiteResult
+ except ImportError as e:
+     import warnings
+
+diff --git a/scripts/testing/integrated_test_orchestrator.py b/scripts/testing/integrated_test_orchestrator.py
+old mode 100644
+new mode 100755
+index bad01fb..f2cc331
+--- a/scripts/testing/integrated_test_orchestrator.py
++++ b/scripts/testing/integrated_test_orchestrator.py
+@@ -2,7 +2,7 @@
+ """
+ Integrated Test Orchestrator for Homelab Infrastructure Testing
+ Copyright (c) 2025 Tyler Zervas
+-Licensed under the MIT License
++Licensed under the MIT License.
+
+ This module provides integration between the Python-based testing framework
+ in scripts/testing/ and the bash-based K3s validation framework in testing/k3s-validation/.
+@@ -17,7 +17,8 @@ import time
+ from dataclasses import asdict, dataclass, field
+ from datetime import datetime, timezone
+ from pathlib import Path
+-from typing import Any, Dict, List, Optional, Union
++from typing import Any
++
+
+ try:
+     from .test_reporter import HomelabTestReporter, TestSuiteResult
+@@ -28,169 +29,173 @@ except ImportError:
+ @dataclass
+ class K3sValidationResult:
+     """Results from K3s validation framework."""
+-
++
+     timestamp: str
+     test_suite: str
+     namespace: str
+-    summary: Dict[str, Any]
+-    cluster_info: Dict[str, Any]
+-    categories_run: List[str] = field(default_factory=list)
++    summary: dict[str, Any]
++    cluster_info: dict[str, Any]
++    categories_run: list[str] = field(default_factory=list)
+     exit_code: int = 0
+     duration: float = 0.0
+-    report_files: List[str] = field(default_factory=list)
++    report_files: list[str] = field(default_factory=list)
+
+
+ @dataclass
+ class IntegratedTestResults:
+     """Combined results from both testing frameworks."""
+-
++
+     timestamp: str
+     duration: float
+     overall_status: str
+-    python_framework_results: Optional[TestSuiteResult] = None
+-    k3s_validation_results: Optional[K3sValidationResult] = None
+-    integration_summary: Dict[str, Any] = field(default_factory=dict)
+-    recommendations: List[str] = field(default_factory=list)
++    python_framework_results: TestSuiteResult | None = None
++    k3s_validation_results: K3sValidationResult | None = None
++    integration_summary: dict[str, Any] = field(default_factory=dict)
++    recommendations: list[str] = field(default_factory=list)
+
+
+ class IntegratedTestOrchestrator:
+     """Master orchestrator for all homelab testing frameworks."""
+-
++
+     def __init__(
+         self,
+-        kubeconfig_path: Optional[str] = None,
++        kubeconfig_path: str | None = None,
+         log_level: str = "INFO",
+-        base_dir: Optional[str] = None,
+-    ):
++        base_dir: str | None = None,
++    ) -> None:
+         """Initialize the integrated test orchestrator."""
+         self.logger = self._setup_logging(log_level)
+         self.kubeconfig_path = kubeconfig_path
+         self.base_dir = Path(base_dir) if base_dir else Path.cwd()
+-
++
+         # Framework paths
+         self.python_framework_dir = self.base_dir / "scripts" / "testing"
+         self.k3s_validation_dir = self.base_dir / "testing" / "k3s-validation"
+         self.orchestrator_path = self.k3s_validation_dir / "orchestrator.sh"
+-
++
+         # Results directory
+         self.results_dir = self.base_dir / "test_results"
+         self.results_dir.mkdir(exist_ok=True)
+-
++
+         # Initialize Python framework
+         self.python_reporter = HomelabTestReporter(
+             kubeconfig_path=kubeconfig_path,
+-            log_level=log_level
++            log_level=log_level,
+         )
+-
++
+         self.logger.info("Integrated test orchestrator initialized")
+-
++
+     def _setup_logging(self, level: str) -> logging.Logger:
+         """Configure structured logging."""
+         logger = logging.getLogger(__name__)
+         logger.setLevel(getattr(logging, level.upper()))
+-
++
+         if not logger.handlers:
+             handler = logging.StreamHandler()
+             formatter = logging.Formatter(
+-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
++                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+             )
+             handler.setFormatter(formatter)
+             logger.addHandler(handler)
+-
++
+         return logger
+-
+-    def _validate_framework_availability(self) -> Dict[str, bool]:
++
++    def _validate_framework_availability(self) -> dict[str, bool]:
+         """Check availability of both testing frameworks."""
+         availability = {
+             "python_framework": self.python_framework_dir.exists(),
+             "k3s_validation": self.k3s_validation_dir.exists(),
+             "orchestrator_script": self.orchestrator_path.exists(),
+         }
+-
++
+         self.logger.debug(f"Framework availability: {availability}")
+         return availability
+-
++
+     def run_python_framework_tests(
+         self,
+-        config_paths: Optional[List[str]] = None,
++        config_paths: list[str] | None = None,
+         include_workstation: bool = False,
+-    ) -> Optional[TestSuiteResult]:
++    ) -> TestSuiteResult | None:
+         """Run the Python-based testing framework."""
+         self.logger.info("🐍 Running Python framework tests...")
+-
++
+         try:
+             result = self.python_reporter.run_comprehensive_test_suite(
+                 config_paths=config_paths,
+                 include_workstation_tests=include_workstation,
+             )
+-
++
+             self.logger.info(
+-                f"✅ Python framework completed with status: {result.overall_status}"
++                f"✅ Python framework completed with status: {result.overall_status}",
+             )
+             return result
+-
++
+         except Exception as e:
+             self.logger.exception(f"❌ Python framework tests failed: {e}")
+             return None
+-
++
+     def run_k3s_validation_tests(
+         self,
+-        categories: Optional[List[str]] = None,
++        categories: list[str] | None = None,
+         parallel: bool = False,
+         report_format: str = "json",
+-    ) -> Optional[K3sValidationResult]:
++    ) -> K3sValidationResult | None:
+         """Run the K3s validation framework."""
+         self.logger.info("🛠️ Running K3s validation tests...")
+-
++
+         if not self.orchestrator_path.exists():
+             self.logger.error(f"K3s orchestrator not found: {self.orchestrator_path}")
+             return None
+-
++
+         # Build command arguments
+         cmd = [str(self.orchestrator_path)]
+-
++
+         if categories:
+             cmd.extend(categories)
+         else:
+             cmd.append("--all")
+-
+-        cmd.extend([
+-            "--report-format", report_format,
+-        ])
+-
++
++        cmd.extend(
++            [
++                "--report-format",
++                report_format,
++            ]
++        )
++
+         if parallel:
+             cmd.append("--parallel")
+-
++
+         start_time = time.time()
+-
++
+         try:
+             # Execute the K3s validation framework
+             self.logger.debug(f"Executing command: {' '.join(cmd)}")
+-
++
+             result = subprocess.run(
+                 cmd,
+                 cwd=self.k3s_validation_dir,
+                 capture_output=True,
+                 text=True,
+-                timeout=1800,  # 30 minute timeout
++                timeout=1800,
++                check=False,  # 30 minute timeout
+             )
+-
++
+             duration = time.time() - start_time
+-
++
+             # Parse the JSON report if available
+             reports_dir = self.k3s_validation_dir / "reports"
+             report_files = list(reports_dir.glob("test-*.json")) if reports_dir.exists() else []
+-
++
+             # Load the most recent report
+             cluster_info = {}
+             summary = {}
+             test_suite = "K3s Validation"
+             namespace = "k3s-test"
+-
++
+             if report_files:
+                 latest_report = max(report_files, key=lambda p: p.stat().st_mtime)
+                 try:
+-                    with open(latest_report, 'r') as f:
++                    with open(latest_report) as f:
+                         report_data = json.load(f)
+                         summary = report_data.get("summary", {})
+                         cluster_info = report_data.get("cluster_info", {})
+@@ -198,7 +203,7 @@ class IntegratedTestOrchestrator:
+                         namespace = report_data.get("namespace", namespace)
+                 except Exception as e:
+                     self.logger.warning(f"Failed to parse K3s report {latest_report}: {e}")
+-
++
+             k3s_result = K3sValidationResult(
+                 timestamp=datetime.now(timezone.utc).isoformat(),
+                 test_suite=test_suite,
+@@ -210,82 +215,82 @@ class IntegratedTestOrchestrator:
+                 duration=duration,
+                 report_files=[str(f) for f in report_files],
+             )
+-
++
+             if result.returncode == 0:
+                 self.logger.info("✅ K3s validation tests completed successfully")
+             else:
+-                self.logger.warning(f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})")
++                self.logger.warning(
++                    f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})"
++                )
+                 if result.stderr:
+                     self.logger.warning(f"K3s validation stderr: {result.stderr}")
+-
++
+             return k3s_result
+-
++
+         except subprocess.TimeoutExpired:
+-            self.logger.error("❌ K3s validation tests timed out")
++            self.logger.exception("❌ K3s validation tests timed out")
+             return None
+         except Exception as e:
+             self.logger.exception(f"❌ K3s validation tests failed: {e}")
+             return None
+-
++
+     def generate_integration_recommendations(
+         self,
+-        python_results: Optional[TestSuiteResult],
+-        k3s_results: Optional[K3sValidationResult],
+-    ) -> List[str]:
++        python_results: TestSuiteResult | None,
++        k3s_results: K3sValidationResult | None,
++    ) -> list[str]:
+         """Generate recommendations based on integrated test results."""
+         recommendations = []
+-
++
+         # Python framework recommendations
+         if python_results:
+             recommendations.extend(python_results.recommendations or [])
+-
++
+         # K3s validation recommendations
+         if k3s_results:
+             if k3s_results.exit_code != 0:
+                 recommendations.append(
+-                    "Review K3s validation test failures for cluster-specific issues"
++                    "Review K3s validation test failures for cluster-specific issues",
+                 )
+-
++
+             # Analyze summary for specific recommendations
+             summary = k3s_results.summary
+             if summary.get("failed", 0) > 0:
+                 recommendations.append(
+-                    f"Address {summary['failed']} failed K3s validation tests"
++                    f"Address {summary['failed']} failed K3s validation tests",
+                 )
+-
++
+             if summary.get("warnings", 0) > 0:
+                 recommendations.append(
+-                    f"Review {summary['warnings']} K3s validation warnings"
++                    f"Review {summary['warnings']} K3s validation warnings",
+                 )
+-
++
+         # Integration-specific recommendations
+         if python_results and k3s_results:
+             # Check for consistency between frameworks
+-            if (python_results.overall_status == "fail" and
+-                k3s_results.exit_code == 0):
++            if python_results.overall_status == "fail" and k3s_results.exit_code == 0:
+                 recommendations.append(
+-                    "Investigate discrepancy between Python framework failures and K3s validation success"
++                    "Investigate discrepancy between Python framework failures and K3s validation success",
+                 )
+-            elif (python_results.overall_status == "pass" and
+-                  k3s_results.exit_code != 0):
++            elif python_results.overall_status == "pass" and k3s_results.exit_code != 0:
+                 recommendations.append(
+-                    "Investigate discrepancy between Python framework success and K3s validation failures"
++                    "Investigate discrepancy between Python framework success and K3s validation failures",
+                 )
+-
++
+         # Framework availability recommendations
+         availability = self._validate_framework_availability()
+         if not availability["k3s_validation"]:
+             recommendations.append(
+-                "Install K3s validation framework for comprehensive cluster testing"
++                "Install K3s validation framework for comprehensive cluster testing",
+             )
+-
++
+         return recommendations
+-
++
+     def run_integrated_test_suite(
+         self,
+-        python_config_paths: Optional[List[str]] = None,
++        python_config_paths: list[str] | None = None,
+         include_workstation: bool = False,
+-        k3s_categories: Optional[List[str]] = None,
++        k3s_categories: list[str] | None = None,
+         parallel_k3s: bool = False,
+         skip_python: bool = False,
+         skip_k3s: bool = False,
+@@ -293,12 +298,12 @@ class IntegratedTestOrchestrator:
+         """Run the complete integrated test suite."""
+         start_time = time.time()
+         timestamp = datetime.now(timezone.utc).isoformat()
+-
++
+         self.logger.info("🚀 Starting integrated homelab test suite...")
+-
++
+         # Validate framework availability
+         availability = self._validate_framework_availability()
+-
++
+         # Run Python framework tests
+         python_results = None
+         if not skip_python and availability["python_framework"]:
+@@ -310,7 +315,7 @@ class IntegratedTestOrchestrator:
+             self.logger.info("🐍 Skipping Python framework tests as requested")
+         else:
+             self.logger.warning("🐍 Python framework not available, skipping")
+-
++
+         # Run K3s validation tests
+         k3s_results = None
+         if not skip_k3s and availability["k3s_validation"] and availability["orchestrator_script"]:
+@@ -322,38 +327,49 @@ class IntegratedTestOrchestrator:
+             self.logger.info("🛠️ Skipping K3s validation tests as requested")
+         else:
+             self.logger.warning("🛠️ K3s validation framework not available, skipping")
+-
++
+         duration = time.time() - start_time
+-
++
+         # Determine overall status
+         overall_status = "pass"
+-
+-        if python_results and python_results.overall_status == "fail":
+-            overall_status = "fail"
+-        elif k3s_results and k3s_results.exit_code != 0:
++
++        if (
++            python_results
++            and python_results.overall_status == "fail"
++            or k3s_results
++            and k3s_results.exit_code != 0
++        ):
+             overall_status = "fail"
+-        elif ((python_results and python_results.overall_status == "warning") or
+-              (k3s_results and k3s_results.summary.get("warnings", 0) > 0)):
++        elif (python_results and python_results.overall_status == "warning") or (
++            k3s_results and k3s_results.summary.get("warnings", 0) > 0
++        ):
+             overall_status = "warning"
+-
++
+         # Generate recommendations
+         recommendations = self.generate_integration_recommendations(
+-            python_results, k3s_results
++            python_results,
++            k3s_results,
+         )
+-
++
+         # Create integration summary
+         integration_summary = {
+             "frameworks_run": [],
+             "total_duration": duration,
+-            "python_framework_status": python_results.overall_status if python_results else "skipped",
+-            "k3s_validation_status": "pass" if k3s_results and k3s_results.exit_code == 0 else "fail" if k3s_results else "skipped",
++            "python_framework_status": python_results.overall_status
++            if python_results
++            else "skipped",
++            "k3s_validation_status": "pass"
++            if k3s_results and k3s_results.exit_code == 0
++            else "fail"
++            if k3s_results
++            else "skipped",
+         }
+-
++
+         if python_results:
+             integration_summary["frameworks_run"].append("python")
+         if k3s_results:
+             integration_summary["frameworks_run"].append("k3s_validation")
+-
++
+         # Create integrated results
+         integrated_results = IntegratedTestResults(
+             timestamp=timestamp,
+@@ -364,60 +380,62 @@ class IntegratedTestOrchestrator:
+             integration_summary=integration_summary,
+             recommendations=recommendations,
+         )
+-
++
+         self.logger.info(
+-            f"✅ Integrated test suite completed in {duration:.2f}s with status: {overall_status.upper()}"
++            f"✅ Integrated test suite completed in {duration:.2f}s with status: {overall_status.upper()}",
+         )
+-
++
+         return integrated_results
+-
++
+     def export_integrated_report(
+         self,
+         results: IntegratedTestResults,
+         format_type: str = "json",
+-        filename: Optional[str] = None,
++        filename: str | None = None,
+     ) -> str:
+         """Export integrated test results to file."""
+         if not filename:
+             timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+             filename = f"integrated_test_report_{timestamp_str}"
+-
++
+         if format_type == "json":
+             filepath = self.results_dir / f"{filename}.json"
+-
++
+             # Convert dataclasses to dict for JSON serialization
+             json_data = asdict(results)
+-
++
+             with open(filepath, "w") as f:
+                 json.dump(json_data, f, indent=2, default=str)
+-
++
+             self.logger.info(f"📄 Integrated JSON report exported to: {filepath}")
+             return str(filepath)
+-
+-        elif format_type == "markdown":
++
++        if format_type == "markdown":
+             filepath = self.results_dir / f"{filename}.md"
+-
++
+             with open(filepath, "w") as f:
+                 f.write("# Integrated Homelab Infrastructure Test Report\\n\\n")
+                 f.write(f"**Generated:** {results.timestamp}\\n")
+                 f.write(f"**Duration:** {results.duration:.2f} seconds\\n")
+                 f.write(f"**Overall Status:** {results.overall_status.upper()}\\n\\n")
+-
++
+                 # Integration summary
+                 f.write("## Integration Summary\\n\\n")
+                 for key, value in results.integration_summary.items():
+                     f.write(f"- **{key.replace('_', ' ').title()}:** {value}\\n")
+                 f.write("\\n")
+-
++
+                 # Python framework results
+                 if results.python_framework_results:
+                     f.write("## Python Framework Results\\n\\n")
+-                    f.write(f"**Status:** {results.python_framework_results.overall_status.upper()}\\n")
++                    f.write(
++                        f"**Status:** {results.python_framework_results.overall_status.upper()}\\n"
++                    )
+                     if results.python_framework_results.summary:
+                         for key, value in results.python_framework_results.summary.items():
+                             f.write(f"- **{key.replace('_', ' ').title()}:** {value}\\n")
+                     f.write("\\n")
+-
++
+                 # K3s validation results
+                 if results.k3s_validation_results:
+                     f.write("## K3s Validation Results\\n\\n")
+@@ -426,19 +444,19 @@ class IntegratedTestOrchestrator:
+                         for key, value in results.k3s_validation_results.summary.items():
+                             f.write(f"- **{key.replace('_', ' ').title()}:** {value}\\n")
+                     f.write("\\n")
+-
++
+                 # Recommendations
+                 if results.recommendations:
+                     f.write("## Recommendations\\n\\n")
+                     for i, rec in enumerate(results.recommendations, 1):
+                         f.write(f"{i}. {rec}\\n")
+-
++
+             self.logger.info(f"📄 Integrated Markdown report exported to: {filepath}")
+             return str(filepath)
+-
+-        else:
+-            raise ValueError(f"Unsupported format type: {format_type}")
+-
++
++        msg = f"Unsupported format type: {format_type}"
++        raise ValueError(msg)
++
+     def print_integrated_summary(self, results: IntegratedTestResults) -> None:
+         """Print a comprehensive console summary of integrated results."""
+         print("\\n🏠 INTEGRATED HOMELAB INFRASTRUCTURE TEST REPORT")
+@@ -447,12 +465,12 @@ class IntegratedTestOrchestrator:
+         print(f"Duration: {results.duration:.2f}s")
+         print(f"Overall Status: {results.overall_status.upper()}")
+         print(f"{'='*60}\\n")
+-
++
+         # Integration summary
+         print("🔗 INTEGRATION SUMMARY:")
+         for key, value in results.integration_summary.items():
+             print(f"  {key.replace('_', ' ').title()}: {value}")
+-
++
+         # Python framework summary
+         if results.python_framework_results:
+             print("\\n🐍 PYTHON FRAMEWORK RESULTS:")
+@@ -460,7 +478,7 @@ class IntegratedTestOrchestrator:
+             if results.python_framework_results.summary:
+                 for key, value in results.python_framework_results.summary.items():
+                     print(f"  {key.replace('_', ' ').title()}: {value}")
+-
++
+         # K3s validation summary
+         if results.k3s_validation_results:
+             print("\\n🛠️ K3S VALIDATION RESULTS:")
+@@ -469,22 +487,22 @@ class IntegratedTestOrchestrator:
+             if results.k3s_validation_results.summary:
+                 for key, value in results.k3s_validation_results.summary.items():
+                     print(f"  {key.replace('_', ' ').title()}: {value}")
+-
++
+         # Recommendations
+         if results.recommendations:
+             print(f"\\n💡 RECOMMENDATIONS ({len(results.recommendations)}):")
+             for i, rec in enumerate(results.recommendations, 1):
+                 print(f"  {i}. {rec}")
+-
++
+         print(f"\\n{'='*60}")
+
+
+ def main() -> int:
+     """Main function for integrated testing."""
+     import argparse
+-
++
+     parser = argparse.ArgumentParser(
+-        description="Run integrated homelab test suite (Python + K3s validation)"
++        description="Run integrated homelab test suite (Python + K3s validation)",
+     )
+     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
+     parser.add_argument(
+@@ -530,15 +548,15 @@ def main() -> int:
+         help="Output format for results",
+     )
+     parser.add_argument("--output-file", help="Custom output filename (without extension)")
+-
++
+     args = parser.parse_args()
+-
++
+     # Initialize orchestrator
+     orchestrator = IntegratedTestOrchestrator(
+         kubeconfig_path=args.kubeconfig,
+         log_level=args.log_level,
+     )
+-
++
+     # Run integrated test suite
+     results = orchestrator.run_integrated_test_suite(
+         python_config_paths=args.python_config_paths,
+@@ -548,17 +566,17 @@ def main() -> int:
+         skip_python=args.skip_python,
+         skip_k3s=args.skip_k3s,
+     )
+-
++
+     # Output results
+     if args.output_format in ["console", "all"]:
+         orchestrator.print_integrated_summary(results)
+-
++
+     if args.output_format in ["json", "all"]:
+         orchestrator.export_integrated_report(results, "json", args.output_file)
+-
++
+     if args.output_format in ["markdown", "all"]:
+         orchestrator.export_integrated_report(results, "markdown", args.output_file)
+-
++
+     return 0 if results.overall_status != "fail" else 1
+
+
+diff --git a/scripts/utilities/check-unsigned-commits.sh b/scripts/utilities/check-unsigned-commits.sh
+index d714b5c..9c571ee 100755
+--- a/scripts/utilities/check-unsigned-commits.sh
++++ b/scripts/utilities/check-unsigned-commits.sh
+@@ -23,7 +23,7 @@
+ # SOFTWARE.
+
+ # Quick check for unsigned commits across all branches
+-#
++#
+ # USAGE:
+ #   ./check-unsigned-commits.sh
+ #
+diff --git a/tools/README.md b/tools/README.md
+index 07e1a78..60f989e 100644
+--- a/tools/README.md
++++ b/tools/README.md
+@@ -15,7 +15,9 @@ tools/
+ ## Directory Overview
+
+ ### Development Tools (`development/`)
++
+ Contains tools and utilities for local development:
++
+ - IDE configuration files
+ - Code formatting and linting tools
+ - Development environment setup scripts
+@@ -23,7 +25,9 @@ Contains tools and utilities for local development:
+ - Debug and profiling tools
+
+ ### CI/CD Tools (`ci-cd/`)
++
+ Houses continuous integration and deployment tools:
++
+ - GitHub Actions workflows
+ - Pipeline scripts and utilities
+ - Build and test automation tools
+@@ -31,7 +35,9 @@ Houses continuous integration and deployment tools:
+ - Release management tools
+
+ ### Monitoring Tools (`monitoring/`)
++
+ Contains monitoring and observability utilities:
++
+ - Custom monitoring scripts
+ - Dashboard generators
+ - Alerting rule generators
+@@ -41,18 +47,23 @@ Contains monitoring and observability utilities:
+ ## Integration with Project Structure
+
+ ### Scripts Integration
++
+ Tools complement the main scripts in `scripts/` directory:
++
+ - **Scripts**: Production deployment and operational scripts
+ - **Tools**: Development support and specialized utilities
+
+ ### Testing Integration
++
+ Works alongside the testing framework in `testing/`:
++
+ - **Testing**: Comprehensive validation and health checks
+ - **Tools**: Specialized development and debugging tools
+
+ ## Usage Patterns
+
+ ### Development Workflow
++
+ ```bash
+ # Setup development environment
+ ./tools/development/setup-dev-env.sh
+@@ -65,6 +76,7 @@ Works alongside the testing framework in `testing/`:
+ ```
+
+ ### CI/CD Pipeline
++
+ ```bash
+ # Build validation
+ ./tools/ci-cd/validate-build.sh
+@@ -77,6 +89,7 @@ Works alongside the testing framework in `testing/`:
+ ```
+
+ ### Monitoring Operations
++
+ ```bash
+ # Generate custom dashboards
+ ./tools/monitoring/generate-dashboards.sh
+@@ -107,16 +120,19 @@ Works alongside the testing framework in `testing/`:
+ ## Current Implementation Status
+
+ ### ✅ Implemented
++
+ - Directory structure created
+ - Integration points defined
+ - Documentation framework established
+
+ ### 🔄 In Progress
++
+ - Populating development tools
+ - Creating CI/CD automation
+ - Building monitoring utilities
+
+ ### 📋 Planned
++
+ - IDE integration packages
+ - Advanced debugging tools
+ - Custom monitoring solutions
+@@ -143,11 +159,13 @@ Works alongside the testing framework in `testing/`:
+ ## Relationship to Main Scripts
+
+ ### Scripts Directory (`scripts/`)
++
+ - **Purpose**: Production deployment and operations
+ - **Audience**: System administrators and operators
+ - **Scope**: Infrastructure management and deployment
+
+ ### Tools Directory (`tools/`)
++
+ - **Purpose**: Development support and specialized utilities
+ - **Audience**: Developers and DevOps engineers
+ - **Scope**: Development workflow and advanced operations
+@@ -155,16 +173,19 @@ Works alongside the testing framework in `testing/`:
+ ## Environment Integration
+
+ ### Development Environment
++
+ - Local development setup and configuration
+ - Code quality and testing tools
+ - Debugging and profiling utilities
+
+ ### CI/CD Environment
++
+ - Automated testing and validation
+ - Build and deployment automation
+ - Quality gates and compliance checks
+
+ ### Production Environment
++
+ - Monitoring and observability tools
+ - Performance analysis and optimization
+ - Troubleshooting and diagnostic utilities
+@@ -172,12 +193,14 @@ Works alongside the testing framework in `testing/`:
+ ## Security Considerations
+
+ ### Tool Security
++
+ - No hardcoded credentials or secrets
+ - Secure handling of sensitive information
+ - Audit trail for tool usage
+ - Access control for sensitive operations
+
+ ### Development Security
++
+ - Static analysis tools for security issues
+ - Dependency vulnerability scanning
+ - Secret detection and prevention
+@@ -188,18 +211,21 @@ Works alongside the testing framework in `testing/`:
+ ### Planned Tools
+
+ #### Development Tools
++
+ - Advanced IDE configuration packages
+ - Custom debugging and profiling tools
+ - Local development environment managers
+ - Code generation and templating tools
+
+ #### CI/CD Tools
++
+ - Advanced pipeline orchestration
+ - Multi-environment deployment tools
+ - Automated security scanning
+ - Performance regression detection
+
+ #### Monitoring Tools
++
+ - Custom dashboard generators
+ - Intelligent alerting systems
+ - Automated performance analysis
+@@ -226,6 +252,7 @@ To contribute new tools:
+ ## Support
+
+ For tool-related issues:
++
+ - Check individual tool documentation first
+ - Review related project documentation
+ - Search existing issues in the project repository

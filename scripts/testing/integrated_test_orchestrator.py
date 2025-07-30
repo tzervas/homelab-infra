@@ -334,8 +334,11 @@ class IntegratedTestOrchestrator:
         # Determine overall status
         overall_status = "pass"
 
-        if (python_results and python_results.overall_status == "fail") or (
-            k3s_results and k3s_results.exit_code != 0
+        if (
+            python_results
+            and python_results.overall_status == "fail"
+            or k3s_results
+            and k3s_results.exit_code != 0
         ):
             overall_status = "fail"
         elif (python_results and python_results.overall_status == "warning") or (
@@ -452,9 +455,8 @@ class IntegratedTestOrchestrator:
                 # Recommendations
                 if results.recommendations:
                     f.write("## Recommendations\\n\\n")
-                    f.writelines(
-                        f"{i}. {rec}\\n" for i, rec in enumerate(results.recommendations, 1)
-                    )
+                    for i, rec in enumerate(results.recommendations, 1):
+                        f.write(f"{i}. {rec}\n")
 
             self.logger.info(f"📄 Integrated Markdown report exported to: {filepath}")
             return str(filepath)

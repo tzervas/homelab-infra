@@ -225,6 +225,10 @@ temp/
 *.tmp
 *~
 
+# Backup directories that may contain sensitive data
+backups/
+**/backups/
+
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt

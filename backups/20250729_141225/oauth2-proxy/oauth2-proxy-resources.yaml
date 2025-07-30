@@ -1,0 +1,1485 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2025-07-29T12:06:41-04:00"
+      creationTimestamp: "2025-07-29T16:06:41Z"
+      generateName: oauth2-proxy-6f689b987c-
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 6f689b987c
+      name: oauth2-proxy-6f689b987c-djlx9
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: oauth2-proxy-6f689b987c
+          uid: 28c891d2-9a7b-400e-ae1a-640dcf9423d0
+      resourceVersion: "39326"
+      uid: 6453101d-9df1-4fcc-ab4a-9fa30e0b3e61
+    spec:
+      containers:
+        - args:
+            - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+          env:
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: client-secret
+                  name: oauth2-proxy-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: cookie-secret
+                  name: oauth2-proxy-secret
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: 4180
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: oauth2-proxy
+          ports:
+            - containerPort: 4180
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ready
+              port: 4180
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/oauth2-proxy
+              name: config
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-6njb4
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: oauth2-proxy-config
+          name: config
+        - name: kube-api-access-6njb4
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:42Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:47Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:47Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:42Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://dd0488ca36519c5c237b41f3bd1ffea7aac2bc3ca9b210b8370e0e77135f347e
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+          imageID: quay.io/oauth2-proxy/oauth2-proxy@sha256:3c6012940d3cd71ecc67fd7783916df6d27972b520209af36e9567b9bdbc0c79
+          lastState: {}
+          name: oauth2-proxy
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T16:06:42Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.55
+      podIPs:
+        - ip: 10.42.0.55
+      qosClass: Burstable
+      startTime: "2025-07-29T16:06:42Z"
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2025-07-29T12:06:41-04:00"
+      creationTimestamp: "2025-07-29T16:06:47Z"
+      generateName: oauth2-proxy-6f689b987c-
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 6f689b987c
+      name: oauth2-proxy-6f689b987c-hcxhh
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: oauth2-proxy-6f689b987c
+          uid: 28c891d2-9a7b-400e-ae1a-640dcf9423d0
+      resourceVersion: "39368"
+      uid: 0e517ae8-d880-4a01-a6e7-87701f2185db
+    spec:
+      containers:
+        - args:
+            - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+          env:
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: client-secret
+                  name: oauth2-proxy-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: cookie-secret
+                  name: oauth2-proxy-secret
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: 4180
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: oauth2-proxy
+          ports:
+            - containerPort: 4180
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ready
+              port: 4180
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/oauth2-proxy
+              name: config
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-r6ljv
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: oauth2-proxy-config
+          name: config
+        - name: kube-api-access-r6ljv
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:47Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:57Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:57Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T16:06:47Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://616abeddb3c2a399effcc785856c6faa5db1164c003c2ea4acf8b240f647c0d3
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+          imageID: quay.io/oauth2-proxy/oauth2-proxy@sha256:3c6012940d3cd71ecc67fd7783916df6d27972b520209af36e9567b9bdbc0c79
+          lastState: {}
+          name: oauth2-proxy
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T16:06:48Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.56
+      podIPs:
+        - ip: 10.42.0.56
+      qosClass: Burstable
+      startTime: "2025-07-29T16:06:47Z"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"oauth2-proxy","namespace":"oauth2-proxy"},"spec":{"ports":[{"name":"http","port":4180,"targetPort":4180}],"selector":{"app":"oauth2-proxy"}}}
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      name: oauth2-proxy
+      namespace: oauth2-proxy
+      resourceVersion: "6709"
+      uid: 9adc68af-770b-4f40-9ac7-c0f87c129a23
+    spec:
+      clusterIP: 10.43.226.156
+      clusterIPs:
+        - 10.43.226.156
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - name: http
+          port: 4180
+          protocol: TCP
+          targetPort: 4180
+      selector:
+        app: oauth2-proxy
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "8"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"oauth2-proxy","namespace":"oauth2-proxy"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"oauth2-proxy"}},"template":{"metadata":{"labels":{"app":"oauth2-proxy"}},"spec":{"containers":[{"args":["--config=/etc/oauth2-proxy/oauth2_proxy.cfg"],"env":[{"name":"OAUTH2_PROXY_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"key":"client-secret","name":"oauth2-proxy-secret"}}},{"name":"OAUTH2_PROXY_COOKIE_SECRET","valueFrom":{"secretKeyRef":{"key":"cookie-secret","name":"oauth2-proxy-secret"}}}],"image":"quay.io/oauth2-proxy/oauth2-proxy:v7.5.1","livenessProbe":{"httpGet":{"path":"/ping","port":4180},"initialDelaySeconds":30,"periodSeconds":10},"name":"oauth2-proxy","ports":[{"containerPort":4180,"protocol":"TCP"}],"readinessProbe":{"httpGet":{"path":"/ready","port":4180},"initialDelaySeconds":5,"periodSeconds":5},"resources":{"limits":{"cpu":"500m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"256Mi"}},"volumeMounts":[{"mountPath":"/etc/oauth2-proxy","name":"config"}]}],"volumes":[{"configMap":{"name":"oauth2-proxy-config"},"name":"config"}]}}}}
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      generation: 8
+      name: oauth2-proxy
+      namespace: oauth2-proxy
+      resourceVersion: "39383"
+      uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 2
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-29T12:06:41-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      availableReplicas: 2
+      conditions:
+        - lastTransitionTime: "2025-07-29T01:16:50Z"
+          lastUpdateTime: "2025-07-29T01:16:50Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T16:06:41Z"
+          lastUpdateTime: "2025-07-29T16:06:57Z"
+          message: ReplicaSet "oauth2-proxy-6f689b987c" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 8
+      readyReplicas: 2
+      replicas: 2
+      updatedReplicas: 2
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      generation: 3
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 7f6858db48
+      name: oauth2-proxy-7f6858db48
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "8146"
+      uid: f552a853-0e6a-4f0e-8ec6-4ebe29f7f9f2
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: 7f6858db48
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: 7f6858db48
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 3
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "2"
+      creationTimestamp: "2025-07-29T00:51:56Z"
+      generation: 2
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: b89ddb7b9
+      name: oauth2-proxy-b89ddb7b9
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "8368"
+      uid: 2e503b7d-0810-4c97-879d-005f12c59501
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: b89ddb7b9
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-28T20:51:56-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: b89ddb7b9
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 2
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "3"
+      creationTimestamp: "2025-07-29T01:10:52Z"
+      generation: 3
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: "6669875655"
+      name: oauth2-proxy-6669875655
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "8597"
+      uid: be485b27-8a1a-450b-80b4-16e1bdc134b8
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: "6669875655"
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-28T21:10:52-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: "6669875655"
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 3
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "4"
+      creationTimestamp: "2025-07-29T01:12:00Z"
+      generation: 3
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 84ddd97954
+      name: oauth2-proxy-84ddd97954
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "8657"
+      uid: 23664bab-7107-40ed-9c3f-a5b1b01a52d0
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: 84ddd97954
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-28T21:12:00-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: 84ddd97954
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 3
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "5"
+      creationTimestamp: "2025-07-29T01:15:29Z"
+      generation: 3
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 5d9bd58d68
+      name: oauth2-proxy-5d9bd58d68
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "8691"
+      uid: 4e5539d6-eab1-402a-8291-11efe9d0027f
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: 5d9bd58d68
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-28T21:15:29-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: 5d9bd58d68
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 3
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "7"
+      creationTimestamp: "2025-07-29T15:56:08Z"
+      generation: 2
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 57d49674b8
+      name: oauth2-proxy-57d49674b8
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "39304"
+      uid: e94c3280-2d2e-4f2b-b66e-e95b12263e69
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: 57d49674b8
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-29T11:56:08-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: 57d49674b8
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 2
+      replicas: 0
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "8"
+      creationTimestamp: "2025-07-29T16:06:41Z"
+      generation: 3
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: 6f689b987c
+      name: oauth2-proxy-6f689b987c
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "39371"
+      uid: 28c891d2-9a7b-400e-ae1a-640dcf9423d0
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: 6f689b987c
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-29T12:06:41-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: 6f689b987c
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      availableReplicas: 2
+      fullyLabeledReplicas: 2
+      observedGeneration: 3
+      readyReplicas: 2
+      replicas: 2
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "2"
+        deployment.kubernetes.io/max-replicas: "3"
+        deployment.kubernetes.io/revision: "6"
+      creationTimestamp: "2025-07-29T01:16:34Z"
+      generation: 5
+      labels:
+        app: oauth2-proxy
+        pod-template-hash: b9d464cdf
+      name: oauth2-proxy-b9d464cdf
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: oauth2-proxy
+          uid: 99d27dc9-b6f4-4b69-be6a-ff6e068a26a7
+      resourceVersion: "39382"
+      uid: 59e4e55d-579f-4b0a-99b8-afc9c3e8db88
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: oauth2-proxy
+          pod-template-hash: b9d464cdf
+      template:
+        metadata:
+          annotations:
+            kubectl.kubernetes.io/restartedAt: "2025-07-28T21:16:34-04:00"
+          creationTimestamp: null
+          labels:
+            app: oauth2-proxy
+            pod-template-hash: b9d464cdf
+        spec:
+          containers:
+            - args:
+                - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+              env:
+                - name: OAUTH2_PROXY_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: client-secret
+                      name: oauth2-proxy-secret
+                - name: OAUTH2_PROXY_COOKIE_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      key: cookie-secret
+                      name: oauth2-proxy-secret
+              image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ping
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: oauth2-proxy
+              ports:
+                - containerPort: 4180
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /ready
+                  port: 4180
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/oauth2-proxy
+                  name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: oauth2-proxy-config
+              name: config
+    status:
+      observedGeneration: 5
+      replicas: 0
+  - apiVersion: v1
+    data:
+      client-secret: aG9tZWxhYi1wb3J0YWwtc2VjcmV0
+      cookie-secret: SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM=
+    kind: Secret
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"client-secret":"aG9tZWxhYi1wb3J0YWwtc2VjcmV0","cookie-secret":"SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM="},"kind":"Secret","metadata":{"annotations":{},"name":"oauth2-proxy-secret","namespace":"oauth2-proxy"},"type":"Opaque"}
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      name: oauth2-proxy-secret
+      namespace: oauth2-proxy
+      resourceVersion: "6702"
+      uid: aa3bdb17-acc6-4463-bee4-43d947a4aaf3
+    type: Opaque
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNtakNDQWtDZ0F3SUJBZ0lSQU9WUVpPT3czL0prdDVXTW1DeDFSTUV3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWprd01EVXdNek5hRncweU5URXdNamN3TURVd016TmEKTUFBd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUN6MjFXUER2ZEM2MDBld1MxTQpjQUFtREtvM0lZSWFoT1VlaXBrbU9CcGh3eTU5UkE4OXlMUExCUVhpb2RJNnNCeFNLUldRU0Nuc21NMzFTVk56ClF6ckdlREpnaEdWOFIwVVcvcFhsWXdDQ1V1dzJsQlZtK0t0YlJrR3RMK3k2S1JEWDNpcU84VXV6T2dLZkkzdWsKaGxBZ0FjVzd3SVFGYUcwS1ZkQ3NlOWxFcWZ5OTRFdCtKWVNWeDFYbzFiQThndUJwU1IvaTRjS1RZaGV4UkNGMQp0UFdtNVVmT0VOLzV0OHhzWkxmMFF4d3hSSlNaaTY3ZC9jcVNzdjhjc2tOVFdDbkEzWjFseS9iUEZRNEpkM2JWCjFKdStoTStPTTVkNWZlclJtcnU5Sy9ZWEc2LzFoTERmcmZ4K3h3QVNEYUxVTDhBUy9HQ3hRU3ZHVXhiVFFubHoKVHZlQkFnTUJBQUdqWGpCY01BNEdBMVVkRHdFQi93UUVBd0lGb0RBTUJnTlZIUk1CQWY4RUFqQUFNQjhHQTFVZApJd1FZTUJhQUZMN1V1NU41b0ZuZm4vMDhMdlMvVGMzMDJNSE1NQnNHQTFVZEVRRUIvd1FSTUErQ0RXaHZiV1ZzCllXSXViRzlqWVd3d0NnWUlLb1pJemowRUF3SURTQUF3UlFJZ0ZuQStxU1FNVGtZelhBNjhYNEl2b3pKQkh6dEUKbkNPTS93TWU5T3VEWkhZQ0lRRDJUOXZrMFdmRlNTVW10WWpianRTSm9sc3dUUHF0a21GSGdaNkl2eDhGT1E9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBczl0Vmp3NzNRdXROSHNFdFRIQUFKZ3lxTnlHQ0dvVGxIb3FaSmpnYVljTXVmVVFQClBjaXp5d1VGNHFIU09yQWNVaWtWa0VncDdKak45VWxUYzBNNnhuZ3lZSVJsZkVkRkZ2NlY1V01BZ2xMc05wUVYKWnZpclcwWkJyUy9zdWlrUTE5NHFqdkZMc3pvQ255TjdwSVpRSUFIRnU4Q0VCV2h0Q2xYUXJIdlpSS244dmVCTApmaVdFbGNkVjZOV3dQSUxnYVVrZjR1SENrMklYc1VRaGRiVDFwdVZIemhEZitiZk1iR1MzOUVNY01VU1VtWXV1CjNmM0trckwvSExKRFUxZ3B3TjJkWmN2Mnp4VU9DWGQyMWRTYnZvVFBqak9YZVgzcTBacTd2U3YyRnh1djlZU3cKMzYzOGZzY0FFZzJpMUMvQUV2eGdzVUVyeGxNVzAwSjVjMDczZ1FJREFRQUJBb0lCQUhWRmttZ1JMaEFvTk1UVQoyS0I2ZHQ1WWE3USsyUUpKbk10cE82cTc4aGZFbUU5OVRTTFA5c3R0bndUQzFyMEZqN0hTc0FpL3hQWk1QQjZ2CmpRWWUwL2dNNzJ3WFo4UzlBOE9XaEU1cFd5K2V1ZjVzVi9nb05ETHpnR2RZVkZhZDZDbVk1czhGYm9LU1ZKdEgKRzV1UEtEZDJjR09YaDMydk5Vb0Q0bWhVNkxubnRNWnZQVkRsUHNlamRRWHA0YjRQV0xORmVIeVhYMDV0SnpPagowUk1CcG1WRldjSzVVbHVTNlRhUE55ZlExeEUyVTIrRnZWUzJBVzNtTW1UYTE0Y1UzTWRkMXdTeW5DN2Z0dm53CjlWSFlmL0xmeWc2Znp4Q0xQc2pOUitCdCtIdnFkVE1mc2wyY0FaeGxidVF2d0VBRUZwazg1Y2tkWmJieDlqRnYKTHhCNDNrRUNnWUVBM0EzTG9mR3VFS21nbUltUXYxZjlHaklPT2lJZlRscWY5YXdyR1g4RWxRK2FLUittL1JmVAo2R285NWpVQk5adFd2MVNTZmRBNlZXWmF2SjJ3cm1Kekc3bWR5Wks5aWkzQk1vdks4d0FjbFRZa2E1OGVHbzdMClZ2VDlsWnlYS2ZUUytOeW51SCtSaExnUXFHdFpaVkdZeFZINlFROUpRNDFoaWxrUys4R1lCWFVDZ1lFQTBUeVQKMWttUjFwODlXMjBING5GeHVYT2F4cThsdkEyTXU1NjFYUXBZdGd6MGJTa2luT2QzVHVaZ0p6cmlWMzBMK1p4VwpLZ1NReVZVNmVMc1RKUVZWUnBxMExkQy9BVEdjZXFVd2xNaTRSMExva1hsRTVyWnhsOWJpNE1xS3VqSzBpeDF2ClRpSGRRZUZkZlorU05iTVF4UExJZVVSeHlxQXQ3ZkNPVmJPVmpGMENnWUVBemkvQzhNL0NPR3lvUktVSlVyQ0EKUUc1TWRGNEtsV0ZHNW12V3lvSUFhaWIvWEs4Q3lienMycVhKc0ExVVA4VjRoN2dYdHZsSDMwTVRuQTNwUWN5UApiSmdFWjU0dUtPM3NTNDgrcjJnWVlCc21EdzA5cU1iSmNvWUZvWXppK3ZZaVEvcUUwTlAvSnF0Tk9IRzFoc0RvCjgySjNxVVJJY3Bwam5iME9rNFIzREEwQ2dZRUFqWldiU0ViU085UFhWaFZxWDIxNmtnNUxMcVQ0T005R2F2TVQKTUprK3ZEbjU4Q0FFdnYzVit2cmpGOGk5dm92c1hZVFB2WEVIZEdXS3dvVjhoL0dhNmNMbnA1VDRtdHN5VXIrVApKeXJIbjlrRHZPUzluZ3pZd3ZGeTVyL0hyZ1YvckI5SDRTd0RKNEJUbmgwcmQ5RHF5UXFzWTNyUU1WZkFuS0RKCi8rNGNoVFVDZ1lCREhKazl3S2t6WURHaEZUOFJaY3E4WGJscG8yZkd6eFRwNytSbU5XK0JoL29PeUNudHQyRHgKTjV6MU5zblcvK1dEUU01NTM3VkJqR1hWcy94ZEtWMEdQdVZyUTB6bm8xMC8xM2tNK3hIQjFzRFRPRkw4NHBPSApVWUlTMVJwa3cxczgyYTg0WnR3ODRiTlI4KzlyWDJnSThuUHVDSVZiOGZwcHovZDBTZ3lMK2c9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: homelab.local
+        cert-manager.io/certificate-name: oauth2-proxy-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: oauth2-proxy-tls-cert
+      namespace: oauth2-proxy
+      resourceVersion: "6748"
+      uid: b56e5bc3-525a-4b19-a9b1-5988a8175eaa
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+        dmVyLWNhQDE3NTM3NDE3OTQwHhcNMjUwNzI4MjIyOTU0WhcNMzUwNzI2MjIyOTU0
+        WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTM3NDE3OTQwWTATBgcqhkjO
+        PQIBBggqhkjOPQMBBwNCAASReyR7DvPvrR4y88wrDNeAy5Zs4CfRRD+qgBkyGa0J
+        IzvoOKZvz8+/bh356xwa1tqqBaSrmQvt5fuMvHZcQLPQo0IwQDAOBgNVHQ8BAf8E
+        BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUrNWcwCmEcL5ksfQVxIE8
+        NdaNIvkwCgYIKoZIzj0EAwIDRwAwRAIgC286fMwQojlX9gm5tsCNDuBlUYrs4KBu
+        wR88SXVxn8ACIGHyBM8IYYTP6tn7gjjyKAUUX2WDwBnYno+NzZgUaEil
+        -----END CERTIFICATE-----
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubernetes.io/description:
+          Contains a CA bundle that can be used to verify the kube-apiserver when using internal
+          endpoints such as the internal service IP or kubernetes.default.svc. No other usage is
+          guaranteed across distributions of Kubernetes clusters.
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      name: kube-root-ca.crt
+      namespace: oauth2-proxy
+      resourceVersion: "6701"
+      uid: 0b5a3ec5-fe6f-4a92-b5d8-06356da0ee94
+  - apiVersion: v1
+    data:
+      oauth2_proxy.cfg: |
+        # OIDC Config
+        provider = "keycloak-oidc"
+        client_id = "homelab-portal"
+        oidc_issuer_url = "http://keycloak.keycloak.svc.cluster.local:8080/realms/homelab"
+        insecure_oidc_allow_unverified_email = true
+        insecure_oidc_skip_issuer_verification = true
+        skip_oidc_discovery = false
+
+        # Redirect and logout URLs
+        redirect_url = "https://homelab.local/oauth2/callback"
+
+        # Upstream and reverse proxy config
+        http_address = "0.0.0.0:4180"
+        reverse_proxy = true
+
+        # Session and security
+        cookie_secure = true
+        cookie_httponly = true
+        cookie_samesite = "lax"
+        cookie_name = "_oauth2_proxy"
+        cookie_expire = "24h0m0s"
+        cookie_refresh = "1h0m0s"
+        cookie_domains = [".homelab.local"]
+
+        # Skip auth for health checks
+        skip_auth_regex = [
+          "^/oauth2/",
+          "^/ping$",
+          "^/ready$"
+        ]
+
+        # Email and username headers
+        set_xauthrequest = true
+        pass_access_token = true
+        pass_user_headers = true
+
+        # Logging
+        silence_ping_logging = true
+        request_logging = true
+
+        # Whitelist email domains
+        email_domains = ["*"]
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"oauth2_proxy.cfg":"# OIDC Config\nprovider = \"keycloak-oidc\"\nclient_id = \"homelab-portal\"\noidc_issuer_url = \"http://keycloak.keycloak.svc.cluster.local:8080/realms/homelab\"\ninsecure_oidc_allow_unverified_email = true\ninsecure_oidc_skip_issuer_verification = true\nskip_oidc_discovery = false\n\n# Redirect and logout URLs\nredirect_url = \"https://homelab.local/oauth2/callback\"\n\n# Upstream and reverse proxy config\nhttp_address = \"0.0.0.0:4180\"\nreverse_proxy = true\n\n# Session and security\ncookie_secure = true\ncookie_httponly = true\ncookie_samesite = \"lax\"\ncookie_name = \"_oauth2_proxy\"\ncookie_expire = \"24h0m0s\"\ncookie_refresh = \"1h0m0s\"\ncookie_domains = [\".homelab.local\"]\n\n# Skip auth for health checks\nskip_auth_regex = [\n  \"^/oauth2/\",\n  \"^/ping$\",\n  \"^/ready$\"\n]\n\n# Email and username headers\nset_xauthrequest = true\npass_access_token = true\npass_user_headers = true\n\n# Logging\nsilence_ping_logging = true\nrequest_logging = true\n\n# Whitelist email domains\nemail_domains = [\"*\"]\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"oauth2-proxy-config","namespace":"oauth2-proxy"}}
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      name: oauth2-proxy-config
+      namespace: oauth2-proxy
+      resourceVersion: "39279"
+      uid: 10baacdd-a0b3-484b-b498-7d9280f603c2
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"oauth2-proxy-ingress","namespace":"oauth2-proxy"},"spec":{"ingressClassName":"nginx","rules":[{"host":"homelab.local","http":{"paths":[{"backend":{"service":{"name":"oauth2-proxy","port":{"number":4180}}},"path":"/oauth2","pathType":"Prefix"}]}}],"tls":[{"hosts":["homelab.local"],"secretName":"oauth2-proxy-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      generation: 1
+      name: oauth2-proxy-ingress
+      namespace: oauth2-proxy
+      resourceVersion: "6824"
+      uid: 41c43abb-2ef4-4070-819a-fef735968d4c
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: oauth2-proxy
+                    port:
+                      number: 4180
+                path: /oauth2
+                pathType: Prefix
+      tls:
+        - hosts:
+            - homelab.local
+          secretName: oauth2-proxy-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"cert-manager.io/v1","kind":"Certificate","metadata":{"annotations":{},"name":"oauth2-proxy-tls-cert","namespace":"oauth2-proxy"},"spec":{"commonName":"homelab.local","dnsNames":["homelab.local"],"issuerRef":{"kind":"ClusterIssuer","name":"homelab-ca-issuer"},"secretName":"oauth2-proxy-tls-cert"}}
+      creationTimestamp: "2025-07-29T00:50:33Z"
+      generation: 17
+      name: oauth2-proxy-tls-cert
+      namespace: oauth2-proxy
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: oauth2-proxy-ingress
+          uid: 41c43abb-2ef4-4070-819a-fef735968d4c
+      resourceVersion: "39284"
+      uid: 3ed42117-ddf3-43b2-b1ef-6211c32d99cd
+    spec:
+      dnsNames:
+        - homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: oauth2-proxy-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-29T16:06:38Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 17
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-27T00:50:33Z"
+      notBefore: "2025-07-29T00:50:33Z"
+      renewalTime: "2025-09-27T00:50:33Z"
+      revision: 1
+kind: List
+metadata:
+  resourceVersion: ""

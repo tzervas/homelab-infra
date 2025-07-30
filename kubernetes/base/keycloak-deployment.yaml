@@ -273,6 +273,7 @@ data:
             "https://grafana.homelab.local/*",
             "https://prometheus.homelab.local/*",
             "https://gitlab.homelab.local/*",
+            "https://gitlab.homelab.local/users/auth/openid_connect/callback",
             "https://ollama.homelab.local/*",
             "https://jupyter.homelab.local/*"
           ],

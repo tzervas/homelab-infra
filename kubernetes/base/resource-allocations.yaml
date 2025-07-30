@@ -1,0 +1,622 @@
+---
+# Resource Allocation Configuration for Homelab Services
+# This file defines balanced resource allocations for all services
+# Based on tier system: micro, small, medium, large, xlarge
+
+# ========================================
+# INFRASTRUCTURE SERVICES
+# ========================================
+
+# MetalLB Controller - Small tier (lightweight control plane)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+  namespace: metallb-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: controller
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "50m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+
+# MetalLB Speaker - Small tier (runs on each node)
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: speaker
+  namespace: metallb-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: speaker
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "50m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+
+# Cert-Manager - Small tier components
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  template:
+    spec:
+      containers:
+      - name: cert-manager-controller
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager-webhook
+  namespace: cert-manager
+spec:
+  template:
+    spec:
+      containers:
+      - name: cert-manager-webhook
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager-cainjector
+  namespace: cert-manager
+spec:
+  template:
+    spec:
+      containers:
+      - name: cert-manager-cainjector
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# NGINX Ingress Controller - Medium tier (handles all traffic)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      containers:
+      - name: controller
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+# Sealed Secrets - Small tier
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sealed-secrets
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: sealed-secrets-controller
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# ========================================
+# AUTHENTICATION & SECURITY
+# ========================================
+
+# OAuth2 Proxy - Small tier (lightweight proxy)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  template:
+    spec:
+      containers:
+      - name: oauth2-proxy
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# Keycloak - Medium tier (identity provider)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  template:
+    spec:
+      containers:
+      - name: keycloak
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+# ========================================
+# MONITORING STACK
+# ========================================
+
+# Prometheus - Large tier (metrics storage)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: prometheus
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+# Grafana - Medium tier (visualization)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: grafana
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+# Alertmanager - Small tier
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: alertmanager
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# Loki - Large tier (log aggregation)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: loki
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+# Promtail - Small tier (log collection)
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+      - name: promtail
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# ========================================
+# APPLICATIONS
+# ========================================
+
+# GitLab - XLarge tier (comprehensive DevOps platform)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  template:
+    spec:
+      containers:
+      - name: gitlab
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+
+# GitLab Runner - Medium tier
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: gitlab
+spec:
+  template:
+    spec:
+      containers:
+      - name: gitlab-runner
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+# JupyterLab - Large tier (data science workloads)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterlab
+  namespace: jupyter
+spec:
+  template:
+    spec:
+      containers:
+      - name: jupyterlab
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+# Ollama - XLarge tier (AI model serving)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ai-tools
+spec:
+  template:
+    spec:
+      containers:
+      - name: ollama
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+
+# Open-WebUI - Medium tier (web interface for Ollama)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: ai-tools
+spec:
+  template:
+    spec:
+      containers:
+      - name: open-webui
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+# ========================================
+# STORAGE
+# ========================================
+
+# Longhorn Manager - Medium tier
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: longhorn-manager
+  namespace: longhorn-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: longhorn-manager
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+# Longhorn Engine - Small tier
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: longhorn-engine
+  namespace: longhorn-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: longhorn-engine
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+# ========================================
+# DATABASES
+# ========================================
+
+# PostgreSQL - Large tier (for GitLab/Keycloak)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: databases
+spec:
+  template:
+    spec:
+      containers:
+      - name: postgresql
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+
+# Redis - Medium tier (caching)
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: databases
+spec:
+  template:
+    spec:
+      containers:
+      - name: redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+
+# ========================================
+# HOMELAB PORTAL
+# ========================================
+
+# Enhanced Portal - Micro tier (static content)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-portal
+  namespace: homelab-portal
+spec:
+  template:
+    spec:
+      containers:
+      - name: nginx
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+
+# ========================================
+# RESOURCE QUOTAS BY NAMESPACE
+# ========================================
+
+# Infrastructure namespace quota
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: infrastructure-quota
+  namespace: kube-system
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "2Gi"
+    limits.cpu: "4"
+    limits.memory: "4Gi"
+    persistentvolumeclaims: "10"
+    requests.storage: "100Gi"
+
+# Monitoring namespace quota
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-quota
+  namespace: monitoring
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: "4Gi"
+    limits.cpu: "8"
+    limits.memory: "8Gi"
+    persistentvolumeclaims: "20"
+    requests.storage: "200Gi"
+
+# Applications namespace quota (GitLab)
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gitlab-quota
+  namespace: gitlab
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: "4Gi"
+    limits.cpu: "8"
+    limits.memory: "8Gi"
+    persistentvolumeclaims: "10"
+    requests.storage: "500Gi"
+
+# AI Tools namespace quota
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ai-tools-quota
+  namespace: ai-tools
+spec:
+  hard:
+    requests.cpu: "6"
+    requests.memory: "8Gi"
+    limits.cpu: "12"
+    limits.memory: "16Gi"
+    persistentvolumeclaims: "10"
+    requests.storage: "200Gi"
+
+# ========================================
+# PRIORITY CLASSES
+# ========================================
+
+# Critical infrastructure components
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: infrastructure-critical
+value: 1000
+globalDefault: false
+description: "Critical infrastructure components"
+
+# Core services
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: core-services
+value: 900
+globalDefault: false
+description: "Core application services"
+
+# Standard applications
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: standard-apps
+value: 500
+globalDefault: true
+description: "Standard applications"
+
+# Batch/background jobs
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: batch-jobs
+value: 100
+globalDefault: false
+description: "Batch and background jobs"

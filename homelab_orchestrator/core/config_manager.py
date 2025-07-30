@@ -195,7 +195,23 @@ class ConfigManager:
 
     def get_security_config(self) -> dict[str, Any]:
         """Get security configuration with environment and context overrides."""
-        security = self.get_config("security", "security", {})
+        # Get the full security configuration, not just the nested 'security' key
+        full_security_config = self.get_config("security")
+
+        # Extract the nested security context if it exists
+        security_context = full_security_config.get("security", {})
+
+        # Build the complete security configuration
+        security = {
+            "default_security_context": security_context.get("default_security_context", {}),
+            "service_contexts": security_context.get("service_contexts", {}),
+            "pod_security_standards": full_security_config.get("pod_security_standards", {}),
+            "rbac": full_security_config.get("rbac", {}),
+            "network_policies": full_security_config.get("network_policies", {}),
+            "image_security": full_security_config.get("image_security", {}),
+            "secrets": full_security_config.get("secrets", {}),
+        }
+
         env_config = self.get_environment_config()
 
         # Apply environment-specific security settings
@@ -300,12 +316,12 @@ class ConfigManager:
 
         # Validate domain configuration
         domains = self.get_domain_config()
-        if not domains.get("domains", {}).get("base", {}).get("primary"):
+        if not domains.get("base", {}).get("primary"):
             issues.append("Primary domain not configured")
 
         # Validate networking configuration
         networking = self.get_networking_config()
-        if not networking.get("networking", {}).get("metallb", {}).get("default_pool"):
+        if not networking.get("metallb", {}).get("default_pool"):
             issues.append("MetalLB default pool not configured")
 
         # Validate environment configuration

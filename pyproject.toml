@@ -7,8 +7,8 @@ packages = ["scripts"]
 
 [project]
 name = "homelab-testing-framework"
-version = "0.3.1"
-description = "Comprehensive testing framework for homelab infrastructure validation"
+version = "0.4.0"
+description = "Comprehensive testing framework for homelab infrastructure validation with portal and security dashboard"
 readme = "scripts/testing/README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -45,6 +45,17 @@ dependencies = [
     "paramiko>=3.0.0", # SSH client for remote cluster management
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
+    # Portal dependencies
+    "fastapi>=0.115.0", # Web framework for portal
+    "uvicorn[standard]>=0.32.0", # ASGI server
+    "prometheus-client>=0.21.0", # Prometheus metrics
+    "httpx>=0.27.0", # Async HTTP client
+    "pydantic>=2.10.0", # Data validation
+    "pydantic-settings>=2.6.0", # Settings management
+    "python-jose[cryptography]>=3.3.0", # JWT handling
+    "python-multipart>=0.0.18", # Form data
+    "jinja2>=3.1.4", # Template engine
+    "aiofiles>=24.1.0", # Async file operations
 ]
 
 [project.optional-dependencies]
@@ -95,6 +106,7 @@ homelab-integration = "scripts.testing.integration_tester:main"
 # Unified orchestrator scripts
 homelab = "homelab_orchestrator.cli:main"
 homelab-orchestrator = "homelab_orchestrator.cli:main"
+homelab-portal = "homelab_orchestrator.portal.main:run_server"
 
 [dependency-groups]
 dev = [

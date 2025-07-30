@@ -1,0 +1,305 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-clients-config
+  namespace: keycloak
+data:
+  keycloak-clients.json: |
+    {
+      "clients": [
+        {
+          "clientId": "gitlab",
+          "name": "GitLab",
+          "description": "GitLab Source Control Management",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "gitlab-client-secret",
+          "redirectUris": [
+            "https://gitlab.homelab.local/users/auth/openid_connect/callback",
+            "https://gitlab.homelab.local/-/user_settings/applications"
+          ],
+          "webOrigins": ["https://gitlab.homelab.local"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": false,
+          "fullScopeAllowed": false,
+          "defaultClientScopes": ["openid", "profile", "email", "roles"],
+          "optionalClientScopes": ["offline_access"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256",
+            "use.refresh.tokens": "true",
+            "access.token.lifespan": "900",
+            "client.session.idle.timeout": "1800",
+            "client.session.max.lifespan": "36000"
+          },
+          "protocolMappers": [
+            {
+              "name": "gitlab-group-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "config": {
+                "claim.name": "groups",
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "gitlab-role-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "config": {
+                "claim.name": "gitlab_roles",
+                "multivalued": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "clientId": "grafana",
+          "name": "Grafana",
+          "description": "Monitoring and Observability Platform",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "grafana-client-secret",
+          "redirectUris": [
+            "https://grafana.homelab.local/login/generic_oauth"
+          ],
+          "webOrigins": ["https://grafana.homelab.local"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "fullScopeAllowed": false,
+          "defaultClientScopes": ["openid", "profile", "email", "roles"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256",
+            "use.refresh.tokens": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "grafana-role-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "config": {
+                "claim.name": "roles",
+                "multivalued": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "grafana-groups-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "config": {
+                "claim.name": "groups",
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "clientId": "prometheus",
+          "name": "Prometheus",
+          "description": "Metrics and Monitoring System",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "prometheus-client-secret",
+          "redirectUris": [
+            "https://prometheus.homelab.local/oauth2/callback"
+          ],
+          "webOrigins": ["https://prometheus.homelab.local"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "fullScopeAllowed": false,
+          "defaultClientScopes": ["openid", "profile", "email", "roles"]
+        },
+        {
+          "clientId": "ollama-webui",
+          "name": "Ollama Web UI",
+          "description": "AI Model Interface",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "ollama-webui-client-secret",
+          "redirectUris": [
+            "https://ollama.homelab.local/oauth/openid/callback"
+          ],
+          "webOrigins": ["https://ollama.homelab.local"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "fullScopeAllowed": false,
+          "defaultClientScopes": ["openid", "profile", "email", "roles"],
+          "protocolMappers": [
+            {
+              "name": "ollama-username-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "user.attribute": "username",
+                "claim.name": "preferred_username",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "clientId": "jupyterlab",
+          "name": "JupyterLab",
+          "description": "Interactive Computing Environment",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "jupyterlab-client-secret",
+          "redirectUris": [
+            "https://jupyter.homelab.local/hub/oauth_callback"
+          ],
+          "webOrigins": ["https://jupyter.homelab.local"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "fullScopeAllowed": false,
+          "defaultClientScopes": ["openid", "profile", "email"],
+          "protocolMappers": [
+            {
+              "name": "jupyter-username-mapper",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "user.attribute": "username",
+                "claim.name": "preferred_username",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+      "roles": {
+        "realm": [
+          {
+            "name": "grafana-admin",
+            "description": "Grafana Administrator with full access",
+            "composite": false
+          },
+          {
+            "name": "grafana-editor",
+            "description": "Grafana Editor - can create and edit dashboards",
+            "composite": false
+          },
+          {
+            "name": "grafana-viewer",
+            "description": "Grafana Viewer - read-only access",
+            "composite": false
+          },
+          {
+            "name": "gitlab-admin",
+            "description": "GitLab Administrator",
+            "composite": false
+          },
+          {
+            "name": "gitlab-developer",
+            "description": "GitLab Developer - can push to protected branches",
+            "composite": false
+          },
+          {
+            "name": "gitlab-user",
+            "description": "GitLab User - standard access",
+            "composite": false
+          },
+          {
+            "name": "prometheus-admin",
+            "description": "Prometheus Administrator",
+            "composite": false
+          },
+          {
+            "name": "prometheus-user",
+            "description": "Prometheus User - read-only access",
+            "composite": false
+          },
+          {
+            "name": "ollama-admin",
+            "description": "Ollama Administrator",
+            "composite": false
+          },
+          {
+            "name": "ollama-user",
+            "description": "Ollama User - standard access",
+            "composite": false
+          },
+          {
+            "name": "jupyter-admin",
+            "description": "JupyterLab Administrator",
+            "composite": false
+          },
+          {
+            "name": "jupyter-user",
+            "description": "JupyterLab User - standard access",
+            "composite": false
+          }
+        ]
+      },
+      "groups": [
+        {
+          "name": "platform-admins",
+          "path": "/platform-admins",
+          "realmRoles": [
+            "grafana-admin",
+            "gitlab-admin",
+            "prometheus-admin",
+            "ollama-admin",
+            "jupyter-admin"
+          ]
+        },
+        {
+          "name": "developers",
+          "path": "/developers",
+          "realmRoles": [
+            "grafana-editor",
+            "gitlab-developer",
+            "prometheus-user",
+            "ollama-user",
+            "jupyter-user"
+          ]
+        },
+        {
+          "name": "users",
+          "path": "/users",
+          "realmRoles": [
+            "grafana-viewer",
+            "gitlab-user",
+            "prometheus-user",
+            "ollama-user",
+            "jupyter-user"
+          ]
+        }
+      ]
+    }

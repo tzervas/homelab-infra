@@ -507,7 +507,7 @@ class SecurityManager:
             ]
 
             for setting, error_msg in required_settings:
-                if setting not in security_config.get("security", {}):
+                if setting not in security_config:
                     validation_errors.append(error_msg)
 
         # Validate certificate configuration

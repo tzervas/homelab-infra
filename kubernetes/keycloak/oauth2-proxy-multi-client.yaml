@@ -7,42 +7,41 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: oauth2-proxy-secret
+  name: prometheus-oauth-secret
   namespace: oauth2-proxy
 type: Opaque
-data:
-  # homelab-portal-secret
-  client-secret: aG9tZWxhYi1wb3J0YWwtc2VjcmV0
-  # Random 32-byte secret for cookie encryption
+stringData:
+  client-secret: prometheus-client-secret
   cookie-secret: SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM=
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: oauth2-proxy-config
+  name: prometheus-oauth2-proxy-config
   namespace: oauth2-proxy
 data:
   oauth2_proxy.cfg: |
-    # OIDC Config
+    # OIDC Config for Prometheus
     provider = "keycloak-oidc"
-    client_id = "homelab-portal"
-    oidc_issuer_url = "http://keycloak.keycloak.svc.cluster.local:8080/realms/homelab"
+    client_id = "prometheus"
+    oidc_issuer_url = "https://auth.homelab.local/realms/homelab"
     insecure_oidc_allow_unverified_email = true
     insecure_oidc_skip_issuer_verification = true
     skip_oidc_discovery = false
 
-    # Redirect and logout URLs
-    redirect_url = "https://homelab.local/oauth2/callback"
+    # Redirect URL
+    redirect_url = "https://prometheus.homelab.local/oauth2/callback"
 
     # Upstream and reverse proxy config
     http_address = "0.0.0.0:4180"
     reverse_proxy = true
+    upstreams = ["http://prometheus.monitoring.svc.cluster.local:9090"]
 
     # Session and security
     cookie_secure = true
     cookie_httponly = true
     cookie_samesite = "lax"
-    cookie_name = "_oauth2_proxy"
+    cookie_name = "_prometheus_oauth2_proxy"
     cookie_expire = "24h0m0s"
     cookie_refresh = "1h0m0s"
     cookie_domains = [".homelab.local"]
@@ -54,32 +53,36 @@ data:
       "^/ready$"
     ]
 
-    # Email and username headers
+    # Headers
     set_xauthrequest = true
     pass_access_token = true
     pass_user_headers = true
+    pass_authorization_header = true
 
     # Logging
     silence_ping_logging = true
     request_logging = true
 
-    # Whitelist email domains
+    # Allow all authenticated users
     email_domains = ["*"]
+
+    # Role-based access
+    allowed_roles = ["prometheus-admin", "prometheus-user"]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: oauth2-proxy
+  name: prometheus-oauth2-proxy
   namespace: oauth2-proxy
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: oauth2-proxy
+      app: prometheus-oauth2-proxy
   template:
     metadata:
       labels:
-        app: oauth2-proxy
+        app: prometheus-oauth2-proxy
     spec:
       containers:
       - name: oauth2-proxy
@@ -93,23 +96,23 @@ spec:
         - name: OAUTH2_PROXY_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: oauth2-proxy-secret
+              name: prometheus-oauth-secret
               key: client-secret
         - name: OAUTH2_PROXY_COOKIE_SECRET
           valueFrom:
             secretKeyRef:
-              name: oauth2-proxy-secret
+              name: prometheus-oauth-secret
               key: cookie-secret
         volumeMounts:
         - name: config
           mountPath: /etc/oauth2-proxy
         resources:
-          limits:
-            cpu: 100m
-            memory: 128Mi
           requests:
-            cpu: 50m
-            memory: 64Mi
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         livenessProbe:
           httpGet:
             path: /ping
@@ -125,58 +128,55 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: oauth2-proxy-config
+          name: prometheus-oauth2-proxy-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: oauth2-proxy
+  name: prometheus-oauth2-proxy
   namespace: oauth2-proxy
 spec:
   selector:
-    app: oauth2-proxy
+    app: prometheus-oauth2-proxy
   ports:
   - name: http
     port: 4180
     targetPort: 4180
 ---
+# Update Prometheus Ingress to use OAuth2 Proxy
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: oauth2-proxy-ingress
-  namespace: oauth2-proxy
+  name: prometheus-https-ingress
+  namespace: monitoring
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+    # Remove OAuth2 proxy annotations since we'll handle it directly
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - homelab.local
-    secretName: oauth2-proxy-tls-cert
+    - prometheus.homelab.local
+    secretName: prometheus-tls-cert
   rules:
-  - host: homelab.local
+  - host: prometheus.homelab.local
     http:
       paths:
       - path: /oauth2
         pathType: Prefix
         backend:
           service:
-            name: oauth2-proxy
+            name: prometheus-oauth2-proxy
+            namespace: oauth2-proxy
             port:
               number: 4180
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: oauth2-proxy-tls-cert
-  namespace: oauth2-proxy
-spec:
-  secretName: oauth2-proxy-tls-cert
-  issuerRef:
-    name: homelab-ca-issuer
-    kind: ClusterIssuer
-  commonName: homelab.local
-  dnsNames:
-  - homelab.local
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-oauth2-proxy
+            namespace: oauth2-proxy
+            port:
+              number: 4180

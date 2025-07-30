@@ -1,0 +1,139 @@
+# Namespaces Configuration
+# Centralized namespace definitions and settings
+
+namespaces:
+  # Core infrastructure namespaces
+  core:
+    cert-manager:
+      labels:
+        homelab.local/tier: "infrastructure"
+        homelab.local/component: "certificates"
+      annotations:
+        homelab.local/description: "Certificate management"
+
+    ingress-nginx:
+      labels:
+        homelab.local/tier: "infrastructure"
+        homelab.local/component: "ingress"
+      annotations:
+        homelab.local/description: "Ingress controller"
+
+    metallb-system:
+      labels:
+        homelab.local/tier: "infrastructure"
+        homelab.local/component: "loadbalancer"
+      annotations:
+        homelab.local/description: "Load balancer for bare metal"
+
+    longhorn-system:
+      labels:
+        homelab.local/tier: "infrastructure"
+        homelab.local/component: "storage"
+      annotations:
+        homelab.local/description: "Distributed storage system"
+
+  # Application namespaces
+  applications:
+    gitlab:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "development"
+        homelab.local/app: "gitlab"
+      annotations:
+        homelab.local/description: "GitLab source control"
+
+    gitlab-runner:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "ci-cd"
+        homelab.local/app: "gitlab-runner"
+      annotations:
+        homelab.local/description: "GitLab CI/CD runners"
+
+    keycloak:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "authentication"
+        homelab.local/app: "keycloak"
+      annotations:
+        homelab.local/description: "Identity and access management"
+
+    monitoring:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "observability"
+      annotations:
+        homelab.local/description: "Monitoring and observability stack"
+
+    ai-ml:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "ai-ml"
+      annotations:
+        homelab.local/description: "AI and ML workloads"
+
+    oauth2-proxy:
+      labels:
+        homelab.local/tier: "application"
+        homelab.local/component: "authentication"
+        homelab.local/app: "oauth2-proxy"
+      annotations:
+        homelab.local/description: "OAuth2 proxy for services"
+
+  # System namespaces (pre-existing, for reference)
+  system:
+    kube-system:
+      managed: false
+      description: "Kubernetes system components"
+
+    kube-public:
+      managed: false
+      description: "Public Kubernetes resources"
+
+    kube-node-lease:
+      managed: false
+      description: "Node heartbeats"
+
+    default:
+      managed: false
+      description: "Default namespace"
+
+  # Resource quotas per namespace type
+  resource_quotas:
+    infrastructure:
+      requests.cpu: "10"
+      requests.memory: "20Gi"
+      limits.cpu: "20"
+      limits.memory: "40Gi"
+      persistentvolumeclaims: "20"
+
+    application:
+      requests.cpu: "5"
+      requests.memory: "10Gi"
+      limits.cpu: "10"
+      limits.memory: "20Gi"
+      persistentvolumeclaims: "10"
+
+    development:
+      requests.cpu: "2"
+      requests.memory: "4Gi"
+      limits.cpu: "4"
+      limits.memory: "8Gi"
+      persistentvolumeclaims: "5"
+
+  # Network policies per namespace type
+  network_policies:
+    infrastructure:
+      default_deny: false
+      allow_dns: true
+      allow_ingress: true
+
+    application:
+      default_deny: true
+      allow_dns: true
+      allow_ingress: true
+      allow_monitoring: true
+
+    development:
+      default_deny: false
+      allow_all: true

@@ -195,7 +195,6 @@ class ConfigManager:
 
     def get_security_config(self) -> dict[str, Any]:
         """Get security configuration with environment and context overrides."""
-<<<<<<< HEAD
         # Get the full security configuration, not just the nested 'security' key
         full_security_config = self.get_config("security")
 
@@ -212,10 +211,6 @@ class ConfigManager:
             "image_security": full_security_config.get("image_security", {}),
             "secrets": full_security_config.get("secrets", {}),
         }
-
-=======
-        security = self.get_config("security", "security", {})
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         env_config = self.get_environment_config()
 
         # Apply environment-specific security settings
@@ -320,20 +315,12 @@ class ConfigManager:
 
         # Validate domain configuration
         domains = self.get_domain_config()
-<<<<<<< HEAD
         if not domains.get("base", {}).get("primary"):
-=======
-        if not domains.get("domains", {}).get("base", {}).get("primary"):
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
             issues.append("Primary domain not configured")
 
         # Validate networking configuration
         networking = self.get_networking_config()
-<<<<<<< HEAD
         if not networking.get("metallb", {}).get("default_pool"):
-=======
-        if not networking.get("networking", {}).get("metallb", {}).get("default_pool"):
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
             issues.append("MetalLB default pool not configured")
 
         # Validate environment configuration

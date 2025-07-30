@@ -229,6 +229,14 @@ temp/
 backups/
 **/backups/
 
+# Branch consolidation and management files (local only)
+docs/consolidation-reports/
+**/consolidation-reports/
+update_branches.sh
+*branch-info*
+*branch-manifest*
+*consolidation-manifest*
+
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt

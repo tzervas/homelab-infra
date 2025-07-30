@@ -237,6 +237,10 @@ update_branches.sh
 *branch-manifest*
 *consolidation-manifest*
 
+# Deployment reports (generated locally)
+docs/deployment-reports/
+**/deployment-reports/
+
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt

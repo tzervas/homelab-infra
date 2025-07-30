@@ -69,7 +69,7 @@ class CrossComponentIntegrationTest:
                     elif config_type == "storage" and config_data:
                         if "storage_classes" in config_data:
                             references["storage_classes"].update(
-                                config_data["storage_classes"].keys(),
+                                config_data["storage_classes"].keys()
                             )
 
         return references
@@ -125,9 +125,9 @@ class TestHelmKubernetesIntegration:
 
         for ns in common_namespaces:
             if ns in config_namespaces:
-                assert ns in k8s_namespaces or len(k8s_namespaces) == 0, (
-                    f"Namespace {ns} in config but not in K8s manifests"
-                )
+                assert (
+                    ns in k8s_namespaces or len(k8s_namespaces) == 0
+                ), f"Namespace {ns} in config but not in K8s manifests"
 
     def _extract_namespaces_from_dict(self, data: Any, namespaces: set[str]) -> None:
         """Recursively extract namespace references from data structure."""
@@ -216,9 +216,9 @@ class TestHelmKubernetesIntegration:
                         domain_match = True
                         break
 
-            assert domain_match, (
-                f"No domain match between config {config_domains} and ingress {ingress_domains}"
-            )
+            assert (
+                domain_match
+            ), f"No domain match between config {config_domains} and ingress {ingress_domains}"
 
 
 class TestTerraformHelmIntegration:
@@ -252,9 +252,9 @@ class TestTerraformHelmIntegration:
         if terraform_outputs:
             common_outputs = terraform_outputs.intersection(expected_outputs)
             # We expect at least some common integration outputs
-            assert len(common_outputs) > 0 or len(terraform_outputs) == 0, (
-                f"Terraform outputs {terraform_outputs} don't include expected integration points"
-            )
+            assert (
+                len(common_outputs) > 0 or len(terraform_outputs) == 0
+            ), f"Terraform outputs {terraform_outputs} don't include expected integration points"
 
     def test_terraform_variable_configuration_consistency(self, cross_component_test):
         """Test that Terraform variables align with configuration."""
@@ -283,9 +283,9 @@ class TestTerraformHelmIntegration:
         if terraform_vars:
             # Should have some expected infrastructure variables
             common_vars = terraform_vars.intersection(expected_vars)
-            assert len(common_vars) > 0, (
-                f"Terraform variables {terraform_vars} don't include expected configuration variables"
-            )
+            assert (
+                len(common_vars) > 0
+            ), f"Terraform variables {terraform_vars} don't include expected configuration variables"
 
 
 class TestAnsibleIntegration:
@@ -308,9 +308,9 @@ class TestAnsibleIntegration:
                 # Check for reasonable inventory structure
                 if "all" in inventory_data:
                     all_group = inventory_data["all"]
-                    assert "children" in all_group or "hosts" in all_group, (
-                        f"Inventory {inventory_file} missing hosts or children"
-                    )
+                    assert (
+                        "children" in all_group or "hosts" in all_group
+                    ), f"Inventory {inventory_file} missing hosts or children"
 
     def test_ansible_playbook_integration(self, cross_component_test):
         """Test that Ansible playbooks integrate with configuration."""
@@ -390,9 +390,9 @@ class TestConfigurationPropagation:
 
         # We expect domains to be referenced somewhere
         if len(domains) > 0:
-            assert domain_references_found, (
-                "Domain configuration not referenced in deployment files"
-            )
+            assert (
+                domain_references_found
+            ), "Domain configuration not referenced in deployment files"
 
     def test_security_configuration_propagation(self, cross_component_test):
         """Test that security configuration propagates correctly."""

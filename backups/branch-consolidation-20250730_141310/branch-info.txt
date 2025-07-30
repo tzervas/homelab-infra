@@ -1,0 +1,11 @@
+cleanup/remove-internal-docs  2025-07-28 19:39:34 -0400 Merge branch 'main' into cleanup/remove-internal-docs
+cleanup/remove-reports-summaries  2025-07-28 19:39:34 -0400 Merge branch 'main' into cleanup/remove-reports-summaries
+develop origin/develop 2025-07-29 13:34:05 -0400 feat: Complete cluster validation and comprehensive Grafana dashboards
+feature/homelab-portal-security-dashboard  2025-07-29 22:05:55 -0400 feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes
+main origin/main 2025-07-28 19:38:22 -0400 fix: Apply pre-commit fixes for whitespace and formatting
+origin  2025-07-28 19:38:22 -0400 fix: Apply pre-commit fixes for whitespace and formatting
+origin/cleanup/remove-internal-docs  2025-07-28 19:39:34 -0400 Merge branch 'main' into cleanup/remove-internal-docs
+origin/cleanup/remove-reports-summaries  2025-07-28 19:39:34 -0400 Merge branch 'main' into cleanup/remove-reports-summaries
+origin/dependabot/go_modules/testing/terraform/terratest/go_modules-98ddd7d280  2025-07-29 05:33:33 +0000 chore(deps): bump the go_modules group across 1 directory with 5 updates
+origin/develop  2025-07-29 13:34:05 -0400 feat: Complete cluster validation and comprehensive Grafana dashboards
+origin/main  2025-07-28 19:38:22 -0400 fix: Apply pre-commit fixes for whitespace and formatting

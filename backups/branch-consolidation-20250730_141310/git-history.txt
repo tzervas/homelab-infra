@@ -1,0 +1,147 @@
+* c419955 (HEAD -> feature/homelab-portal-security-dashboard) feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes
+* 25fb7ff (origin/develop, develop) feat: Complete cluster validation and comprehensive Grafana dashboards
+* e76e45b feat: Comprehensive deployment validation framework and enhanced documentation
+* c399410 Step 3: Establish comprehensive user and admin bootstrap processes
+| * d1a2869 (origin/dependabot/go_modules/testing/terraform/terratest/go_modules-98ddd7d280) chore(deps): bump the go_modules group across 1 directory with 5 updates
+|/
+| *   34ea588 (origin/cleanup/remove-internal-docs, cleanup/remove-internal-docs) Merge branch 'main' into cleanup/remove-internal-docs
+| |\
+| |/
+|/|
+| *   a2e086f Resolve merge conflict in .gitignore and update secrets baseline
+| |\
+| * | 748949e chore: remove validation reports and summaries from repository (#23)
+| | | *   83abac9 (origin/cleanup/remove-reports-summaries, cleanup/remove-reports-summaries) Merge branch 'main' into cleanup/remove-reports-summaries
+| | | |\
+| |_|_|/
+|/| | |
+* | | | c2cbe64 (origin/main, origin/HEAD, main) fix: Apply pre-commit fixes for whitespace and formatting
+* | | | 85404bd docs: Update documentation to reflect successful deployment
+* | | | dc6812b feat: Complete Step 11 - Comprehensive validation and reporting (bypass hooks for critical fixes)
+| |/ /
+|/| |
+| | *   4ee1e46 Merge branch 'main' into cleanup/remove-reports-summaries
+| | |\
+| |_|/
+|/| |
+* | | e42eee4 fix: Resolve YAML syntax issues and improve CI/CD pipeline structure
+* | | 7e507c5 feat: Add comprehensive GitLab CI/CD pipeline infrastructure
+* | |   4cb9727 Merge branch 'develop' of https://github.com/tzervas/homelab-infra into develop
+|\ \ \
+| * | | 96fd4a1 feat: comprehensive script reorganization and refactoring (#25)
+| | | * 7c00eaa chore: remove validation reports and summaries from repository
+| | |/
+| | | * 9179477 (refs/stash) WIP on develop: 439b8c6 feat: comprehensive script reorganization and refactoring
+| |_|/|
+|/| | |
+| | | * 7a52e3b index on develop: 439b8c6 feat: comprehensive script reorganization and refactoring
+| |_|/
+|/| |
+* | | 439b8c6 feat: comprehensive script reorganization and refactoring
+|/ /
+* | ebf9f01 feat: add comprehensive testing framework and automation scripts
+* | fc1fa3b feat: implement automated K3s deployment with VM infrastructure
+* |   43e5f4d Merge branch 'main' of https://github.com/tzervas/homelab-infra into develop
+|\ \
+| * | 958c4fc chore: remove validation reports and summaries from repository (#23) (#24)
+* | | e3a45d1 Merge remote-tracking branch 'origin/main' into develop
+|\| |
+| * | 3b392e9 chore: remove validation reports and summaries from repository (#23)
+| |/
+* | 7e98980 Merge branch 'main' into develop
+|\|
+| * 9d4df38 feat: Merge develop branch with infrastructure stabilization and tooling enhancements (#21)
+* | 5efea49 Add K3s deployment stabilization and network setup scripts
+* | 86ac82d chore: update .secrets.baseline with line number changes
+* | 5f3a35a feat: add environment configuration verification script
+* | 6af0293 feat: streamline development tooling and enhance code quality (#20)
+* | 13897e4 fix: Temporarily disable problematic pre-commit hooks
+* | b80990b style: Apply Ruff auto-fixes and add upgraded dependency lock
+* | afe5f32 chore: Improve development tooling and bump version to 0.3.1
+* | 8fd35b9 Fix pre-commit configuration and Python typing issues
+* | 9d7e183 Simplify Ansible configuration and remove unused components (#18)
+* | a37fe8e feat: Clean up infrastructure by removing deprecated deployment components (#19)
+* |   6bb6b41 Merge branch 'feature/comprehensive-testing-framework-clean' into develop
+|\ \
+| |/
+|/|
+| * 50121d4 feat(testing): enhance testing framework with code review improvements
+| * d370eb3 fix: address code review comments for testing framework
+| * 3370173 chore: remove problematic filter-branch scripts
+| * 403f960 feat: Add Python project configuration and package structure
+| * 96c16e7 feat: Add comprehensive homelab testing framework
+* | 8988693 feat: Add comprehensive testing framework (#17)
+|/
+* db3ea44 feat: Improve SSH readiness check with intelligent backoff and diagnostics
+* 42c04e3 feat: Add comprehensive deployment orchestration and validation scripts (#10)
+*   99c561b Merge feature/comprehensive-documentation-consolidation into develop
+|\
+| * 7fca293 feat: consolidate and enhance documentation with comprehensive configuration management
+|/
+* 7b2f23a chore: clean up commit history fix script
+* 65d2fac feat: implement bastion host security pattern with comprehensive testing
+* 25294bf feat: implement private configuration repository integration
+* 8b35199 feat: Add comprehensive deployment dry-run test with full simulation
+* 1332187 fix: Resolve Kubernetes manifest validation issues and enhance validation scripts
+* 293f10c feat: Add comprehensive deployment validation and VM testing framework
+* 26aa0ce feat: Add comprehensive monitoring stack with Prometheus and AlertManager (#8)
+* 7d33333 feat: Add comprehensive backup solutions guide (#7)
+* dcf431d docs: Add comprehensive deployment documentation structure (#6)
+* 371a225 docs: Add architecture and network documentation (#5)
+| * d3a16fd (tag: v0.3.0) docs: add CHANGELOG.md with semantic versioning history
+| *   431233d docs: resolve merge conflicts in documentation
+| |\
+| | * 6bfe499 feat: Clean up infrastructure by removing deprecated deployment components (#19)
+| * | 9573b03 docs: update documentation structure and improve markdown compliance
+| * | 47ecab9 chore: update project files with rootless deployment enhancements
+| * | e99d75d fix(keycloak): resolve duplicate postgresql configuration
+| * | 9510216 fix: remove files that should be gitignored
+| * | 20dcb0f chore(gitignore): update with comprehensive ignore patterns
+| * | a7d1f63 feat(testing): enhance testing framework for rootless deployment
+| * | c83229b feat(scripts): add deployment scripts with privilege management
+| * | cd991c2 feat(helm): add security contexts for rootless deployment
+| * | b139c11 feat(ansible): add deployment-user role for rootless operations
+| * | 74d38c7 fix(ansible): implement rootless deployment configuration
+| * | 472f290 Merge branch 'develop' of https://github.com/tzervas/homelab-infra into feature/ansible-simplification-clean
+| |\|
+| | *   e3ecea0 Merge branch 'feature/comprehensive-testing-framework-clean' into develop
+| | |\
+| | | * 843893f feat(testing): enhance testing framework with code review improvements
+| | | * 144e39f fix: address code review comments for testing framework
+| | | * e63f2b4 chore: remove problematic filter-branch scripts
+| | | * 4be5f1a feat: Add Python project configuration and package structure
+| | | * a5e8631 feat: Add comprehensive homelab testing framework
+| * | | c6aed03 feat: Simplify Ansible configuration and remove environment dependencies
+| |/ /
+| * / fe03486 feat: Add comprehensive testing framework (#17)
+| |/
+| * 281f358 feat: Improve SSH readiness check with intelligent backoff and diagnostics
+| * 8893008 feat: Add comprehensive deployment orchestration and validation scripts (#10)
+| *   84b563b Merge feature/comprehensive-documentation-consolidation into develop
+| |\
+| | * cc1d982 feat: consolidate and enhance documentation with comprehensive configuration management
+| |/
+| * 35017c5 chore: clean up commit history fix script
+| * d673de8 feat: implement bastion host security pattern with comprehensive testing
+| * 74e24ad feat: implement private configuration repository integration
+| * 7314eb4 feat: Add comprehensive deployment dry-run test with full simulation
+| * ace2595 fix: Resolve Kubernetes manifest validation issues and enhance validation scripts
+| * d8429e1 feat: Add comprehensive deployment validation and VM testing framework
+| * 54b165b feat: Add comprehensive monitoring stack with Prometheus and AlertManager (#8)
+| * 1ed95f6 feat: Add comprehensive backup solutions guide (#7)
+| * dca179f docs: Add comprehensive deployment documentation structure (#6)
+|/
+* 1f25ba3 feat: initial infrastructure setup (#4)
+* 68faadd chore: Update Claude model configuration for available models
+* b72273b chore: Update gitignore patterns and Claude configuration
+* 44af13c chore: Add backup directories to gitignore
+* eeb9f6a chore: Update gitignore to exclude sensitive scripts
+* 976c1ca chore: Remove sensitive scripts from git tracking
+* e8cf181 fix: Update sync_untracked.sh script syntax
+* 79e12d4 feat: Add scripts for syncing untracked files and updating branches
+* 5192a52 Update .env.template and .gitignore
+* 7b7d55c chore: Update gitignore for Claude-specific files
+* 17c13f3 chore: Update gitignore and add env template
+* 7da46cf docs: Add Claude CLI integration documentation and project requirements
+* 0a3187c feat: Add branch update script
+* 0254dd2 Initial commit with project structure and configuration

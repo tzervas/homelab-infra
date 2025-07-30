@@ -289,3 +289,4 @@ reports/
 # Claude Code RAG Index Files (locally generated)
 .claude/rag_index.json
 .claude/rag_metadata.json
+homelab-infra/

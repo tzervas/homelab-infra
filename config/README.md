@@ -1,38 +1,45 @@
-# Centralized Configuration Management
+# Unified Configuration Management
 
-This directory provides a unified configuration management strategy for the homelab infrastructure, consolidating settings across Helm, Kubernetes, Terraform, and Ansible.
+This directory provides a unified configuration management strategy for the homelab infrastructure, consolidating settings across Helm, Kubernetes, Terraform, and Ansible. The structure has been optimized to eliminate duplication and provide clear integration points.
 
-## Structure
+## Unified Structure
 
 ```
 config/
 ├── README.md                    # This documentation
-├── base/                       # Base configuration values
-│   ├── global.yaml            # Global settings (domains, namespaces, etc.)
-│   ├── networking.yaml         # Network configuration (IPs, ports, CIDRs)
-│   ├── storage.yaml            # Storage classes and persistent volumes
-│   ├── security.yaml           # Security contexts and policies
-│   └── resources.yaml          # Default resource limits and requests
+├── consolidated/               # **PRIMARY CONFIG** - Single source of truth
+│   ├── README.md              # Consolidated configuration guide
+│   ├── domains.yaml           # All domain and DNS configuration
+│   ├── networking.yaml        # Network policies, MetalLB, ingress
+│   ├── storage.yaml           # Storage classes, Longhorn, PVC defaults
+│   ├── security.yaml          # Security contexts, RBAC, pod security
+│   ├── resources.yaml         # CPU/memory limits, HPA configuration
+│   ├── namespaces.yaml        # Namespace definitions and policies
+│   ├── environments.yaml      # Environment-specific configurations
+│   └── services.yaml          # Service discovery and health checks
 ├── environments/               # Environment-specific overrides
 │   ├── development/           # Development environment settings
-│   │   ├── values.yaml        # Environment-specific overrides
-│   │   └── secrets.yaml.template # Sanitized secrets template
+│   │   └── values.yaml        # Environment-specific overrides
 │   ├── staging/              # Staging environment settings
-│   │   ├── values.yaml        # Environment-specific overrides
-│   │   └── secrets.yaml.template # Sanitized secrets template
+│   │   └── values.yaml        # Environment-specific overrides
 │   └── production/           # Production environment settings
-│       ├── values.yaml        # Environment-specific overrides
-│       └── secrets.yaml.template # Sanitized secrets template
+│       └── values.yaml        # Environment-specific overrides
 ├── services/                   # Service-specific configurations
 │   ├── gitlab/                # GitLab configuration templates
-│   ├── keycloak/              # Keycloak realm and client configs
-│   ├── monitoring/            # Prometheus, Grafana, Loki settings
-│   └── ingress/               # Ingress and certificate configurations
+│   └── monitoring/            # Prometheus, Grafana, Loki settings
+├── hooks/                      # Deployment validation hooks
+│   └── deployment-validation-hooks.yaml
 └── templates/                  # Reusable configuration templates
-    ├── deployment.yaml        # Standard deployment template
-    ├── service.yaml           # Standard service template
-    └── ingress.yaml           # Standard ingress template
+    └── deployment.yaml        # Standard deployment template
 ```
+
+## Migration from Duplicated Structure
+
+The configuration has been unified from previous duplicated structures:
+
+- `config/base/` → Merged into `config/consolidated/`
+- Multiple scattered domain configs → Single `domains.yaml`
+- Duplicated networking configs → Unified `networking.yaml`
 
 ## Environment Configurations
 
@@ -75,21 +82,22 @@ These configurations are automatically loaded by:
 - `./scripts/deployment/deploy-with-privileges.sh` - Privileged deployment operations
 - Helmfile configurations in `helm/environments/`
 
-## Configuration Layers
+## Configuration Layers (Unified)
 
-1. **Base Configuration**: Default values from `config/base/`
+1. **Consolidated Base**: All defaults from `config/consolidated/` (single source of truth)
 2. **Environment Overrides**: Values from `config/environments/{env}/`
 3. **Service-Specific**: Service configs from `config/services/`
 4. **Private Local**: Final overrides from `.env.private.local`
-5. **Tool Integration**: Tool-specific consumption (Helm, Terraform, Ansible)
+5. **Tool Integration**: Consistent consumption across Helm, Terraform, Ansible
 
-## Consolidation Benefits
+## Unified Structure Benefits
 
-- **Single Source of Truth**: Eliminates duplicate configuration across tools
-- **Environment Consistency**: Standardized settings across dev/staging/prod
+- **Eliminated Duplication**: Removed `config/base/` duplication with `config/consolidated/`
+- **Single Source of Truth**: All configuration consolidated in `config/consolidated/`
+- **Consistent Integration**: Unified consumption patterns across all tools
+- **Simplified Maintenance**: One location for all configuration updates
+- **Clear Dependencies**: Explicit configuration layer hierarchy
 - **Version Control Safety**: Sanitized templates with secret placeholders
-- **Easier Maintenance**: Centralized updates propagate to all tools
-- **Configuration Validation**: Structured YAML enables schema validation
 
 ## Security Notes
 
@@ -103,26 +111,26 @@ These configurations are automatically loaded by:
 
 ### Helm Integration
 
-- Helm values files reference base configurations via YAML anchors
-- Environment-specific helmfiles consume consolidated values
+- Helm values files reference consolidated configurations via YAML anchors
+- Environment-specific helmfiles consume unified values from `config/consolidated/`
 - Shared templates reduce chart duplication
 
 ### Kubernetes Integration
 
-- Kustomize overlays use base configurations as references
-- ConfigMaps generated from consolidated settings
+- Kustomize overlays use consolidated configurations as references
+- ConfigMaps generated from unified settings in `config/consolidated/`
 - Consistent namespace and label management
 
 ### Terraform Integration
 
-- Variable files consume YAML configurations via `yamldecode()`
-- Module parameters standardized across environments
+- Variable files consume consolidated YAML configurations via `yamldecode()`
+- Module parameters standardized across environments using `config/consolidated/`
 - Infrastructure settings aligned with application configs
 
 ### Ansible Integration
 
-- Group variables loaded from centralized configs
-- Inventory settings derived from networking configurations
+- Group variables loaded from `config/consolidated/` configs
+- Inventory settings derived from unified networking configurations
 - Playbook variables consistent with deployment settings
 
 ## Related Documentation

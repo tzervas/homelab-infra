@@ -334,16 +334,8 @@ class IntegratedTestOrchestrator:
         # Determine overall status
         overall_status = "pass"
 
-<<<<<<< Updated upstream
         if (python_results and python_results.overall_status == "fail") or (
             k3s_results and k3s_results.exit_code != 0
-=======
-        if (
-            python_results
-            and python_results.overall_status == "fail"
-            or k3s_results
-            and k3s_results.exit_code != 0
->>>>>>> Stashed changes
         ):
             overall_status = "fail"
         elif (python_results and python_results.overall_status == "warning") or (

@@ -1,34 +1,78 @@
-# Centralized Networking Configuration
+# Unified Networking Configuration
 # Single source of truth for all network-related settings
+# Consolidated from config/base/networking.yaml and config/base/metallb.yaml
 
 networking:
-  # Cluster Networking
+  # Cluster Networking (consolidated)
   cluster:
-    cidr: "10.42.0.0/16"
+    # Pod and Service CIDRs (consistent across all tools)
+    pod_cidr: "10.42.0.0/16"
     service_cidr: "10.43.0.0/16"
     dns_service_ip: "10.43.0.10"
 
-  # Load Balancer Configuration
+    # DNS Configuration (from base/networking.yaml)
+    dns:
+      cluster_domain: "cluster.local"
+      upstream_servers:
+        - "8.8.8.8"
+        - "8.8.4.4"
+        - "1.1.1.1"
+      search_domains:
+        - "homelab.local"
+        - "svc.cluster.local"
+        - "cluster.local"
+
+  # MetalLB Load Balancer Configuration (consolidated)
   metallb:
     enabled: true
     protocol: "layer2"
+
+    # Controller configuration (from base/metallb.yaml)
+    controller:
+      image:
+        repository: quay.io/metallb/controller
+        tag: v0.13.12
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 50m
+          memory: 50Mi
+
+    # Speaker configuration (from base/metallb.yaml)
+    speaker:
+      image:
+        repository: quay.io/metallb/speaker
+        tag: v0.13.12
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 50m
+          memory: 50Mi
 
     # Environment-specific IP pools
     ip_pools:
       development:
         addresses: "192.168.100.200-192.168.100.210"
         name: "dev-pool"
+        protocol: "layer2"
       staging:
         addresses: "192.168.101.200-192.168.101.210"
         name: "staging-pool"
+        protocol: "layer2"
       production:
-        addresses: "192.168.16.200-192.168.16.210"
+        addresses: "192.168.16.100-192.168.16.110"
         name: "prod-pool"
+        protocol: "layer2"
 
     # Default pool (fallback)
     default_pool:
-      addresses: "192.168.100.200-192.168.100.210"
+      addresses: "192.168.16.100-192.168.16.110"
       name: "default"
+      protocol: "layer2"
 
   # Ingress Configuration
   ingress:

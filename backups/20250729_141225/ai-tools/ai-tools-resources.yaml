@@ -1,0 +1,852 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      generateName: ollama-6989fcb67c-
+      labels:
+        app: ollama
+        pod-template-hash: 6989fcb67c
+      name: ollama-6989fcb67c-8thpc
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: ollama-6989fcb67c
+          uid: 5359bea2-20c9-4416-9984-05cf10758172
+      resourceVersion: "4780"
+      uid: a8380659-6cfb-4ba9-8022-33e3ca9103da
+    spec:
+      containers:
+        - env:
+            - name: OLLAMA_HOST
+              value: 0.0.0.0
+          image: ollama/ollama:latest
+          imagePullPolicy: Always
+          name: ollama
+          ports:
+            - containerPort: 11434
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /root/.ollama
+              name: ollama-data
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-2sfq4
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: ollama-data
+        - name: kube-api-access-2sfq4
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:17Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:11:32Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:11:32Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:17Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://41fddd78031e0afbe43cae7326af7bc1bc125ecf2be0a17cc4ca6cdbbf9fa008
+          image: docker.io/ollama/ollama:latest
+          imageID: docker.io/ollama/ollama@sha256:f478761c18fea69b1624e095bce0f8aab06825d09ccabcd0f88828db0df185ce
+          lastState: {}
+          name: ollama
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:11:31Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.23
+      podIPs:
+        - ip: 10.42.0.23
+      qosClass: Burstable
+      startTime: "2025-07-29T00:10:17Z"
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:13:37Z"
+      generateName: open-webui-9c7b568d6-
+      labels:
+        app: open-webui
+        pod-template-hash: 9c7b568d6
+      name: open-webui-9c7b568d6-fbd7j
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: open-webui-9c7b568d6
+          uid: bc41e4d5-9ea5-4070-b4f4-40fe04e3deef
+      resourceVersion: "5049"
+      uid: 435ecc1a-4f6f-440d-84f2-1863b4a2bba1
+    spec:
+      containers:
+        - env:
+            - name: OLLAMA_BASE_URL
+              value: http://ollama:11434
+            - name: WEBUI_SECRET_KEY
+              value: your-secret-key-change-this
+          image: ghcr.io/open-webui/open-webui:main
+          imagePullPolicy: IfNotPresent
+          name: open-webui
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /app/backend/data
+              name: webui-data
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-vxvxz
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - emptyDir: {}
+          name: webui-data
+        - name: kube-api-access-vxvxz
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:13:37Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:13:38Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:13:38Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:13:37Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://f0ef1590ded8126bf1d3f5e0dbd9f263b7645d5d86a500390e8ffc58b1f55a30
+          image: ghcr.io/open-webui/open-webui:main
+          imageID: ghcr.io/open-webui/open-webui@sha256:1addcd1bd7f8adfa635855bc8dfb91efc11632a3ca1ed0c0cc9424b82a5975d6
+          lastState: {}
+          name: open-webui
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:13:38Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.28
+      podIPs:
+        - ip: 10.42.0.28
+      qosClass: Burstable
+      startTime: "2025-07-29T00:13:37Z"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"ollama","namespace":"ai-tools"},"spec":{"ports":[{"port":11434,"protocol":"TCP","targetPort":11434}],"selector":{"app":"ollama"}}}
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      name: ollama
+      namespace: ai-tools
+      resourceVersion: "4497"
+      uid: 000a369b-fc17-451f-bc08-7f7a3916e75c
+    spec:
+      clusterIP: 10.43.157.255
+      clusterIPs:
+        - 10.43.157.255
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 11434
+          protocol: TCP
+          targetPort: 11434
+      selector:
+        app: ollama
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"open-webui","namespace":"ai-tools"},"spec":{"ports":[{"port":8080,"protocol":"TCP","targetPort":8080}],"selector":{"app":"open-webui"}}}
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      name: open-webui
+      namespace: ai-tools
+      resourceVersion: "4518"
+      uid: 02b307ce-bcdf-4e97-a35c-cdf86f95ac68
+    spec:
+      clusterIP: 10.43.169.66
+      clusterIPs:
+        - 10.43.169.66
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 8080
+          protocol: TCP
+          targetPort: 8080
+      selector:
+        app: open-webui
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"ollama","namespace":"ai-tools"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"ollama"}},"template":{"metadata":{"labels":{"app":"ollama"}},"spec":{"containers":[{"env":[{"name":"OLLAMA_HOST","value":"0.0.0.0"}],"image":"ollama/ollama:latest","name":"ollama","ports":[{"containerPort":11434}],"resources":{"limits":{"cpu":"2000m","memory":"4Gi"},"requests":{"cpu":"500m","memory":"1Gi"}},"volumeMounts":[{"mountPath":"/root/.ollama","name":"ollama-data"}]}],"volumes":[{"name":"ollama-data","persistentVolumeClaim":{"claimName":"ollama-data"}}]}}}}
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      generation: 1
+      name: ollama
+      namespace: ai-tools
+      resourceVersion: "4784"
+      uid: f6fd28db-3f97-409f-ac6b-5671d926e85a
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: ollama
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: ollama
+        spec:
+          containers:
+            - env:
+                - name: OLLAMA_HOST
+                  value: 0.0.0.0
+              image: ollama/ollama:latest
+              imagePullPolicy: Always
+              name: ollama
+              ports:
+                - containerPort: 11434
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /root/.ollama
+                  name: ollama-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: ollama-data
+              persistentVolumeClaim:
+                claimName: ollama-data
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:11:32Z"
+          lastUpdateTime: "2025-07-29T00:11:32Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:10:13Z"
+          lastUpdateTime: "2025-07-29T00:11:32Z"
+          message: ReplicaSet "ollama-6989fcb67c" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "2"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"open-webui","namespace":"ai-tools"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"open-webui"}},"template":{"metadata":{"labels":{"app":"open-webui"}},"spec":{"containers":[{"env":[{"name":"OLLAMA_BASE_URL","value":"http://ollama:11434"},{"name":"WEBUI_SECRET_KEY","value":"your-secret-key-change-this"}],"image":"ghcr.io/open-webui/open-webui:main","name":"open-webui","ports":[{"containerPort":8080}],"resources":{"limits":{"cpu":"1000m","memory":"3Gi"},"requests":{"cpu":"250m","memory":"1Gi"}},"volumeMounts":[{"mountPath":"/app/backend/data","name":"webui-data"}]}],"volumes":[{"emptyDir":{},"name":"webui-data"}]}}}}
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      generation: 2
+      name: open-webui
+      namespace: ai-tools
+      resourceVersion: "5063"
+      uid: 8a178ef9-1559-4370-bb8b-496202127534
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: open-webui
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: open-webui
+        spec:
+          containers:
+            - env:
+                - name: OLLAMA_BASE_URL
+                  value: http://ollama:11434
+                - name: WEBUI_SECRET_KEY
+                  value: your-secret-key-change-this
+              image: ghcr.io/open-webui/open-webui:main
+              imagePullPolicy: IfNotPresent
+              name: open-webui
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 3Gi
+                requests:
+                  cpu: 250m
+                  memory: 1Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /app/backend/data
+                  name: webui-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - emptyDir: {}
+              name: webui-data
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:13:31Z"
+          lastUpdateTime: "2025-07-29T00:13:31Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:10:13Z"
+          lastUpdateTime: "2025-07-29T00:13:39Z"
+          message: ReplicaSet "open-webui-9c7b568d6" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 2
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      generation: 1
+      labels:
+        app: ollama
+        pod-template-hash: 6989fcb67c
+      name: ollama-6989fcb67c
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: ollama
+          uid: f6fd28db-3f97-409f-ac6b-5671d926e85a
+      resourceVersion: "4783"
+      uid: 5359bea2-20c9-4416-9984-05cf10758172
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: ollama
+          pod-template-hash: 6989fcb67c
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: ollama
+            pod-template-hash: 6989fcb67c
+        spec:
+          containers:
+            - env:
+                - name: OLLAMA_HOST
+                  value: 0.0.0.0
+              image: ollama/ollama:latest
+              imagePullPolicy: Always
+              name: ollama
+              ports:
+                - containerPort: 11434
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /root/.ollama
+                  name: ollama-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: ollama-data
+              persistentVolumeClaim:
+                claimName: ollama-data
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "2"
+      creationTimestamp: "2025-07-29T00:13:37Z"
+      generation: 1
+      labels:
+        app: open-webui
+        pod-template-hash: 9c7b568d6
+      name: open-webui-9c7b568d6
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: open-webui
+          uid: 8a178ef9-1559-4370-bb8b-496202127534
+      resourceVersion: "5052"
+      uid: bc41e4d5-9ea5-4070-b4f4-40fe04e3deef
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: open-webui
+          pod-template-hash: 9c7b568d6
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: open-webui
+            pod-template-hash: 9c7b568d6
+        spec:
+          containers:
+            - env:
+                - name: OLLAMA_BASE_URL
+                  value: http://ollama:11434
+                - name: WEBUI_SECRET_KEY
+                  value: your-secret-key-change-this
+              image: ghcr.io/open-webui/open-webui:main
+              imagePullPolicy: IfNotPresent
+              name: open-webui
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 3Gi
+                requests:
+                  cpu: 250m
+                  memory: 1Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /app/backend/data
+                  name: webui-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - emptyDir: {}
+              name: webui-data
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      generation: 2
+      labels:
+        app: open-webui
+        pod-template-hash: 657d7648c8
+      name: open-webui-657d7648c8
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: open-webui
+          uid: 8a178ef9-1559-4370-bb8b-496202127534
+      resourceVersion: "5062"
+      uid: 3343b4fa-9fea-4748-ad80-d3d89cf4bffa
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: open-webui
+          pod-template-hash: 657d7648c8
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: open-webui
+            pod-template-hash: 657d7648c8
+        spec:
+          containers:
+            - env:
+                - name: OLLAMA_BASE_URL
+                  value: http://ollama:11434
+                - name: WEBUI_SECRET_KEY
+                  value: your-secret-key-change-this
+              image: ghcr.io/open-webui/open-webui:main
+              imagePullPolicy: IfNotPresent
+              name: open-webui
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /app/backend/data
+                  name: webui-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - emptyDir: {}
+              name: webui-data
+    status:
+      observedGeneration: 2
+      replicas: 0
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNvRENDQWthZ0F3SUJBZ0lRSlZJQnI5M3JvZmI1UXZvSm15NmUxekFLQmdncWhrak9QUVFEQWpCeU1Rc3cKQ1FZRFZRUUdFd0pWVXpFTk1Bc0dBMVVFQ0JNRVNHOXRaVEVNTUFvR0ExVUVCeE1EVEdGaU1SQXdEZ1lEVlFRSwpFd2RJYjIxbGJHRmlNUjh3SFFZRFZRUUxFeFpJYjIxbGJHRmlJRWx1Wm5KaGMzUnlkV04wZFhKbE1STXdFUVlEClZRUURFd3BJYjIxbGJHRmlJRU5CTUI0WERUSTFNRGN5T1RBd01UQXhORm9YRFRJMU1UQXlOekF3TVRBeE5Gb3cKQURDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTTNrNGlVUlI5RzRuVE90RUd4VApRRDRqWGlPOWNNdEdQM294TUFObnFhWlNUdkExSkNKMWw5MUZ5R1R3Vmt3RHFINWZzUmF3Zm9NeXhUblhkMWVjCms0VkdtSVBsTUd0Qy9XWDFSQXZWaGJLUkRYVEY0bStVcCt5Sk8ydlIvZ28ySUdkZ2Nkd0xMblAySE1wVTEzSVUKWlBVV2k2YW9UMFQxYVZmNmx5RWUrSE9oUHRacGhJS1lkWDBJWndOR2RhY1Yzdms0RjJValk4VURrYzg2dDlVVAo1V2lweXY3cHAzakZDT2JvOXlYUlBVRGk3WkZHZmV1U1V2eXNYUWZ2WFVqZ0VEcnphSzZzNm5kMng3elIxL0JKCjh1aW5HSXRRM01NRHA2TG93R0RFSVMzR2gvTm5acXFFcGNEWjBxalluWjJMUTRmOEtiaSt6RHAxTnBTS0RhMzUKYUg4Q0F3RUFBYU5sTUdNd0RnWURWUjBQQVFIL0JBUURBZ1dnTUF3R0ExVWRFd0VCL3dRQ01BQXdId1lEVlIwagpCQmd3Rm9BVXZ0UzdrM21nV2QrZi9Ud3U5TDlOemZUWXdjd3dJZ1lEVlIwUkFRSC9CQmd3Rm9JVWIyeHNZVzFoCkxtaHZiV1ZzWVdJdWJHOWpZV3d3Q2dZSUtvWkl6ajBFQXdJRFNBQXdSUUloQUpGT0RtLzhlZTVaUGNIS1MraHAKY0kwS3ZTWk95a3g0VVdxTUJmQTFIWGdWQWlBSUtsNm5hT1BLNzNBc3l4TmIrUHlwbkkySnZtYXpXRklZRm4xNwpVWVJ3dXc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBemVUaUpSRkgwYmlkTTYwUWJGTkFQaU5lSTcxd3kwWS9lakV3QTJlcHBsSk84RFVrCkluV1gzVVhJWlBCV1RBT29mbCt4RnJCK2d6TEZPZGQzVjV5VGhVYVlnK1V3YTBMOVpmVkVDOVdGc3BFTmRNWGkKYjVTbjdJazdhOUgrQ2pZZ1oyQngzQXN1Yy9ZY3lsVFhjaFJrOVJhTHBxaFBSUFZwVi9xWElSNzRjNkUrMW1tRQpncGgxZlFobkEwWjFweFhlK1RnWFpTTmp4UU9SenpxMzFSUGxhS25LL3VtbmVNVUk1dWozSmRFOVFPTHRrVVo5CjY1SlMvS3hkQis5ZFNPQVFPdk5vcnF6cWQzYkh2TkhYOEVueTZLY1lpMURjd3dPbm91akFZTVFoTGNhSDgyZG0KcW9TbHdOblNxTmlkbll0RGgvd3B1TDdNT25VMmxJb05yZmxvZndJREFRQUJBb0lCQUVvNlNSbEorSlZ3TkNScwpNUzZNZU8ydC9JTndDWmtQTTFWUEpGc2w1VENVSGVkVmtUaG5JcC9nUjVXMFc3ZzkzV0hxQjhNQlVDcm1nOW9OCmh2WHIrZmNqYzFxaHB1b1VsWnhMWndQSkw5RW5vQzFJSmhGS0M1d29BV2NtcHFweHh3N2Q0MDZNTFd3YS8xZ20KYkNHeG5wQUpWOEYyamxWekVFNXFoaytuaGJUUmVFdEIzVjdpdUNqYUpRN0JjTE9sVVpzMGJRNGM4THdPSWlHWAo0ZHczSFh0aStJRWx0b29YeW95NmxoOVdLbmZGWnZIOEttOTdoN3QzTy9odEFMMFFINUtOVERKaFJYVWN1OXR2CnhjaTdOdEpJRHJwdk1FcXNGM2lwczBNT1pFZ1Vuekk5L2FIT2xBUWdzd1FnakRnTXZCNElpbUpTU0hWaHFhZ28KMU5IUTJ2a0NnWUVBOEVEdGFLRUllYkwxeUo4ekJvclBVaFh3d2ZGN2NVeWgwbHBVN083WkhZUTEwUFBlZlRFZwpIeFNHcy9FY2JQSTJGek9wQmlEUFBBd01EKzhnYTNrVWxSYVBxeFZhMUtHNDJWOVIxaDQ1WDhFR0UwS2JCclF5CmJEQ0Z6eUczRVB2TmJtb0NreXV3TWM2c3FwZEVoYlRmVVNOcTdXdU9SSW0rRUZNZXpHSjZJelVDZ1lFQTIyTjEKSldBVkhRdjZwd3laWEh2cW5MT0ovUC9VUy9VQ0ZVWDF3aS9YNGJUNENSL1A0OUpSaldIY09UMEwwa1RuUUpQZApkSXVhMklwMmRsYTk2OEVTVFkwOTdkR0VYSnI3TnUwQTY1ZW5KNDZwTUs4WGVVK3V3NnI1NWJMaHI5VjVwTmcwCndKbnRGVHFrOVU3cnBkUzBBWjVkZ1NOZXJjL0tBSVRaNFpwOC8yTUNnWUVBaEQyb3I2T2JqNmtTb2xnR2RQNW8KdVN6OGRUUWZGekR3RFdITlJ4RDlEc01jQUNTTGZXdFIyK21uYjFveXBFRDV4dkdYZ3BrQ21IR2xIZ3dvVXgrMQpWWTZ5aTUvWWZCdDhMS0hMNE1pSUdnMmI4M1FBOHNLeTBsd3UrdUQ2NiswOW1SM2V4dlVRS1lveC9qLys1bjIxClFlcjF5ek1kZnRvMmRMUGJ5dklWZWxVQ2dZQnpYUU5XMmdXQU5ySmhjVkNidjFXSmZTZU1jSUtVUm93SDM3ZngKbXZMc2J4c1d3VEd5WFFBaFZscFZodkpXYVlFcEJoZ25sdG1nRUg5bWp3cGpsQzBwdHFIZ0VwS0ZsOEdPQ21hMwpmQkdielhyT2JPUHRHS2VQb0xLenhMTEVvWDdMM2gwdlFrSFhMZlZjUVZuTTQrS2NEMGlnQlpkZDBxd29SYlBFCjNGWHFmUUtCZ0N5VzZTQTMrT0ZvSTJmclFrN2M3V1FjQTB4ek85ajA3V3VoL3RVTlQwdjZpUWRZSVJsemJQQnQKVmo5L2pGMlZJK0RPaTY5RVVyYjJLRi85aUQxVVRKbS9ITlVZc3o2WnFsWjNWOU9oTXlIMTVUQ3JDNmxqU0lCdgozYTVCZHc5UE5FVE01dEFNQXFXUHdSdmNyUmFBemlyczc4MUtNcFZRa2tkTDlqdStOVWV6Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: ollama.homelab.local
+        cert-manager.io/certificate-name: ollama-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-29T00:10:14Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: ollama-tls-cert
+      namespace: ai-tools
+      resourceVersion: "4550"
+      uid: 5775be22-4cdc-438c-9a60-ca1de8cb93a7
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+        dmVyLWNhQDE3NTM3NDE3OTQwHhcNMjUwNzI4MjIyOTU0WhcNMzUwNzI2MjIyOTU0
+        WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTM3NDE3OTQwWTATBgcqhkjO
+        PQIBBggqhkjOPQMBBwNCAASReyR7DvPvrR4y88wrDNeAy5Zs4CfRRD+qgBkyGa0J
+        IzvoOKZvz8+/bh356xwa1tqqBaSrmQvt5fuMvHZcQLPQo0IwQDAOBgNVHQ8BAf8E
+        BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUrNWcwCmEcL5ksfQVxIE8
+        NdaNIvkwCgYIKoZIzj0EAwIDRwAwRAIgC286fMwQojlX9gm5tsCNDuBlUYrs4KBu
+        wR88SXVxn8ACIGHyBM8IYYTP6tn7gjjyKAUUX2WDwBnYno+NzZgUaEil
+        -----END CERTIFICATE-----
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubernetes.io/description:
+          Contains a CA bundle that can be used to verify the kube-apiserver when using internal
+          endpoints such as the internal service IP or kubernetes.default.svc. No other usage is
+          guaranteed across distributions of Kubernetes clusters.
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      name: kube-root-ca.crt
+      namespace: ai-tools
+      resourceVersion: "4485"
+      uid: 2b0fba3a-3cdd-48f5-a0f2-b96eed20eeda
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/auth-response-headers":"X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token","nginx.ingress.kubernetes.io/auth-signin":"https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri","nginx.ingress.kubernetes.io/auth-url":"http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"ollama-https-ingress","namespace":"ai-tools"},"spec":{"ingressClassName":"nginx","rules":[{"host":"ollama.homelab.local","http":{"paths":[{"backend":{"service":{"name":"open-webui","port":{"number":8080}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["ollama.homelab.local"],"secretName":"ollama-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token
+        nginx.ingress.kubernetes.io/auth-signin: https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri
+        nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-29T16:10:18Z"
+      generation: 1
+      name: ollama-https-ingress
+      namespace: ai-tools
+      resourceVersion: "39580"
+      uid: b0179fef-28f8-4a73-87cf-f3d66de3484e
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: ollama.homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: open-webui
+                    port:
+                      number: 8080
+                path: /
+                pathType: Prefix
+      tls:
+        - hosts:
+            - ollama.homelab.local
+          secretName: ollama-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      creationTimestamp: "2025-07-29T16:10:18Z"
+      generation: 1
+      name: ollama-tls-cert
+      namespace: ai-tools
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: ollama-https-ingress
+          uid: b0179fef-28f8-4a73-87cf-f3d66de3484e
+      resourceVersion: "39571"
+      uid: f59bb485-2f0d-4326-8b10-4720323959ac
+    spec:
+      dnsNames:
+        - ollama.homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: ollama-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-29T16:10:18Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 1
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-27T00:10:14Z"
+      notBefore: "2025-07-29T00:10:14Z"
+      renewalTime: "2025-09-27T00:10:14Z"
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"ollama-data","namespace":"ai-tools"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"20Gi"}}}}
+        pv.kubernetes.io/bind-completed: "yes"
+        pv.kubernetes.io/bound-by-controller: "yes"
+        volume.beta.kubernetes.io/storage-provisioner: rancher.io/local-path
+        volume.kubernetes.io/selected-node: homelab
+        volume.kubernetes.io/storage-provisioner: rancher.io/local-path
+      creationTimestamp: "2025-07-29T00:10:13Z"
+      finalizers:
+        - kubernetes.io/pvc-protection
+      name: ollama-data
+      namespace: ai-tools
+      resourceVersion: "4573"
+      uid: 87df4530-5219-457c-b843-3214008f6d17
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: local-path
+      volumeMode: Filesystem
+      volumeName: pvc-87df4530-5219-457c-b843-3214008f6d17
+    status:
+      accessModes:
+        - ReadWriteOnce
+      capacity:
+        storage: 20Gi
+      phase: Bound
+kind: List
+metadata:
+  resourceVersion: ""

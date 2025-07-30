@@ -20,6 +20,17 @@ networking:
         - "svc.cluster.local"
         - "cluster.local"
 
+  # MetalLB Configuration
+  metallb:
+    enabled: true
+    # Default pool configuration
+    default_pool:
+      name: "default-pool"
+      protocol: "layer2"
+      addresses: "192.168.100.200-192.168.100.250"
+      auto_assign: true
+      avoid_buggy_ips: true
+
   # Load Balancer Configuration (MetalLB)
   loadbalancer:
     # IP Address Pools (environment-specific overrides expected)
@@ -27,7 +38,7 @@ networking:
       default:
         # Base range - override in environment configs
         addresses:
-          - "192.168.1.240-192.168.1.250"
+          - "192.168.100.200-192.168.100.250"
         auto_assign: true
         avoid_buggy_ips: true
 

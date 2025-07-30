@@ -1,20 +1,12 @@
 ---
 apiVersion: v1
-kind: Namespace
+kind: Secret
 metadata:
-  name: gitlab
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: gitlab-data
+  name: gitlab-oauth-secret
   namespace: gitlab
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
+type: Opaque
+stringData:
+  client-secret: gitlab-client-secret
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,33 +63,51 @@ spec:
             # Keycloak OAuth2 Integration
             gitlab_rails['omniauth_enabled'] = true
             gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
-            gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'openid_connect'
+            gitlab_rails['omniauth_sync_email_from_provider'] = 'openid_connect'
+            gitlab_rails['omniauth_sync_profile_from_provider'] = ['openid_connect']
+            gitlab_rails['omniauth_sync_profile_attributes'] = ['email', 'name']
+            gitlab_rails['omniauth_auto_sign_in_with_provider'] = nil
             gitlab_rails['omniauth_block_auto_created_users'] = false
             gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
+            gitlab_rails['omniauth_external_providers'] = ['openid_connect']
 
             gitlab_rails['omniauth_providers'] = [
               {
                 'name' => 'openid_connect',
-                'label' => 'Keycloak SSO',
+                'label' => 'Keycloak',
+                'icon' => 'https://www.keycloak.org/resources/images/keycloak_icon_512px.svg',
                 'args' => {
                   'name' => 'openid_connect',
-                  'scope' => ['openid','profile','email'],
+                  'scope' => ['openid','profile','email','roles'],
                   'response_type' => 'code',
                   'issuer' => 'https://auth.homelab.local/realms/homelab',
                   'discovery' => true,
                   'client_auth_method' => 'query',
                   'uid_field' => 'preferred_username',
+                  'send_scope_to_token_endpoint' => 'false',
+                  'pkce' => true,
                   'client_options' => {
-                    'identifier' => 'homelab-portal',
-                    'secret' => 'homelab-portal-secret',
-                    'redirect_uri' => 'https://gitlab.homelab.local/users/auth/openid_connect/callback'
+                    'identifier' => 'gitlab',
+                    'secret' => 'gitlab-client-secret',
+                    'redirect_uri' => 'https://gitlab.homelab.local/users/auth/openid_connect/callback',
+                    'end_session_endpoint' => 'https://auth.homelab.local/realms/homelab/protocol/openid-connect/logout'
                   }
                 }
               }
             ]
 
-            # Allow automatic user creation from Keycloak
-            gitlab_rails['omniauth_external_providers'] = ['openid_connect']
+            # Map Keycloak roles to GitLab permissions
+            gitlab_rails['omniauth_providers'][0]['args']['gitlab_role_mapping'] = {
+              'gitlab-admin' => 'admin',
+              'gitlab-developer' => 'developer',
+              'gitlab-user' => 'guest'
+            }
+
+        - name: GITLAB_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-oauth-secret
+              key: client-secret
         volumeMounts:
         - name: gitlab-data
           mountPath: /var/opt/gitlab
@@ -120,69 +130,3 @@ spec:
         emptyDir: {}
       - name: gitlab-config
         emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: gitlab
-  namespace: gitlab
-spec:
-  selector:
-    app: gitlab
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 80
-    - name: ssh
-      protocol: TCP
-      port: 22
-      targetPort: 22
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: gitlab-https-ingress
-  namespace: gitlab
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
-    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
-    # OAuth2 Proxy annotations
-    nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth"
-    nginx.ingress.kubernetes.io/auth-signin: "https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri"
-    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - gitlab.homelab.local
-    secretName: gitlab-tls-cert
-  rules:
-  - host: gitlab.homelab.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: gitlab
-            port:
-              number: 80
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: gitlab-tls-cert
-  namespace: gitlab
-spec:
-  secretName: gitlab-tls-cert
-  issuerRef:
-    name: homelab-ca-issuer
-    kind: ClusterIssuer
-  commonName: gitlab.homelab.local
-  dnsNames:
-  - gitlab.homelab.local

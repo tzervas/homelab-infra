@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-07-29T15:46:03.739404+00:00",
+  "duration": 2.846163749694824,
+  "overall_status": "fail",
+  "python_framework_results": null,
+  "k3s_validation_results": {
+    "timestamp": "2025-07-29T15:46:06.585258+00:00",
+    "test_suite": "K3s Validation",
+    "namespace": "k3s-test",
+    "summary": {},
+    "cluster_info": {},
+    "categories_run": ["core", "k3s-specific", "performance", "security", "production"],
+    "exit_code": 1,
+    "duration": 2.8192930221557617,
+    "report_files": []
+  },
+  "integration_summary": {
+    "frameworks_run": ["k3s_validation"],
+    "total_duration": 2.846163749694824,
+    "python_framework_status": "skipped",
+    "k3s_validation_status": "fail"
+  },
+  "recommendations": ["Review K3s validation test failures for cluster-specific issues"]
+}

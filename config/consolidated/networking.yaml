@@ -16,18 +16,18 @@ networking:
     # Environment-specific IP pools
     ip_pools:
       development:
-        addresses: "192.168.25.200-192.168.25.210"
+        addresses: "192.168.100.200-192.168.100.210"
         name: "dev-pool"
       staging:
-        addresses: "192.168.25.211-192.168.25.220"
+        addresses: "192.168.101.200-192.168.101.210"
         name: "staging-pool"
       production:
-        addresses: "192.168.25.221-192.168.25.230"
+        addresses: "192.168.16.200-192.168.16.210"
         name: "prod-pool"
 
     # Default pool (fallback)
     default_pool:
-      addresses: "192.168.25.200-192.168.25.210"
+      addresses: "192.168.100.200-192.168.100.210"
       name: "default"
 
   # Ingress Configuration

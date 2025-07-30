@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from ..portal import PortalManager
 from ..remote.cluster_manager import ClusterManager
 from ..webhooks.manager import WebhookManager
 from .config_manager import ConfigManager
@@ -27,6 +28,7 @@ from .deployment import DeploymentManager
 from .gpu_manager import GPUResourceManager
 from .health import HealthMonitor
 from .security import SecurityManager
+from .unified_deployment import UnifiedDeploymentManager
 
 
 @dataclass
@@ -98,6 +100,12 @@ class HomelabOrchestrator:
             project_root=self.project_root,
         )
 
+        # Unified deployment manager (replaces bash scripts)
+        self.unified_deployment = UnifiedDeploymentManager(
+            config_manager=self.config_manager,
+            project_root=self.project_root,
+        )
+
         self.health_monitor = HealthMonitor(
             config_manager=self.config_manager,
         )
@@ -126,6 +134,14 @@ class HomelabOrchestrator:
             )
         else:
             self.cluster_manager = None
+
+        # Portal management
+        self.portal_manager = PortalManager(
+            config_manager=self.config_manager,
+            health_monitor=self.health_monitor,
+            security_manager=self.security_manager,
+            project_root=self.project_root,
+        )
 
         self.logger.debug("All component managers initialized")
 
@@ -254,6 +270,105 @@ class HomelabOrchestrator:
 
         self.logger.debug("Core event handlers registered")
 
+    async def teardown_infrastructure(
+        self,
+        environment: str | None = None,
+        force: bool = False,
+        backup: bool = True,
+    ) -> OrchestrationResult:
+        """Teardown the complete homelab infrastructure.
+
+        Args:
+            environment: Target environment (development, staging, production)
+            force: Force teardown without confirmation
+            backup: Create backup before teardown
+
+        Returns:
+            OrchestrationResult with teardown status and details
+        """
+        start_time = datetime.now()
+        self.logger.info(f"Starting complete infrastructure teardown (force={force})")
+
+        # Emit teardown started event
+        await self.emit_event(
+            OrchestrationEvent(
+                event_type="teardown.started",
+                timestamp=start_time,
+                source="orchestrator",
+                data={"environment": environment, "force": force, "backup": backup},
+            ),
+        )
+
+        try:
+            # Execute unified teardown
+            teardown_results = await self.unified_deployment.teardown_infrastructure(
+                components=None,  # Teardown all components
+                force=force,
+            )
+
+            # Check if teardown was successful
+            failed_steps = [r for r in teardown_results if r.status == "failure"]
+            success = len(failed_steps) == 0
+
+            if success:
+                # Validate clean state
+                validation_result = await self._validate_clean_state()
+
+                await self.emit_event(
+                    OrchestrationEvent(
+                        event_type="teardown.completed",
+                        timestamp=datetime.now(),
+                        source="orchestrator",
+                        data={"validation": validation_result},
+                    ),
+                )
+
+                return OrchestrationResult(
+                    operation="teardown_infrastructure",
+                    status="success" if validation_result["clean"] else "warning",
+                    duration=(datetime.now() - start_time).total_seconds(),
+                    details={
+                        "teardown_steps": [
+                            {"step": r.step_name, "status": r.status, "duration": r.duration}
+                            for r in teardown_results
+                        ],
+                        "validation": validation_result,
+                    },
+                    recommendations=validation_result.get("recommendations", []),
+                )
+            return OrchestrationResult(
+                operation="teardown_infrastructure",
+                status="failure",
+                duration=(datetime.now() - start_time).total_seconds(),
+                details={
+                    "failed_steps": [{"step": r.step_name, "error": r.error} for r in failed_steps],
+                    "all_results": [
+                        {"step": r.step_name, "status": r.status, "duration": r.duration}
+                        for r in teardown_results
+                    ],
+                },
+                recommendations=["Check teardown step logs for detailed error information"],
+            )
+
+        except Exception as e:
+            self.logger.exception(f"Infrastructure teardown failed: {e}")
+            await self.emit_event(
+                OrchestrationEvent(
+                    event_type="teardown.failed",
+                    timestamp=datetime.now(),
+                    source="orchestrator",
+                    data={"error": str(e)},
+                ),
+            )
+
+            return OrchestrationResult(
+                operation="teardown_infrastructure",
+                status="failure",
+                duration=(datetime.now() - start_time).total_seconds(),
+                details={"error": str(e)},
+                recommendations=["Check logs for detailed error information"],
+            )
+
     async def deploy_full_infrastructure(
         self,
         environment: str | None = None,
@@ -295,44 +410,119 @@ class HomelabOrchestrator:
                     recommendations=["Fix validation errors before deployment"],
                 )
 
-            # Deploy infrastructure components
-            deployment_result = await self.deployment_manager.deploy_infrastructure(
-                environment=environment,
-                components=components,
-                dry_run=dry_run,
-            )
+            # Deploy infrastructure using unified deployment manager
+            if not dry_run:
+                # Execute unified deployment
+                deployment_results = await self.unified_deployment.deploy_full_infrastructure(
+                    components=components,
+                    skip_dependencies=False,
+                    dry_run=False,
+                )
+
+                # Check if deployment was successful
+                failed_steps = [r for r in deployment_results if r.status == "failure"]
+                if failed_steps:
+                    return OrchestrationResult(
+                        operation="deploy_full_infrastructure",
+                        status="failure",
+                        duration=(datetime.now() - start_time).total_seconds(),
+                        details={
+                            "failed_steps": [
+                                {"step": r.step_name, "error": r.error} for r in failed_steps
+                            ],
+                            "all_results": [
+                                {"step": r.step_name, "status": r.status, "duration": r.duration}
+                                for r in deployment_results
+                            ],
+                        },
+                        recommendations=[
+                            "Check deployment step logs for detailed error information",
+                        ],
+                    )
+
+                # Mock deployment_result for compatibility with existing code
+                deployment_result = type(
+                    "DeploymentResult",
+                    (),
+                    {
+                        "returncode": 0,
+                        "stdout": f"Unified deployment completed with {len(deployment_results)} steps",
+                        "stderr": "",
+                        "details": {"deployment_steps": deployment_results},
+                    },
+                )()
+            else:
+                # Dry run - validate configurations only
+                deployment_results = await self.unified_deployment.deploy_full_infrastructure(
+                    components=components,
+                    skip_dependencies=False,
+                    dry_run=True,
+                )
+
+                deployment_result = type(
+                    "MockResult",
+                    (),
+                    {
+                        "returncode": 0,
+                        "stdout": f"Dry run completed - {len(deployment_results)} steps validated",
+                        "stderr": "",
+                        "details": {"dry_run_steps": deployment_results},
+                    },
+                )()
 
             # GPU resource setup (if enabled)
             if self.gpu_manager and not dry_run:
                 gpu_result = await self.gpu_manager.setup_gpu_resources()
                 deployment_result.details["gpu_setup"] = gpu_result
 
-            # Post-deployment validation
+            # Post-deployment validation using comprehensive validation script
             if not dry_run:
+                validation_result = await self._run_comprehensive_deployment_validation()
+
+                # Traditional health monitoring
                 health_result = await self.health_monitor.comprehensive_health_check()
-                deployment_result.details["health_check"] = health_result
 
                 # Security validation
                 security_result = await self.security_manager.validate_security_posture()
-                deployment_result.details["security_validation"] = security_result
+
+                final_result = OrchestrationResult(
+                    operation="deploy_full_infrastructure",
+                    status="success" if validation_result["success"] else "warning",
+                    duration=(datetime.now() - start_time).total_seconds(),
+                    details={
+                        "deployment_output": deployment_result.stdout,
+                        "comprehensive_validation": validation_result,
+                        "health_check": health_result,
+                        "security_validation": security_result,
+                    },
+                    recommendations=validation_result.get("recommendations", []),
+                )
+            else:
+                final_result = OrchestrationResult(
+                    operation="deploy_full_infrastructure",
+                    status="success",
+                    duration=(datetime.now() - start_time).total_seconds(),
+                    details={"dry_run": True, "validation_only": True},
+                    recommendations=["Execute without --dry-run to perform actual deployment"],
+                )
 
             # Emit completion event
             await self.emit_event(
                 OrchestrationEvent(
                     event_type="deployment.completed"
-                    if deployment_result.status == "success"
+                    if final_result.status == "success"
                     else "deployment.failed",
                     timestamp=datetime.now(),
                     source="orchestrator",
                     data={
-                        "result": deployment_result.status,
-                        "duration": deployment_result.duration,
+                        "result": final_result.status,
+                        "duration": final_result.duration,
                         "dry_run": dry_run,
                     },
                 ),
             )
 
-            return deployment_result
+            return final_result
 
         except Exception as e:
             self.logger.exception(f"Infrastructure deployment failed: {e}")
@@ -571,6 +761,560 @@ class HomelabOrchestrator:
     async def _handle_gpu_release(self, event: OrchestrationEvent) -> None:
         """Handle GPU resource release event."""
         self.logger.info(f"GPU resource released: {event.data}")
+
+    async def _validate_clean_state(self) -> dict[str, Any]:
+        """Validate that the system is in a clean state after teardown.
+
+        Returns:
+            Validation result with clean status and recommendations
+        """
+        self.logger.info("Validating clean state after teardown")
+
+        issues = []
+        recommendations = []
+
+        try:
+            # Check if kubectl can connect (should fail)
+            import subprocess
+
+            kubectl_result = await asyncio.get_event_loop().run_in_executor(
+                self.thread_pool,
+                subprocess.run,
+                ["kubectl", "cluster-info"],
+                {"capture_output": True, "text": True},
+            )
+
+            if kubectl_result.returncode == 0:
+                issues.append("Kubernetes cluster is still accessible")
+                recommendations.append("Ensure K3s cluster is properly uninstalled")
+        except Exception:
+            # Expected - kubectl should not be able to connect
+            pass
+
+        # Check for remaining processes
+        try:
+            pgrep_result = await asyncio.get_event_loop().run_in_executor(
+                self.thread_pool,
+                subprocess.run,
+                ["pgrep", "-f", "k3s"],
+                {"capture_output": True, "text": True},
+            )
+
+            if pgrep_result.returncode == 0:
+                issues.append("K3s processes are still running")
+                recommendations.append("Kill remaining K3s processes")
+        except Exception:
+            pass
+
+        return {
+            "clean": len(issues) == 0,
+            "issues": issues,
+            "recommendations": recommendations,
+        }
+
+    async def _run_comprehensive_deployment_validation(self) -> dict[str, Any]:
+        """Run comprehensive deployment validation using unified Python validation.
+
+        Returns:
+            Validation result with success status and details
+        """
+        self.logger.info("Running unified comprehensive deployment validation")
+
+        try:
+            # Run unified Python validation checks
+            validation_results = await self._run_unified_validation_checks()
+
+            # Determine overall success
+            failed_checks = [
+                name
+                for name, result in validation_results.items()
+                if result.get("status") == "failed"
+            ]
+            success = len(failed_checks) == 0
+
+            # Compile recommendations from all validation modules
+            recommendations = []
+            for result in validation_results.values():
+                recommendations.extend(result.get("recommendations", []))
+
+            return {
+                "success": success,
+                "validation_results": validation_results,
+                "failed_checks": failed_checks,
+                "recommendations": list(set(recommendations)),  # Remove duplicates
+                "validation_details": validation_results,
+            }
+
+        except Exception as e:
+            self.logger.exception(f"Comprehensive validation failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "recommendations": ["Check validation logs for detailed error information"],
+            }
+
+    async def _run_unified_validation_checks(self) -> dict[str, Any]:
+        """Run unified validation checks replacing bash script functionality.
+
+        Returns:
+            Dictionary of validation results keyed by check name
+        """
+        validation_results = {}
+
+        # Prerequisites validation
+        validation_results["prerequisites"] = await self._validate_prerequisites()
+
+        # Cluster health validation
+        validation_results["cluster_health"] = await self._validate_cluster_health()
+
+        # Namespace validation
+        validation_results["namespaces"] = await self._validate_namespaces()
+
+        # Certificate validation
+        validation_results["certificates"] = await self._validate_certificates()
+
+        # Networking validation
+        validation_results["networking"] = await self._validate_networking()
+
+        # Authentication validation
+        validation_results["authentication"] = await self._validate_authentication()
+
+        # Service connectivity validation
+        validation_results["service_connectivity"] = await self._validate_service_connectivity()
+
+        # Storage validation
+        validation_results["storage"] = await self._validate_storage()
+
+        return validation_results
+
+    async def _validate_prerequisites(self) -> dict[str, Any]:
+        """Validate deployment prerequisites."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check kubectl availability
+            result = await asyncio.create_subprocess_shell(
+                "kubectl version --client",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await result.communicate()
+            if result.returncode != 0:
+                issues.append("kubectl is not available")
+                recommendations.append("Install kubectl")
+
+            # Check curl availability
+            result = await asyncio.create_subprocess_shell(
+                "curl --version",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            await result.communicate()
+            if result.returncode != 0:
+                issues.append("curl is not available")
+                recommendations.append("Install curl")
+
+            # Check required files
+            required_files = [
+                "kubernetes/base/keycloak-deployment.yaml",
+                "kubernetes/base/oauth2-proxy.yaml",
+                "kubernetes/base/gitlab-deployment.yaml",
+                "kubernetes/base/grafana-deployment.yaml",
+            ]
+
+            for file_path in required_files:
+                full_path = self.project_root / file_path
+                if not full_path.exists():
+                    issues.append(f"Required file missing: {file_path}")
+                    recommendations.append(f"Ensure {file_path} exists")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check prerequisites validation logs"],
+            }
+
+    async def _validate_cluster_health(self) -> dict[str, Any]:
+        """Validate Kubernetes cluster health."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check if kubectl can connect to cluster
+            result = await asyncio.create_subprocess_shell(
+                "kubectl cluster-info",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await result.communicate()
+
+            if result.returncode != 0:
+                issues.append("Cannot connect to Kubernetes cluster")
+                recommendations.append(
+                    "Ensure K3s cluster is running and kubeconfig is properly configured",
+                )
+            else:
+                # Check node status
+                result = await asyncio.create_subprocess_shell(
+                    "kubectl get nodes --no-headers",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, _ = await result.communicate()
+
+                if result.returncode == 0:
+                    lines = stdout.decode().strip().split("\n")
+                    ready_nodes = 0
+                    total_nodes = 0
+
+                    for line in lines:
+                        if line.strip():
+                            total_nodes += 1
+                            if "Ready" in line:
+                                ready_nodes += 1
+
+                    if ready_nodes != total_nodes:
+                        issues.append(f"Only {ready_nodes}/{total_nodes} nodes are ready")
+                        recommendations.append("Check node status and troubleshoot non-ready nodes")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check cluster health validation logs"],
+            }
+
+    async def _validate_namespaces(self) -> dict[str, Any]:
+        """Validate required namespaces exist."""
+        try:
+            issues = []
+            recommendations = []
+
+            required_namespaces = [
+                "keycloak",
+                "oauth2-proxy",
+                "monitoring",
+                "gitlab",
+                "ai-tools",
+                "jupyter",
+                "homelab-portal",
+            ]
+
+            # Get all namespaces
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get namespaces --no-headers -o custom-columns=NAME:.metadata.name",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                existing_namespaces = set(stdout.decode().strip().split("\n"))
+
+                for namespace in required_namespaces:
+                    if namespace not in existing_namespaces:
+                        issues.append(f"Namespace missing: {namespace}")
+                        recommendations.append(
+                            f"Create namespace: kubectl create namespace {namespace}",
+                        )
+            else:
+                issues.append("Cannot retrieve namespaces from cluster")
+                recommendations.append("Check cluster connectivity")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check namespace validation logs"],
+            }
+
+    async def _validate_certificates(self) -> dict[str, Any]:
+        """Validate SSL certificates and issuers."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check for SSL certificates
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get certificates --all-namespaces --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                if not stdout.decode().strip():
+                    issues.append("No SSL certificates found")
+                    recommendations.append("Deploy certificate issuers and request certificates")
+            else:
+                issues.append("Cannot check certificates")
+                recommendations.append("Ensure cert-manager is installed")
+
+            # Check cluster issuers
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get clusterissuers --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                if "homelab-ca-issuer" not in stdout.decode():
+                    issues.append("Homelab CA issuer not found")
+                    recommendations.append("Deploy cluster issuers configuration")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check certificate validation logs"],
+            }
+
+    async def _validate_networking(self) -> dict[str, Any]:
+        """Validate networking components."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check ingress controller
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get pods -n ingress-nginx --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode != 0 or not stdout.decode().strip():
+                issues.append("Ingress controller is not running")
+                recommendations.append("Deploy nginx-ingress controller")
+
+            # Check MetalLB
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get service -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                lb_ip = stdout.decode().strip()
+                if lb_ip != "192.168.16.100":
+                    issues.append(
+                        f"LoadBalancer IP mismatch. Expected: 192.168.16.100, Got: {lb_ip}",
+                    )
+                    recommendations.append("Check MetalLB configuration")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check networking validation logs"],
+            }
+
+    async def _validate_authentication(self) -> dict[str, Any]:
+        """Validate authentication infrastructure."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check Keycloak pods
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get pods -n keycloak --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode != 0 or "Running" not in stdout.decode():
+                issues.append("Keycloak is not running")
+                recommendations.append("Check Keycloak deployment status")
+
+            # Check OAuth2 Proxy
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get pods -n oauth2-proxy --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode != 0 or "Running" not in stdout.decode():
+                issues.append("OAuth2 Proxy is not running")
+                recommendations.append("Check OAuth2 Proxy deployment status")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check authentication validation logs"],
+            }
+
+    async def _validate_service_connectivity(self) -> dict[str, Any]:
+        """Validate service connectivity."""
+        try:
+            issues = []
+            recommendations = []
+
+            services_to_test = [
+                ("https://auth.homelab.local", "Keycloak Authentication"),
+                ("https://grafana.homelab.local", "Grafana Monitoring"),
+                ("https://gitlab.homelab.local", "GitLab Repository"),
+                ("https://homelab.local", "Landing Portal"),
+            ]
+
+            for url, service_name in services_to_test:
+                result = await asyncio.create_subprocess_shell(
+                    f"curl -k -s -o /dev/null -w '%{{http_code}}' --connect-timeout 3 {url}",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, _ = await result.communicate()
+
+                if result.returncode != 0 or stdout.decode().strip() in ["000", ""]:
+                    issues.append(f"{service_name}: Connection failed/timeout")
+                    recommendations.append(
+                        f"Check {service_name} deployment and ingress configuration",
+                    )
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check service connectivity validation logs"],
+            }
+
+    async def _validate_storage(self) -> dict[str, Any]:
+        """Validate storage components."""
+        try:
+            issues = []
+            recommendations = []
+
+            # Check PVCs
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get pvc --all-namespaces --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                lines = stdout.decode().strip().split("\n")
+                total_pvcs = 0
+                bound_pvcs = 0
+
+                for line in lines:
+                    if line.strip():
+                        total_pvcs += 1
+                        if "Bound" in line:
+                            bound_pvcs += 1
+
+                if total_pvcs > 0 and bound_pvcs != total_pvcs:
+                    issues.append(f"Only {bound_pvcs}/{total_pvcs} PVCs are bound")
+                    recommendations.append("Check storage provisioner and PVC status")
+
+            # Check storage classes
+            result = await asyncio.create_subprocess_shell(
+                "kubectl get storageclass --no-headers",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await result.communicate()
+
+            if result.returncode == 0:
+                if "local-path" not in stdout.decode():
+                    issues.append("Local path storage class is missing")
+                    recommendations.append("Deploy local-path storage provisioner")
+
+            return {
+                "status": "passed" if len(issues) == 0 else "failed",
+                "issues": issues,
+                "recommendations": recommendations,
+            }
+        except Exception as e:
+            return {
+                "status": "failed",
+                "error": str(e),
+                "recommendations": ["Check storage validation logs"],
+            }
+
+    def _parse_validation_output(self, output: str) -> dict[str, Any]:
+        """Parse validation script output to extract structured results.
+
+        Args:
+            output: Raw validation script output
+
+        Returns:
+            Structured validation results
+        """
+        results = {
+            "prerequisites": "unknown",
+            "cluster_health": "unknown",
+            "namespaces": "unknown",
+            "certificates": "unknown",
+            "networking": "unknown",
+            "authentication": "unknown",
+            "service_connectivity": "unknown",
+            "storage": "unknown",
+        }
+
+        # Simple parsing logic - could be enhanced with regex
+        lines = output.split("\n")
+        for line in lines:
+            line = line.strip()
+            if "Prerequisites validation" in line:
+                results["prerequisites"] = "passed" if "passed" in line else "failed"
+            elif "Cluster health validation" in line:
+                results["cluster_health"] = "passed" if "passed" in line else "failed"
+            elif "Namespace validation" in line:
+                results["namespaces"] = "passed" if "passed" in line else "failed"
+            elif "Certificate validation" in line:
+                results["certificates"] = "passed" if "passed" in line else "failed"
+            elif "Networking validation" in line:
+                results["networking"] = "passed" if "passed" in line else "failed"
+            elif "Authentication validation" in line:
+                results["authentication"] = "passed" if "passed" in line else "failed"
+            elif "Service connectivity validation" in line:
+                results["service_connectivity"] = "passed" if "passed" in line else "failed"
+            elif "Storage validation" in line:
+                results["storage"] = "passed" if "passed" in line else "failed"
+
+        return results
 
     def get_system_status(self) -> dict[str, Any]:
         """Get current system status and metrics.

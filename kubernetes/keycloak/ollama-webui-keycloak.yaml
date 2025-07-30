@@ -1,0 +1,106 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ollama-oauth-secret
+  namespace: ai-tools
+type: Opaque
+stringData:
+  client-secret: ollama-webui-client-secret
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: open-webui-config
+  namespace: ai-tools
+data:
+  # OpenWebUI environment configuration for Keycloak
+  oauth.env: |
+    ENABLE_OAUTH_SIGNUP=true
+    OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: ai-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+      - name: open-webui
+        image: ghcr.io/open-webui/open-webui:main
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OLLAMA_BASE_URL
+          value: "http://ollama:11434"
+        - name: WEBUI_SECRET_KEY
+          value: "your-secret-key-change-this"
+
+        # Keycloak OIDC Configuration
+        - name: ENABLE_OAUTH_SIGNUP
+          value: "true"
+        - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+          value: "true"
+        - name: OPENID_PROVIDER_URL
+          value: "https://auth.homelab.local/realms/homelab/.well-known/openid-configuration"
+        - name: OPENID_CLIENT_ID
+          value: "ollama-webui"
+        - name: OPENID_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ollama-oauth-secret
+              key: client-secret
+        - name: OPENID_SCOPES
+          value: "openid profile email roles"
+        - name: OPENID_REDIRECT_URI
+          value: "https://ollama.homelab.local/oauth/openid/callback"
+
+        # User info mapping
+        - name: OPENID_USERNAME_CLAIM
+          value: "preferred_username"
+        - name: OPENID_EMAIL_CLAIM
+          value: "email"
+        - name: OPENID_FULLNAME_CLAIM
+          value: "name"
+
+        # Role mapping for admin access
+        - name: WEBUI_AUTH_TRUSTED_EMAIL_HEADER
+          value: "X-Auth-Request-Email"
+        - name: WEBUI_AUTH_TRUSTED_NAME_HEADER
+          value: "X-Auth-Request-User"
+
+        volumeMounts:
+        - name: webui-data
+          mountPath: /app/backend/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "250m"
+          limits:
+            memory: "3Gi"
+            cpu: "1000m"
+      volumes:
+      - name: webui-data
+        persistentVolumeClaim:
+          claimName: open-webui-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open-webui-data
+  namespace: ai-tools
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

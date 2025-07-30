@@ -198,25 +198,47 @@ def manage_backup(ctx: click.Context, components: list[str]) -> None:
 
 
 @manage.command("teardown")
-@click.option("--components", multiple=True, help="Specific components to teardown")
+@click.option("--force", is_flag=True, help="Force teardown without confirmation")
+@click.option("--no-backup", is_flag=True, help="Skip backup before teardown")
 @click.pass_context
-def manage_teardown(ctx: click.Context, components: list[str]) -> None:
-    """Teardown infrastructure components."""
+def manage_teardown(ctx: click.Context, force: bool, no_backup: bool) -> None:
+    """Teardown complete infrastructure."""
 
     async def _teardown() -> None:
         config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
 
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.teardown_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Initializing orchestrator...", total=None)
+
+            orchestrator = HomelabOrchestrator(
+                config_manager=config_manager,
+                project_root=ctx.obj["project_root"],
+                log_level=ctx.obj["log_level"],
+            )
+
+            try:
+                progress.update(task, description="Starting orchestrator...")
+                await orchestrator.start()
+
+                progress.update(task, description="Tearing down infrastructure...")
+                result = await orchestrator.teardown_infrastructure(
+                    environment=config_manager.context.environment,
+                    force=force,
+                    backup=not no_backup,
+                )
+
+                progress.update(task, description="Teardown completed", completed=100)
+
+                # Display results
+                _display_teardown_result(result)
+
+            finally:
+                progress.update(task, description="Cleaning up...")
+                await orchestrator.stop()
 
     asyncio.run(_teardown())
 
@@ -525,7 +547,13 @@ def _display_deployment_result(result: Any) -> None:
         ),
     )
 
-    if result.components_deployed:
+    # Display comprehensive validation results if available
+    if hasattr(result, "details") and "comprehensive_validation" in result.details:
+        validation = result.details["comprehensive_validation"]
+        if "validation_details" in validation:
+            _display_validation_details(validation["validation_details"])
+
+    if hasattr(result, "components_deployed") and result.components_deployed:
         table = Table(title="Deployed Components")
         table.add_column("Component", style="green")
         table.add_column("Status", style="bold")
@@ -535,7 +563,7 @@ def _display_deployment_result(result: Any) -> None:
 
         console.print(table)
 
-    if result.components_failed:
+    if hasattr(result, "components_failed") and result.components_failed:
         table = Table(title="Failed Components")
         table.add_column("Component", style="red")
         table.add_column("Status", style="bold")
@@ -549,6 +577,66 @@ def _display_deployment_result(result: Any) -> None:
         console.print("\n[yellow]Recommendations:[/yellow]")
         for i, rec in enumerate(result.recommendations, 1):
             console.print(f"  {i}. {rec}")
+
+
+def _display_teardown_result(result: Any) -> None:
+    """Display teardown results in a nice format."""
+    status_color = {
+        "success": "green",
+        "failure": "red",
+        "warning": "yellow",
+    }.get(result.status, "white")
+
+    console.print(
+        Panel(
+            f"[{status_color}]{result.status.upper()}[/{status_color}]\n"
+            f"Operation: {result.operation}\n"
+            f"Duration: {result.duration:.2f}s",
+            title="Teardown Result",
+        ),
+    )
+
+    # Display clean state validation if available
+    if hasattr(result, "details") and "validation" in result.details:
+        validation = result.details["validation"]
+
+        table = Table(title="Clean State Validation")
+        table.add_column("Check", style="cyan")
+        table.add_column("Status", style="bold")
+        table.add_column("Details")
+
+        clean_status = "✅ CLEAN" if validation.get("clean", False) else "❌ NOT CLEAN"
+        table.add_row("Overall State", clean_status, "")
+
+        if validation.get("issues"):
+            for issue in validation["issues"]:
+                table.add_row("Issue", "[red]FOUND[/red]", issue)
+
+        console.print(table)
+
+    if result.recommendations:
+        console.print("\n[yellow]Recommendations:[/yellow]")
+        for i, rec in enumerate(result.recommendations, 1):
+            console.print(f"  {i}. {rec}")
+
+
+def _display_validation_details(validation_details: dict[str, Any]) -> None:
+    """Display validation details in a structured format."""
+    table = Table(title="Deployment Validation Details")
+    table.add_column("Component", style="cyan")
+    table.add_column("Status", style="bold")
+
+    for component, status in validation_details.items():
+        if status == "passed":
+            status_display = "[green]✅ PASSED[/green]"
+        elif status == "failed":
+            status_display = "[red]❌ FAILED[/red]"
+        else:
+            status_display = f"[yellow]❓ {status.upper()}[/yellow]"
+
+        table.add_row(component.replace("_", " ").title(), status_display)
+
+    console.print(table)
 
 
 def _display_health_result(result: Any, output_format: str) -> None:

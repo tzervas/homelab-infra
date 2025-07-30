@@ -164,6 +164,72 @@ check_service_connectivity() {
     fi
 }
 
+check_keycloak_auth() {
+    log "${BLUE}🔍 Checking Keycloak authentication...${NC}"
+
+    # Check Keycloak realm endpoint
+    local keycloak_response=$(curl -k -s --max-time 10 "https://auth.homelab.local/realms/homelab" 2>/dev/null)
+    if echo "$keycloak_response" | grep -q "homelab"; then
+        log "${GREEN}${CHECK} Keycloak realm is accessible${NC}"
+    else
+        log "${RED}${CROSS} Keycloak realm check failed${NC}"
+        return 1
+    fi
+
+    # Check OAuth2 Proxy health
+    local oauth_pods=$(kubectl get pods -n oauth2-proxy -l app=oauth2-proxy --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+    if [[ "$oauth_pods" -gt 0 ]]; then
+        log "${GREEN}${CHECK} OAuth2 Proxy is running ($oauth_pods pods)${NC}"
+    else
+        log "${RED}${CROSS} OAuth2 Proxy is not running properly${NC}"
+        return 1
+    fi
+
+    # Check OAuth2 Proxy logs for authentication issues
+    local recent_errors=$(kubectl logs -n oauth2-proxy -l app=oauth2-proxy --since=1m 2>/dev/null | grep -i "error\|failed" | wc -l)
+    if [[ "$recent_errors" -gt 5 ]]; then
+        log "${YELLOW}${WARN} OAuth2 Proxy has $recent_errors recent errors${NC}"
+    else
+        log "${GREEN}${CHECK} OAuth2 Proxy error rate is acceptable${NC}"
+    fi
+
+    return 0
+}
+
+check_certificate_validity() {
+    log "${BLUE}🔍 Checking certificate validity...${NC}"
+
+    local domains=("auth.homelab.local" "homelab.local" "grafana.homelab.local" "prometheus.homelab.local" "gitlab.homelab.local" "ollama.homelab.local" "jupyter.homelab.local")
+    local failed_certs=0
+
+    for domain in "${domains[@]}"; do
+        local cert_info=$(echo | timeout 5 openssl s_client -connect "${domain}:443" -servername "$domain" 2>/dev/null | openssl x509 -noout -dates 2>/dev/null)
+        if [[ -n "$cert_info" ]]; then
+            local not_after=$(echo "$cert_info" | grep "notAfter" | cut -d= -f2)
+            local expiry_date=$(date -d "$not_after" +%s 2>/dev/null)
+            local current_date=$(date +%s)
+            local days_until_expiry=$(( (expiry_date - current_date) / 86400 ))
+
+            if [[ "$days_until_expiry" -gt 7 ]]; then
+                log "${GREEN}${CHECK} Certificate for $domain expires in $days_until_expiry days${NC}"
+            elif [[ "$days_until_expiry" -gt 0 ]]; then
+                log "${YELLOW}${WARN} Certificate for $domain expires in $days_until_expiry days${NC}"
+            else
+                log "${RED}${CROSS} Certificate for $domain has expired${NC}"
+                failed_certs=$((failed_certs + 1))
+            fi
+        else
+            log "${YELLOW}${WARN} Could not check certificate for $domain${NC}"
+        fi
+    done
+
+    if [[ "$failed_certs" -gt 0 ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
 check_all_services() {
     log "${BLUE}🔍 Checking service connectivity...${NC}"
 
@@ -187,7 +253,7 @@ check_all_services() {
 
 perform_health_check() {
     local checks_passed=0
-    local total_checks=5
+    local total_checks=7
 
     echo "═══════════════════════════════════════════"
     log "${BLUE}🏠 HOMELAB INFRASTRUCTURE HEALTH CHECK${NC}"
@@ -201,6 +267,10 @@ perform_health_check() {
     if check_certificates; then checks_passed=$((checks_passed + 1)); fi
     echo
     if check_storage; then checks_passed=$((checks_passed + 1)); fi
+    echo
+    if check_keycloak_auth; then checks_passed=$((checks_passed + 1)); fi
+    echo
+    if check_certificate_validity; then checks_passed=$((checks_passed + 1)); fi
     echo
     if check_all_services; then checks_passed=$((checks_passed + 1)); fi
     echo
@@ -216,9 +286,11 @@ perform_health_check() {
         log "${GREEN}${CHECK} Service pods: All running${NC}"
         log "${GREEN}${CHECK} SSL certificates: All valid${NC}"
         log "${GREEN}${CHECK} Storage: All volumes bound${NC}"
+        log "${GREEN}${CHECK} Keycloak authentication: Working${NC}"
+        log "${GREEN}${CHECK} Certificate validity: All current${NC}"
         log "${GREEN}${CHECK} Service connectivity: All accessible${NC}"
         echo
-        log "${GREEN}✨ Your homelab infrastructure is ready for production use!${NC}"
+        log "${GREEN}✨ Your homelab infrastructure with Keycloak SSO is ready for production use!${NC}"
         return 0
     else
         local failed_checks=$((total_checks - checks_passed))

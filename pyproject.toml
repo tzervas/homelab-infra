@@ -33,8 +33,6 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "jsonschema>=4.19.0",
-<<<<<<< HEAD
-<<<<<<< HEAD
     "ansible-core>=2.16.0", # Required by ansible-lint
     "python-dotenv>=1.0.0", # For environment variable management
     # Unified orchestrator dependencies
@@ -58,32 +56,6 @@ dependencies = [
     "python-multipart>=0.0.18", # Form data
     "jinja2>=3.1.4", # Template engine
     "aiofiles>=24.1.0", # Async file operations
-=======
-    "ansible-core>=2.16.0",  # Required by ansible-lint
-    "python-dotenv>=1.0.0",  # For environment variable management
-    # Unified orchestrator dependencies
-    "rich>=13.0.0",  # CLI and console output
-    "aiohttp>=3.8.0",  # Async HTTP client
-    "asyncio-mqtt>=0.16.0",  # MQTT client for webhooks
-    "click>=8.0.0",  # CLI framework
-    "dataclasses-json>=0.5.0",  # JSON serialization for dataclasses
-    "keyring>=24.0.0",  # Secure credential storage
-    "paramiko>=3.0.0",  # SSH client for remote cluster management
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
-=======
-    "ansible-core>=2.16.0", # Required by ansible-lint
-    "python-dotenv>=1.0.0", # For environment variable management
-    # Unified orchestrator dependencies
-    "rich>=13.0.0", # CLI and console output
-    "aiohttp>=3.8.0", # Async HTTP client
-    "asyncio-mqtt>=0.16.0", # MQTT client for webhooks
-    "click>=8.0.0", # CLI framework
-    "dataclasses-json>=0.5.0", # JSON serialization for dataclasses
-    "keyring>=24.0.0", # Secure credential storage
-    "paramiko>=3.0.0", # SSH client for remote cluster management
-    "pytest>=8.4.1",
-    "pytest-cov>=6.2.1",
->>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
 ]
 
 [project.optional-dependencies]
@@ -134,16 +106,7 @@ homelab-integration = "scripts.testing.integration_tester:main"
 # Unified orchestrator scripts
 homelab = "homelab_orchestrator.cli:main"
 homelab-orchestrator = "homelab_orchestrator.cli:main"
-<<<<<<< HEAD
 homelab-portal = "homelab_orchestrator.portal.main:run_server"
-
-[dependency-groups]
-dev = [
-    "mypy>=1.17.0",
-    "ruff>=0.12.5",
-]
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 [dependency-groups]
 dev = [

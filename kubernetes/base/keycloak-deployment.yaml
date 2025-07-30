@@ -273,10 +273,7 @@ data:
             "https://grafana.homelab.local/*",
             "https://prometheus.homelab.local/*",
             "https://gitlab.homelab.local/*",
-<<<<<<< HEAD
             "https://gitlab.homelab.local/users/auth/openid_connect/callback",
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
             "https://ollama.homelab.local/*",
             "https://jupyter.homelab.local/*"
           ],

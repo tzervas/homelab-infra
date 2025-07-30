@@ -1,0 +1,1121 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      generateName: prometheus-6b9497f7-
+      labels:
+        app: prometheus
+        pod-template-hash: 6b9497f7
+      name: prometheus-6b9497f7-9ls5j
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: prometheus-6b9497f7
+          uid: c2570bea-1be1-42b5-ae55-1240c1b8fd9a
+      resourceVersion: "4467"
+      uid: d6cd085d-259a-47bc-8460-8446fca03538
+    spec:
+      containers:
+        - args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.console.libraries=/etc/prometheus/console_libraries
+            - --web.console.templates=/etc/prometheus/consoles
+            - --storage.tsdb.retention.time=200h
+            - --web.enable-lifecycle
+          image: prom/prometheus:latest
+          imagePullPolicy: Always
+          name: prometheus
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/prometheus
+              name: config-volume
+            - mountPath: /prometheus
+              name: storage-volume
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-j2tzb
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: prometheus-config
+          name: config-volume
+        - emptyDir: {}
+          name: storage-volume
+        - name: kube-api-access-j2tzb
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:03Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:11Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:11Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:10:03Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://d89a4603f15c600b9c25d1d13475e2e481af4e06e32e8e03bf34513ae5ef403d
+          image: docker.io/prom/prometheus:latest
+          imageID: docker.io/prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+          lastState: {}
+          name: prometheus
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:10:10Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.18
+      podIPs:
+        - ip: 10.42.0.18
+      qosClass: BestEffort
+      startTime: "2025-07-29T00:10:03Z"
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T18:04:52Z"
+      generateName: grafana-79c58d77df-
+      labels:
+        app: grafana
+        pod-template-hash: 79c58d77df
+      name: grafana-79c58d77df-qvgdw
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: grafana-79c58d77df
+          uid: 68e4f7e1-23c4-4783-9703-ac7c353dbd2a
+      resourceVersion: "43625"
+      uid: b1564c56-e898-45fc-8a8e-b3438d8ac8c9
+    spec:
+      containers:
+        - env:
+            - name: GF_PATHS_CONFIG
+              value: /etc/grafana/grafana.ini
+          image: grafana/grafana:11.1.3
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: grafana
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/lib/grafana
+              name: grafana-storage
+            - mountPath: /etc/grafana
+              name: grafana-config
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-5pn6p
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-data
+        - configMap:
+            defaultMode: 420
+            name: grafana-config
+          name: grafana-config
+        - name: kube-api-access-5pn6p
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T18:04:56Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T18:05:07Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T18:05:07Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T18:04:56Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://de6d4e50c4209cf7966182b46cdc73b0f6a555c702c0595fd16f8e0c29c99ed2
+          image: docker.io/grafana/grafana:11.1.3
+          imageID: docker.io/grafana/grafana@sha256:b23b588cf7cba025ec95efba82e0d8d2e5d549a8b2cb5d50332d4175693c54e0
+          lastState: {}
+          name: grafana
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T18:04:57Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.60
+      podIPs:
+        - ip: 10.42.0.60
+      qosClass: Burstable
+      startTime: "2025-07-29T18:04:56Z"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"prometheus","namespace":"monitoring"},"spec":{"ports":[{"port":9090,"protocol":"TCP","targetPort":9090}],"selector":{"app":"prometheus"}}}
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      name: prometheus
+      namespace: monitoring
+      resourceVersion: "4355"
+      uid: 6f967d8a-b825-481c-8280-779e464271a9
+    spec:
+      clusterIP: 10.43.185.234
+      clusterIPs:
+        - 10.43.185.234
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 9090
+          protocol: TCP
+          targetPort: 9090
+      selector:
+        app: prometheus
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"grafana","namespace":"monitoring"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":3000}],"selector":{"app":"grafana"}}}
+      creationTimestamp: "2025-07-28T23:00:51Z"
+      name: grafana
+      namespace: monitoring
+      resourceVersion: "43569"
+      uid: 2022fa64-b625-4fb6-8054-18896c58e7dd
+    spec:
+      clusterIP: 10.43.143.94
+      clusterIPs:
+        - 10.43.143.94
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 80
+          protocol: TCP
+          targetPort: 3000
+      selector:
+        app: grafana
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"prometheus","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"prometheus"}},"template":{"metadata":{"labels":{"app":"prometheus"}},"spec":{"containers":[{"args":["--config.file=/etc/prometheus/prometheus.yml","--storage.tsdb.path=/prometheus","--web.console.libraries=/etc/prometheus/console_libraries","--web.console.templates=/etc/prometheus/consoles","--storage.tsdb.retention.time=200h","--web.enable-lifecycle"],"image":"prom/prometheus:latest","name":"prometheus","ports":[{"containerPort":9090}],"volumeMounts":[{"mountPath":"/etc/prometheus","name":"config-volume"},{"mountPath":"/prometheus","name":"storage-volume"}]}],"volumes":[{"configMap":{"name":"prometheus-config"},"name":"config-volume"},{"emptyDir":{},"name":"storage-volume"}]}}}}
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      generation: 1
+      name: prometheus
+      namespace: monitoring
+      resourceVersion: "4472"
+      uid: e5b90947-32ba-40a2-9423-e3e0d4eb08d9
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: prometheus
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: prometheus
+        spec:
+          containers:
+            - args:
+                - --config.file=/etc/prometheus/prometheus.yml
+                - --storage.tsdb.path=/prometheus
+                - --web.console.libraries=/etc/prometheus/console_libraries
+                - --web.console.templates=/etc/prometheus/consoles
+                - --storage.tsdb.retention.time=200h
+                - --web.enable-lifecycle
+              image: prom/prometheus:latest
+              imagePullPolicy: Always
+              name: prometheus
+              ports:
+                - containerPort: 9090
+                  protocol: TCP
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/prometheus
+                  name: config-volume
+                - mountPath: /prometheus
+                  name: storage-volume
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: prometheus-config
+              name: config-volume
+            - emptyDir: {}
+              name: storage-volume
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:10:11Z"
+          lastUpdateTime: "2025-07-29T00:10:11Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:10:03Z"
+          lastUpdateTime: "2025-07-29T00:10:11Z"
+          message: ReplicaSet "prometheus-6b9497f7" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "2"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"grafana"},"name":"grafana","namespace":"monitoring"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"grafana"}},"template":{"metadata":{"labels":{"app":"grafana"}},"spec":{"containers":[{"env":[{"name":"GF_PATHS_CONFIG","value":"/etc/grafana/grafana.ini"}],"image":"grafana/grafana:11.1.3","livenessProbe":{"httpGet":{"path":"/api/health","port":3000},"initialDelaySeconds":30,"periodSeconds":10},"name":"grafana","ports":[{"containerPort":3000}],"readinessProbe":{"httpGet":{"path":"/api/health","port":3000},"initialDelaySeconds":5,"periodSeconds":5},"resources":{"limits":{"cpu":"500m","memory":"1Gi"},"requests":{"cpu":"200m","memory":"512Mi"}},"volumeMounts":[{"mountPath":"/var/lib/grafana","name":"grafana-storage"},{"mountPath":"/etc/grafana","name":"grafana-config"}]}],"volumes":[{"name":"grafana-storage","persistentVolumeClaim":{"claimName":"grafana-data"}},{"configMap":{"name":"grafana-config"},"name":"grafana-config"}]}}}}
+      creationTimestamp: "2025-07-28T23:00:51Z"
+      generation: 2
+      labels:
+        app: grafana
+      name: grafana
+      namespace: monitoring
+      resourceVersion: "43639"
+      uid: 60764bc4-ed3b-4f52-b06a-2f1841ca957e
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: grafana
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: grafana
+        spec:
+          containers:
+            - env:
+                - name: GF_PATHS_CONFIG
+                  value: /etc/grafana/grafana.ini
+              image: grafana/grafana:11.1.3
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /api/health
+                  port: 3000
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: grafana
+              ports:
+                - containerPort: 3000
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /api/health
+                  port: 3000
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 1Gi
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /var/lib/grafana
+                  name: grafana-storage
+                - mountPath: /etc/grafana
+                  name: grafana-config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: grafana-storage
+              persistentVolumeClaim:
+                claimName: grafana-data
+            - configMap:
+                defaultMode: 420
+                name: grafana-config
+              name: grafana-config
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-28T23:01:03Z"
+          lastUpdateTime: "2025-07-28T23:01:03Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-28T23:00:51Z"
+          lastUpdateTime: "2025-07-29T18:05:07Z"
+          message: ReplicaSet "grafana-79c58d77df" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 2
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      generation: 1
+      labels:
+        app: prometheus
+        pod-template-hash: 6b9497f7
+      name: prometheus-6b9497f7
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: prometheus
+          uid: e5b90947-32ba-40a2-9423-e3e0d4eb08d9
+      resourceVersion: "4470"
+      uid: c2570bea-1be1-42b5-ae55-1240c1b8fd9a
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: prometheus
+          pod-template-hash: 6b9497f7
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: prometheus
+            pod-template-hash: 6b9497f7
+        spec:
+          containers:
+            - args:
+                - --config.file=/etc/prometheus/prometheus.yml
+                - --storage.tsdb.path=/prometheus
+                - --web.console.libraries=/etc/prometheus/console_libraries
+                - --web.console.templates=/etc/prometheus/consoles
+                - --storage.tsdb.retention.time=200h
+                - --web.enable-lifecycle
+              image: prom/prometheus:latest
+              imagePullPolicy: Always
+              name: prometheus
+              ports:
+                - containerPort: 9090
+                  protocol: TCP
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /etc/prometheus
+                  name: config-volume
+                - mountPath: /prometheus
+                  name: storage-volume
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: prometheus-config
+              name: config-volume
+            - emptyDir: {}
+              name: storage-volume
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "2"
+      creationTimestamp: "2025-07-29T18:04:52Z"
+      generation: 1
+      labels:
+        app: grafana
+        pod-template-hash: 79c58d77df
+      name: grafana-79c58d77df
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: grafana
+          uid: 60764bc4-ed3b-4f52-b06a-2f1841ca957e
+      resourceVersion: "43628"
+      uid: 68e4f7e1-23c4-4783-9703-ac7c353dbd2a
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: grafana
+          pod-template-hash: 79c58d77df
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: grafana
+            pod-template-hash: 79c58d77df
+        spec:
+          containers:
+            - env:
+                - name: GF_PATHS_CONFIG
+                  value: /etc/grafana/grafana.ini
+              image: grafana/grafana:11.1.3
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /api/health
+                  port: 3000
+                  scheme: HTTP
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: grafana
+              ports:
+                - containerPort: 3000
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /api/health
+                  port: 3000
+                  scheme: HTTP
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 1Gi
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /var/lib/grafana
+                  name: grafana-storage
+                - mountPath: /etc/grafana
+                  name: grafana-config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: grafana-storage
+              persistentVolumeClaim:
+                claimName: grafana-data
+            - configMap:
+                defaultMode: 420
+                name: grafana-config
+              name: grafana-config
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-28T23:00:51Z"
+      generation: 2
+      labels:
+        app: grafana
+        pod-template-hash: 7b5976d6b6
+      name: grafana-7b5976d6b6
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: grafana
+          uid: 60764bc4-ed3b-4f52-b06a-2f1841ca957e
+      resourceVersion: "43638"
+      uid: 988fed60-e0da-44de-bb53-1260edde967e
+    spec:
+      replicas: 0
+      selector:
+        matchLabels:
+          app: grafana
+          pod-template-hash: 7b5976d6b6
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: grafana
+            pod-template-hash: 7b5976d6b6
+        spec:
+          containers:
+            - env:
+                - name: GF_SECURITY_ADMIN_PASSWORD
+                  value: admin
+              image: grafana/grafana:11.1.3
+              imagePullPolicy: IfNotPresent
+              name: grafana
+              ports:
+                - containerPort: 3000
+                  protocol: TCP
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /var/lib/grafana
+                  name: grafana-storage
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - emptyDir: {}
+              name: grafana-storage
+    status:
+      observedGeneration: 2
+      replicas: 0
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNvakNDQWtpZ0F3SUJBZ0lSQVBXa0J3N0UySHFoR2puZE5MRXU1SWd3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXhNelphRncweU5URXdNall5TXpBeE16WmEKTUFBd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUUM0d2ZySkgyMjV6YWFnTFl4dAp4U0xpdUtvU3VvSW1PdzVJTHQ0NTdna0tPYjNMR0JyOTBSVlpySmpndzZmVGdkY1lFNHdQdktnamsrMTlLT3k0CmxoaDdKVUNzWVFPb0V6b2ZqekQvZWhGTjVvTkpxZUd4TTFVQTdoSmZDZXU3bnJnZ0VQay9CeVRFRG9SSDE2cGUKUVUyZ1BPRzYvREU1b1MrV1Nyb2NqbmVnQ2Jad0x4ZXhvaFRJR240ZXY4Wm5LTTd4UFcxeFlDRGNjaFh6dEtoUQpDSENrMEk3SVArMzJ6V1dYVmU1L0xGT1RESm9ETzVMNTUxaHRwODFnd095eUgzUEw3NHcyV2liT0hJWUFqbTF5Ck1CejRtVk1uTWgxa3FhMWQ2THBkcGZoQWlzdVl2b1BqR3NwWDdpZmxCekpiaW9HZ2FZWk1YQkljNVd4cE11MDcKUldyL0FnTUJBQUdqWmpCa01BNEdBMVVkRHdFQi93UUVBd0lGb0RBTUJnTlZIUk1CQWY4RUFqQUFNQjhHQTFVZApJd1FZTUJhQUZMN1V1NU41b0ZuZm4vMDhMdlMvVGMzMDJNSE1NQ01HQTFVZEVRRUIvd1FaTUJlQ0ZXZHlZV1poCmJtRXVhRzl0Wld4aFlpNXNiMk5oYkRBS0JnZ3Foa2pPUFFRREFnTklBREJGQWlCaDRSSmxNc2gvT0J5Y3RJZ3gKVlhyOTJ3MWZQTEhTRzJXWEZiMVB3azI2UndJaEFPK211WndCSlBpdWkwWWlIVnpqNkwzNXVuUnRWbHRTQXlSbQpNUnQrZjZUOAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBdU1INnlSOXR1YzJtb0MyTWJjVWk0cmlxRXJxQ0pqc09TQzdlT2U0SkNqbTl5eGdhCi9kRVZXYXlZNE1PbjA0SFhHQk9NRDd5b0k1UHRmU2pzdUpZWWV5VkFyR0VEcUJNNkg0OHcvM29SVGVhRFNhbmgKc1ROVkFPNFNYd25ydTU2NElCRDVQd2NreEE2RVI5ZXFYa0ZOb0R6aHV2d3hPYUV2bGtxNkhJNTNvQW0yY0M4WApzYUlVeUJwK0hyL0daeWpPOFQxdGNXQWczSElWODdTb1VBaHdwTkNPeUQvdDlzMWxsMVh1Znl4VGt3eWFBenVTCitlZFliYWZOWU1Ec3NoOXp5KytNTmxvbXpoeUdBSTV0Y2pBYytKbFRKeklkWkttdFhlaTZYYVg0UUlyTG1MNkQKNHhyS1YrNG41UWN5VzRxQm9HbUdURndTSE9Wc2FUTHRPMFZxL3dJREFRQUJBb0lCQURUOWFieTZkMkdGZ3FkSgpPUkFZck9kQzJJQ1RucFZ4ZGFpdFRJNW4zNDdmdmJnY3UwMFY1UjQ1bXdWSUNIL29xdlRjVWwwSEdtQk40cHoxCm1tTmNwVHZZbE9KNzFxMGppcFdYbjVGK2hLMEhrcHNUanNnZ2RWNVZhYzU1VFhPYjA2cGF3K25ZVmlxbkVUaDcKdWdEYmtQU0cwYVVzQk1CSEl4dGpabHFmWDk3MXZXWEYwc2IzTFdLYitwVWZsWVpIT25YbkRQa2ZvZ3pYL3lSMQpocHRrWmlCbHVyTmFCak1Bc05BNC85Tnk5SzhqWUNNTk1RTW1vVHVWZDhpbnR2VFRISlc4ajlyMk9NeDZVM25VCjlTNFg2aUlPbXNBK2JTaFRjeFZGNkwwcDhTWU5abFA0dkFkdXhSL2Ftamc3QUdadUdseWJYZ0ozd2RTeDdLREMKSWZJazdCMENnWUVBM2xGZWdsNDE5N1lxd0FjOUFUNzJocVVqdi9mb2dSUnRZaXJIdnNvUjEyY3FvZVNGZkF6OApvZGZ0NmRuMmxxQlYydWVxTjdzMkNETEJOZVdQK2Z3M3FmTU5QaTRrNlZxUnRVY0xlby9rZzJ6VmI0V05sRnU4CmZkNTJFYmk5ZFdTZXF2dUl6dnVCZ0xaMXBKTVBFYmkzYWtIQUxxR1I4OHZ1VFRkZkZURDlmSnNDZ1lFQTFML1YKOWx4OG05NzgwazhGbVB2ZVBWdm1HaUVCdnBpTCtNOHpwcm92K0lGdGhvS2Y1bGI2VE11djJOYTRVRkwwcE1aMwo1TSsyTkZQWG5Lem5FVG1Db1dSeXl4N2M4TjltajRvUDE4bURZNlBnR1JBaEF6Z2pJa051OUQ3T2lNK1cxaWhoCllMVFFick9VNktOckFiVDZ1aDdneEFHVGxxVk5DeEc2djBGdloyMENnWUVBbzUxdTJMTk5OSWswM1M1Mmp6d3YKWXRpV2Z1bU1pN0xrN2FKZWJ1TjRUZmIzUVQ1Vm52NVB6eXlEUTkvTnd2MHRNblhjcURkM2hJRVdBUHg2QVpqRgp2cVhKMFVGVW1RaTJ3NXNOcjUzR3A1S3BZZklBU0hkYk9hZEhiYk53ZTcwWnFPeUZ1dzhPT0JRUWNKWnFPTGloCkErcHY3ZUdxOEtuZEw2YllxMWZxdHBFQ2dZRUFvdWdPSjJwa2hGcDRUM1h3L0ZjSXN3VldxZlZTUjZhNXI1akIKblU1K2d4UmdVSnBmWkZwL3FTUmpEM0JEakVZcFRLOG9pVTIvNEV1L0V4cVdpT3IzcXl1bWR3QzMvNzJnNUJLOAoxT2hhTW9iK2gxS0JaTnlza29UK1JncDl6ZWJmUWplRGNUQ2pWZEV2R2dCZ1pOczNEaU9zeW9uR2dKa3M2R2Y0CkRwRkZnL1VDZ1lBV0orVlQ1b2ZPUXdCL1l6THNJU3EySnl6L05Rb1RRM3grNy9aR2JWUUdWSDAvbU8rTHlSQXgKdUNQWllXdlhZRkZCNWU4RmFBMkdGcEo0TjhUeWY4ZjZzTWtyY2ZWdjZ5MmtlRS9QWXpnS2lkRWN1WjErdTJPQwpQTmYxcm5NdG44RzV4SHFNT0M3WUZ2aWJaYzZZb29CemVyVlZyVHVkUzVzVWxhbmVucW5RU0E9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: grafana.homelab.local
+        cert-manager.io/certificate-name: grafana-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-28T23:01:36Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: grafana-tls-cert
+      namespace: monitoring
+      resourceVersion: "1631"
+      uid: 51bf32c0-e551-43bb-ad61-abc2b41a1a20
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNwakNDQWt1Z0F3SUJBZ0lSQUpPQVpDZjNxeXI5a1dvRjRYRFdTSnd3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWprd01ERXdNRE5hRncweU5URXdNamN3TURFd01ETmEKTUFBd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURTVy9JZFRVMkhWZjNpUDVPYgpZczRGQWxzUm1YUmMyRTFRbGpSaXJXVnpBb3JhRjFKeENJczM0SThKZnVPL0R3M1pvcngxbDdrekRDd2RkUzZPCndCR1NmZWhJOUUzajNGSzNUYnBDMUJJOE5JZHJJS25NVE5JSmIySHBmRyswV1piTFB2c0NZa2Jsenovcy9xUHgKNkdXRStUeXRMTzUyUWhld0FXbkQ5N25BQzk4STlPQldMZTVLMEhpVURIMmpoR1NmREh5cGxjcjdvNW5DekdTVwowOU8zdFR4cG9ob2RoNEVueGVnclNoU1B0Q2lrMHZCamRPNmdEcW5vRmFHaXVhSXp5Z3FFUFJ6Vm9PYzJLYmk4CkcvdlRQS1NCUnY3bUJFNEljbXRjK2FHOU1EeUxkeGVZVCsxWTVmNFBkV21IRUkvdmJaTGFUQ2hwbEJTOEZyTHMKenloTEFnTUJBQUdqYVRCbk1BNEdBMVVkRHdFQi93UUVBd0lGb0RBTUJnTlZIUk1CQWY4RUFqQUFNQjhHQTFVZApJd1FZTUJhQUZMN1V1NU41b0ZuZm4vMDhMdlMvVGMzMDJNSE1NQ1lHQTFVZEVRRUIvd1FjTUJxQ0dIQnliMjFsCmRHaGxkWE11YUc5dFpXeGhZaTVzYjJOaGJEQUtCZ2dxaGtqT1BRUURBZ05KQURCR0FpRUF2TzNEaGV5MlJpTXMKVjFZVUdWbGxBRXVDR0VCSVg0bWdIaTUxWm5VYURSWUNJUUROQ2RlOVVYUWhEMDNCbVdIUFRzWERaNTRxOXNwVQo3aGpkSHE0VFlXWmV3UT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBMGx2eUhVMU5oMVg5NGorVG0yTE9CUUpiRVpsMFhOaE5VSlkwWXExbGN3S0syaGRTCmNRaUxOK0NQQ1g3anZ3OE4yYUs4ZFplNU13d3NIWFV1anNBUmtuM29TUFJONDl4U3QwMjZRdFFTUERTSGF5Q3AKekV6U0NXOWg2WHh2dEZtV3l6NzdBbUpHNWM4LzdQNmo4ZWhsaFBrOHJTenVka0lYc0FGcHcvZTV3QXZmQ1BUZwpWaTN1U3RCNGxBeDlvNFJrbnd4OHFaWEsrNk9ad3N4a2x0UFR0N1U4YWFJYUhZZUJKOFhvSzBvVWo3UW9wTkx3ClkzVHVvQTZwNkJXaG9ybWlNOG9LaEQwYzFhRG5OaW00dkJ2NzB6eWtnVWIrNWdST0NISnJYUG1odlRBOGkzY1gKbUUvdFdPWCtEM1ZwaHhDUDcyMlMya3dvYVpRVXZCYXk3TThvU3dJREFRQUJBb0lCQURNMWN1RXpPbFpoMXFaSApOOVd4M2RsV1Uza2JWRHB0NVpSaW5Hb1JNQXNwYVVmaU9ZMk91T1ZuWXlxNm14S2R4WTlma0dWSUJDdXJJT29pCjVxeVZrVEdLT1F2WmZVU2xFL1hQbERKRWtoUFo3Y1ZrZERGcDJnKzE3NjM1UHZBMmh3RC9XZmVnbVFYRXlCa1gKZkMyZGwya2hpMlhVOUZBUmt0YWo0VzExVnVDckVhcHFIQmRvQlh0VDJOc3BYazBlVldZckxVeVl2Q0d6TXI1cApMbmhOMTZTektsUC94VW1TYWJjc3V1RDRqeDY0SDR1bXU4QzNlVGlVZUUva2lDRldXbkRobDZncDQzTERtcHJUCi9GbndmWElZYWY4emdIOUwzSldtNHM4YTZIRTVHOFZGbExEWmxOQ3hYSU9TdHhCd0JwemVxSkJkMTBwbmxSUWkKUDBTbVh4RUNnWUVBL3ZGWW5hZXIxMnhjdnN1NmdlclE2cksvMGhOSFlIbkpJNmhDSGxLYkJmNTJKRGZWdlNWaApUSUZOanIxMXo2RXZhb3Y4czJ5Q0hRM0Y2a0RRNWVzdm1ZZFRiaWkzaUhLK29XYk0vWm5aMy80L3dyQkRGR1ljCmxwMUl0RW0rWkRTRFFOcS9zOUJBNlFEN1ZzV09XeWFpVHJBYzRycGsyQVllMXlNeGhYTS91UmNDZ1lFQTB6dEUKdkp1aTExNXFLTVlCaVY1eWk1a0srMllxMkp2YjNjU1pKcklxUEF4U0F5Ly80ZmhnOGlsbVA1bDcwazlKOGY1cgpveCtHaWxOalp5dFFpdmlNNU1aVVEyOEtpMHN1MHFmeGhoNWNrQWRYeEJLM1dVVHlKZnY0eEZ5STRQcEtIMy9KCk85SFhxY1pQcVJwYXJLTWlEUTBKemlXRFlsc3lQWUZxSFFkNll1MENnWUVBcFJFZEFFN3MyM2xrLzRBblRURDkKZmNpb25Gc3hMczBMcDVPczQ3YzJlb1lNZGx6VWZqZ3lySGRZQVNDNG8rdklLS05reGNOdTUyTGdqMURTTU51NwpJUnZXc0ErYTdiVGxxdGxGeHJtVHNRME11WUNvbmcrVFdRMlRZbkFRM3c2RklUdkJQYXFNTEpFZkswcVVabjQ0ClB0eVdoMUtLTXJpYnhVNGJKVDIrdDVjQ2dZRUF2TldUVVhsaFRsL2RUNjRUMlpaUm1IS3MycW92UzQycU5NdDQKanB0Z0htWjFPdHhDU09VZTVkNFV4bTZUdnlPYTIzZXpDaFU0MVpoT21RQ2o5RmpXdS82QmZmZGEyY1BRakFvUApaUExubE9xN2oxR2NEM1lQYzkyYU94RHVYUkhrQ2R6WExWOGZDV3Q3ODVUWDB0WFRydzhrNE9Hd1h0RmdUSlBSCkpUcDJNdEVDZ1lCc1lXOG5MRk5RSUNyLzdtYjgraTBQU1NJSkZVVkZkMFNJOFQyUHQva2FabVlsS3dHZkZybVEKRDd1enNOY0cyYTJ3a25TV1ljenl5MVNDZzg5cWlHN0VpcHp4eUl1d2o0akhlUkZmWU9LVFNFWWpoR3dRTUE2bAo5WkVQQnJxTFpoQjY0RkV1SmtTTWw5Y25WYkJaWlJyV1djbnM3U0RsWDBZKy96NHlqZWRxMlE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: prometheus.homelab.local
+        cert-manager.io/certificate-name: prometheus-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: prometheus-tls-cert
+      namespace: monitoring
+      resourceVersion: "4390"
+      uid: bef814b6-2070-410b-919d-26d9c9ff819f
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+        dmVyLWNhQDE3NTM3NDE3OTQwHhcNMjUwNzI4MjIyOTU0WhcNMzUwNzI2MjIyOTU0
+        WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTM3NDE3OTQwWTATBgcqhkjO
+        PQIBBggqhkjOPQMBBwNCAASReyR7DvPvrR4y88wrDNeAy5Zs4CfRRD+qgBkyGa0J
+        IzvoOKZvz8+/bh356xwa1tqqBaSrmQvt5fuMvHZcQLPQo0IwQDAOBgNVHQ8BAf8E
+        BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUrNWcwCmEcL5ksfQVxIE8
+        NdaNIvkwCgYIKoZIzj0EAwIDRwAwRAIgC286fMwQojlX9gm5tsCNDuBlUYrs4KBu
+        wR88SXVxn8ACIGHyBM8IYYTP6tn7gjjyKAUUX2WDwBnYno+NzZgUaEil
+        -----END CERTIFICATE-----
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubernetes.io/description:
+          Contains a CA bundle that can be used to verify the kube-apiserver when using internal
+          endpoints such as the internal service IP or kubernetes.default.svc. No other usage is
+          guaranteed across distributions of Kubernetes clusters.
+      creationTimestamp: "2025-07-28T23:00:51Z"
+      name: kube-root-ca.crt
+      namespace: monitoring
+      resourceVersion: "1558"
+      uid: d0f63e3c-c5cd-45f5-999a-61fd519898c6
+  - apiVersion: v1
+    data:
+      prometheus.yml: |
+        global:
+          scrape_interval: 15s
+        scrape_configs:
+          - job_name: 'prometheus'
+            static_configs:
+              - targets: ['localhost:9090']
+          - job_name: 'kubernetes-nodes'
+            kubernetes_sd_configs:
+              - role: node
+            relabel_configs:
+              - source_labels: [__address__]
+                regex: '(.*):10250'
+                target_label: __address__
+                replacement: '${1}:9100'
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"prometheus.yml":"global:\n  scrape_interval: 15s\nscrape_configs:\n  - job_name: 'prometheus'\n    static_configs:\n      - targets: ['localhost:9090']\n  - job_name: 'kubernetes-nodes'\n    kubernetes_sd_configs:\n      - role: node\n    relabel_configs:\n      - source_labels: [__address__]\n        regex: '(.*):10250'\n        target_label: __address__\n        replacement: '${1}:9100'\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"prometheus-config","namespace":"monitoring"}}
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      name: prometheus-config
+      namespace: monitoring
+      resourceVersion: "4349"
+      uid: 5ae30751-9e71-4c8f-9ce3-02117e47cd53
+  - apiVersion: v1
+    data:
+      grafana.ini: |
+        [server]
+        domain = grafana.homelab.local
+        root_url = https://grafana.homelab.local
+        serve_from_sub_path = false
+
+        [security]
+        admin_user = admin
+        admin_password = admin
+        allow_embedding = true
+
+        [auth]
+        disable_login_form = false
+        disable_signout_menu = false
+
+        [auth.generic_oauth]
+        enabled = true
+        name = Keycloak SSO
+        allow_sign_up = true
+        client_id = homelab-portal
+        client_secret = homelab-portal-secret
+        scopes = openid profile email
+        empty_scopes = false
+        auth_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/auth
+        token_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/token
+        api_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/userinfo
+        login_attribute_path = preferred_username
+        groups_attribute_path = groups
+        name_attribute_path = name
+        email_attribute_path = email
+        role_attribute_path = contains(groups[*], 'admin') && 'Admin' || 'Viewer'
+        auto_login = false
+        use_pkce = true
+
+        [users]
+        allow_sign_up = true
+        auto_assign_org = true
+        auto_assign_org_id = 1
+        auto_assign_org_role = Viewer
+
+        [log]
+        mode = console
+        level = info
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"grafana.ini":"[server]\ndomain = grafana.homelab.local\nroot_url = https://grafana.homelab.local\nserve_from_sub_path = false\n\n[security]\nadmin_user = admin\nadmin_password = admin\nallow_embedding = true\n\n[auth]\ndisable_login_form = false\ndisable_signout_menu = false\n\n[auth.generic_oauth]\nenabled = true\nname = Keycloak SSO\nallow_sign_up = true\nclient_id = homelab-portal\nclient_secret = homelab-portal-secret\nscopes = openid profile email\nempty_scopes = false\nauth_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/auth\ntoken_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/token\napi_url = https://auth.homelab.local/realms/homelab/protocol/openid-connect/userinfo\nlogin_attribute_path = preferred_username\ngroups_attribute_path = groups\nname_attribute_path = name\nemail_attribute_path = email\nrole_attribute_path = contains(groups[*], 'admin') \u0026\u0026 'Admin' || 'Viewer'\nauto_login = false\nuse_pkce = true\n\n[users]\nallow_sign_up = true\nauto_assign_org = true\nauto_assign_org_id = 1\nauto_assign_org_role = Viewer\n\n[log]\nmode = console\nlevel = info\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"grafana-config","namespace":"monitoring"}}
+      creationTimestamp: "2025-07-29T18:04:52Z"
+      name: grafana-config
+      namespace: monitoring
+      resourceVersion: "43550"
+      uid: 1411e6c6-80d4-4d98-987b-1a7da33b1918
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"grafana-https-ingress","namespace":"monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"grafana.homelab.local","http":{"paths":[{"backend":{"service":{"name":"grafana","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["grafana.homelab.local"],"secretName":"grafana-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token
+        nginx.ingress.kubernetes.io/auth-signin: https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri
+        nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-28T23:01:35Z"
+      generation: 1
+      name: grafana-https-ingress
+      namespace: monitoring
+      resourceVersion: "38794"
+      uid: a57b5bf6-3f6e-47c1-85dc-6cc8e2f9658f
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: grafana.homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: grafana
+                    port:
+                      number: 80
+                path: /
+                pathType: Prefix
+      tls:
+        - hosts:
+            - grafana.homelab.local
+          secretName: grafana-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/auth-response-headers":"X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token","nginx.ingress.kubernetes.io/auth-signin":"https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri","nginx.ingress.kubernetes.io/auth-url":"http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"prometheus-https-ingress","namespace":"monitoring"},"spec":{"ingressClassName":"nginx","rules":[{"host":"prometheus.homelab.local","http":{"paths":[{"backend":{"service":{"name":"prometheus","port":{"number":9090}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["prometheus.homelab.local"],"secretName":"prometheus-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token
+        nginx.ingress.kubernetes.io/auth-signin: https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri
+        nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      generation: 1
+      name: prometheus-https-ingress
+      namespace: monitoring
+      resourceVersion: "38807"
+      uid: bf05928e-851b-405a-ae84-02a400cc7339
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: prometheus.homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: prometheus
+                    port:
+                      number: 9090
+                path: /
+                pathType: Prefix
+      tls:
+        - hosts:
+            - prometheus.homelab.local
+          secretName: prometheus-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"cert-manager.io/v1","kind":"Certificate","metadata":{"annotations":{},"name":"prometheus-tls-cert","namespace":"monitoring"},"spec":{"commonName":"prometheus.homelab.local","dnsNames":["prometheus.homelab.local"],"issuerRef":{"kind":"ClusterIssuer","name":"homelab-ca-issuer"},"secretName":"prometheus-tls-cert"}}
+      creationTimestamp: "2025-07-29T00:10:03Z"
+      generation: 5
+      name: prometheus-tls-cert
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: prometheus-https-ingress
+          uid: bf05928e-851b-405a-ae84-02a400cc7339
+      resourceVersion: "38812"
+      uid: 8c89673a-f43d-4aa9-83aa-20aa8a90c174
+    spec:
+      dnsNames:
+        - prometheus.homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: prometheus-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:10:03Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 5
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-27T00:10:03Z"
+      notBefore: "2025-07-29T00:10:03Z"
+      renewalTime: "2025-09-27T00:10:03Z"
+      revision: 1
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"cert-manager.io/v1","kind":"Certificate","metadata":{"annotations":{},"name":"grafana-tls-cert","namespace":"monitoring"},"spec":{"commonName":"grafana.homelab.local","dnsNames":["grafana.homelab.local"],"issuerRef":{"kind":"ClusterIssuer","name":"homelab-ca-issuer"},"secretName":"grafana-tls-cert"}}
+      creationTimestamp: "2025-07-28T23:01:35Z"
+      generation: 5
+      name: grafana-tls-cert
+      namespace: monitoring
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: grafana-https-ingress
+          uid: a57b5bf6-3f6e-47c1-85dc-6cc8e2f9658f
+      resourceVersion: "43578"
+      uid: 541ebad0-4f46-44c5-8c07-337dbcdbfc2c
+    spec:
+      dnsNames:
+        - grafana.homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: grafana-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-28T23:01:36Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 5
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-26T23:01:36Z"
+      notBefore: "2025-07-28T23:01:36Z"
+      renewalTime: "2025-09-26T23:01:36Z"
+      revision: 1
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"grafana-data","namespace":"monitoring"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}}}}
+        pv.kubernetes.io/bind-completed: "yes"
+        pv.kubernetes.io/bound-by-controller: "yes"
+        volume.beta.kubernetes.io/storage-provisioner: rancher.io/local-path
+        volume.kubernetes.io/selected-node: homelab
+        volume.kubernetes.io/storage-provisioner: rancher.io/local-path
+      creationTimestamp: "2025-07-29T18:04:52Z"
+      finalizers:
+        - kubernetes.io/pvc-protection
+      name: grafana-data
+      namespace: monitoring
+      resourceVersion: "43608"
+      uid: b98f8be2-9944-40bb-a654-72878a6267e3
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: local-path
+      volumeMode: Filesystem
+      volumeName: pvc-b98f8be2-9944-40bb-a654-72878a6267e3
+    status:
+      accessModes:
+        - ReadWriteOnce
+      capacity:
+        storage: 10Gi
+      phase: Bound
+kind: List
+metadata:
+  resourceVersion: ""

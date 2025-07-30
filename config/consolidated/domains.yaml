@@ -1,10 +1,24 @@
-# Centralized Domain Configuration
+# Unified Domain Configuration
 # Single source of truth for all domain-related settings
+# Consolidated from config/base/global.yaml and config/base/domains.yaml
 
 domains:
   base:
     primary: "homelab.local"
     tld: "local"
+
+# Global settings (from global.yaml)
+global:
+  domain:
+    base: "homelab.local"
+    tld: "local"
+
+  # Common Labels
+  labels:
+    app.kubernetes.io/managed-by: "homelab-infra"
+    app.kubernetes.io/part-of: "homelab"
+    homelab.local/environment: "{{ .Values.environment }}"
+    homelab.local/component: "{{ .Values.component }}"
 
   # Service subdomains - automatically generate URLs
   services:
@@ -38,6 +52,7 @@ dns:
     - "cluster.local"
 
 # Certificate Management
+# Certificate Management (consolidated)
 certificates:
   issuer:
     email: "admin@homelab.local"
@@ -57,3 +72,15 @@ certificates:
     country: "US"
     province: "Home"
     locality: "Lab"
+
+# Image Registry Settings (from global.yaml)
+registry:
+  default: "docker.io"
+  pullPolicy: "IfNotPresent"
+  pullSecrets: []
+
+# Common Annotations
+annotations:
+  deployment.kubernetes.io/revision: '{{ .Values.revision | default "1" }}'
+  homelab.local/managed-by: "centralized-config"
+  homelab.local/last-updated: '{{ now | date "2006-01-02T15:04:05Z" }}'

@@ -27,9 +27,10 @@ Welcome to the comprehensive documentation for the **Homelab Infrastructure Orch
 - **[SSH Key Setup](setup/ssh-keys.md)** - Secure authentication configuration
 - **[DNS Configuration](setup/dns-setup.md)** - Domain and DNS requirements
 
-### 🔧 Configuration Management
+### 🔧 Configuration Management (Unified)
 
-- **[Configuration Structure](../config/README.md)** - Configuration directory organization and management
+- **[Unified Configuration Structure](../config/README.md)** - Consolidated configuration directory organization
+- **[Consolidated Configs](../config/consolidated/README.md)** - Single source of truth for all configuration
 - **[Environment Variables](configuration/environment-variables.md)** - Complete .env configuration guide
 - **[Private Configuration](configuration/private-configuration.md)** - Managing secrets and private settings
 - **[Helm Values](configuration/helm-values.md)** - Customizing application deployments

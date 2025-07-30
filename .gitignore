@@ -260,6 +260,26 @@ code-quality-output.txt
 *-output.txt
 .cache/
 
+# Security and vulnerability reports
+*security-report*
+*vulnerability-report*
+*scan-report*
+*security_report*
+*vulnerability_report*
+*scan_report*
+**/security-reports/
+**/vulnerability-reports/
+**/scan-results/
+**/security-scans/
+*.sarif
+*.trivy.json
+gitleaks-report.*
+
+# Test reports and logs
+testing/**/reports/
+testing/**/*.log
+test-*.log
+
 # Validation and test reports (not version controlled)
 reports/
 *.report

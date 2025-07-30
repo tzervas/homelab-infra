@@ -177,7 +177,8 @@ class IntegratedTestOrchestrator:
                 cwd=self.k3s_validation_dir,
                 capture_output=True,
                 text=True,
-                timeout=1800,  # 30 minute timeout
+                timeout=1800,
+                check=False,  # 30 minute timeout
             )
 
             duration = time.time() - start_time
@@ -333,8 +334,16 @@ class IntegratedTestOrchestrator:
         # Determine overall status
         overall_status = "pass"
 
+<<<<<<< Updated upstream
         if (python_results and python_results.overall_status == "fail") or (
             k3s_results and k3s_results.exit_code != 0
+=======
+        if (
+            python_results
+            and python_results.overall_status == "fail"
+            or k3s_results
+            and k3s_results.exit_code != 0
+>>>>>>> Stashed changes
         ):
             overall_status = "fail"
         elif (python_results and python_results.overall_status == "warning") or (
@@ -451,9 +460,14 @@ class IntegratedTestOrchestrator:
                 # Recommendations
                 if results.recommendations:
                     f.write("## Recommendations\\n\\n")
+<<<<<<< Updated upstream
                     f.writelines(
                         f"{i}. {rec}\\n" for i, rec in enumerate(results.recommendations, 1)
                     )
+=======
+                    for i, rec in enumerate(results.recommendations, 1):
+                        f.write(f"{i}. {rec}\\n")
+>>>>>>> Stashed changes
 
             self.logger.info(f"📄 Integrated Markdown report exported to: {filepath}")
             return str(filepath)

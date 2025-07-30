@@ -1,0 +1,281 @@
+name: Repository Monitoring
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: "Run full security and health scan"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  repository-health:
+    runs-on: ubuntu-latest
+    name: Repository Health Check
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml gitpython
+
+      - name: Check repository metrics
+        run: |
+          python << 'EOF'
+          import os, json, subprocess
+          from datetime import datetime, timedelta
+
+          # Get recent commit activity
+          result = subprocess.run(['git', 'log', '--since=7 days ago', '--oneline'],
+                                capture_output=True, text=True)
+          commit_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+
+          # Get branch information
+          result = subprocess.run(['git', 'branch', '-r'], capture_output=True, text=True)
+          branch_count = len([b for b in result.stdout.split('\n') if b.strip() and 'origin/' in b])
+
+          # Check for large files
+          result = subprocess.run(['find', '.', '-type', 'f', '-size', '+50M'],
+                                capture_output=True, text=True)
+          large_files = [f for f in result.stdout.split('\n') if f.strip()]
+
+          # Generate report
+          report = {
+              'timestamp': datetime.now().isoformat(),
+              'commits_last_week': commit_count,
+              'total_branches': branch_count,
+              'large_files_count': len(large_files),
+              'large_files': large_files[:10]  # Limit to first 10
+          }
+
+          print("Repository Health Report:")
+          print(f"Commits in last week: {commit_count}")
+          print(f"Total branches: {branch_count}")
+          print(f"Large files (>50MB): {len(large_files)}")
+
+          if large_files:
+              print("Large files found:")
+              for f in large_files[:5]:
+                  print(f"  - {f}")
+
+          # Save report
+          with open('repository-health.json', 'w') as f:
+              json.dump(report, f, indent=2)
+          EOF
+
+      - name: Upload health report
+        uses: actions/upload-artifact@v3
+        with:
+          name: repository-health-report
+          path: repository-health.json
+          retention-days: 30
+
+  security-monitoring:
+    runs-on: ubuntu-latest
+    name: Security Monitoring
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Check for security updates
+        if: github.event.inputs.full_scan == 'true'
+        run: |
+          echo "Checking for security advisories..."
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "https://api.github.com/repos/${{ github.repository }}/vulnerability-alerts" || true
+
+      - name: Scan for exposed secrets in config files
+        run: |
+          echo "Scanning configuration files for potential secrets..."
+          # Check for common secret patterns in YAML files
+          find . -name "*.yaml" -o -name "*.yml" | grep -v ".git" | while read -r file; do
+            if grep -i -E "(password|secret|key|token).*:.*['\"][^'\"]{8,}['\"]" "$file" 2>/dev/null; then
+              echo "⚠️  Potential secret in $file"
+            fi
+          done
+
+  dependency-monitoring:
+    runs-on: ubuntu-latest
+    name: Dependency Monitoring
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Python dependencies
+        if: hashFiles('**/requirements.txt', '**/pyproject.toml') != ''
+        run: |
+          if [ -f "pyproject.toml" ]; then
+            echo "Found pyproject.toml"
+            python -m pip install --upgrade pip
+            pip install uv
+            uv pip list --outdated || true
+          elif [ -f "requirements.txt" ]; then
+            echo "Found requirements.txt"
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip list --outdated || true
+          fi
+
+      - name: Check Helm chart dependencies
+        if: hashFiles('**/Chart.yaml') != ''
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          find . -name "Chart.yaml" -path "*/charts/*" | while read -r chart; do
+            chart_dir=$(dirname "$chart")
+            echo "Checking dependencies for $chart_dir"
+            cd "$chart_dir"
+            helm dependency list || true
+            cd - > /dev/null
+          done
+
+      - name: Check for Kubernetes API deprecations
+        run: |
+          echo "Checking for deprecated Kubernetes APIs..."
+          find kubernetes/ -name "*.yaml" | while read -r file; do
+            # Check for deprecated APIs (basic check)
+            if grep -q "apiVersion: extensions/v1beta1" "$file" 2>/dev/null; then
+              echo "⚠️  Deprecated extensions/v1beta1 API in $file"
+            fi
+            if grep -q "apiVersion: apps/v1beta" "$file" 2>/dev/null; then
+              echo "⚠️  Deprecated apps/v1beta API in $file"
+            fi
+          done
+
+  compliance-check:
+    runs-on: ubuntu-latest
+    name: Compliance Check
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check license compliance
+        run: |
+          echo "Checking license compliance..."
+
+          # Check for LICENSE file
+          if [ ! -f "LICENSE" ]; then
+            echo "❌ LICENSE file missing"
+          else
+            echo "✅ LICENSE file present"
+          fi
+
+          # Check for NOTICE file
+          if [ ! -f "NOTICE" ]; then
+            echo "⚠️  NOTICE file missing (may be required for some licenses)"
+          else
+            echo "✅ NOTICE file present"
+          fi
+
+      - name: Check documentation compliance
+        run: |
+          echo "Checking documentation compliance..."
+
+          # Check for README files in major directories
+          for dir in ansible helm kubernetes terraform; do
+            if [ -d "$dir" ] && [ ! -f "$dir/README.md" ]; then
+              echo "⚠️  README.md missing in $dir/"
+            elif [ -f "$dir/README.md" ]; then
+              echo "✅ README.md present in $dir/"
+            fi
+          done
+
+          # Check for security documentation
+          if [ ! -f "docs/security/best-practices.md" ]; then
+            echo "⚠️  Security best practices documentation missing"
+          else
+            echo "✅ Security documentation present"
+          fi
+
+      - name: Check configuration consistency
+        run: |
+          echo "Checking configuration consistency..."
+
+          # Check for consistent naming conventions
+          inconsistent_files=$(find . -name "*.yaml" -o -name "*.yml" | grep -v ".git" | \
+            awk -F'/' '{print $NF}' | sort | uniq -c | awk '$1 > 1 {print $2}' | \
+            grep -E '\.(yaml|yml)$' || true)
+
+          if [ -n "$inconsistent_files" ]; then
+            echo "⚠️  Files with mixed extensions found:"
+            echo "$inconsistent_files"
+          fi
+
+  notification:
+    runs-on: ubuntu-latest
+    name: Send Monitoring Summary
+    needs: [repository-health, security-monitoring, dependency-monitoring, compliance-check]
+    if: failure() || github.event.inputs.full_scan == 'true'
+    steps:
+      - name: Generate monitoring summary
+        run: |
+          echo "# Repository Monitoring Summary" > monitoring-summary.md
+          echo "" >> monitoring-summary.md
+          echo "**Date:** $(date -u)" >> monitoring-summary.md
+          echo "**Repository:** ${{ github.repository }}" >> monitoring-summary.md
+          echo "**Triggered by:** ${{ github.event_name }}" >> monitoring-summary.md
+          echo "" >> monitoring-summary.md
+
+          # Add job status
+          echo "## Job Status" >> monitoring-summary.md
+          echo "- Repository Health: ${{ needs.repository-health.result }}" >> monitoring-summary.md
+          echo "- Security Monitoring: ${{ needs.security-monitoring.result }}" >> monitoring-summary.md
+          echo "- Dependency Monitoring: ${{ needs.dependency-monitoring.result }}" >> monitoring-summary.md
+          echo "- Compliance Check: ${{ needs.compliance-check.result }}" >> monitoring-summary.md
+          echo "" >> monitoring-summary.md
+
+          if [[ "${{ needs.repository-health.result }}" == "failure" ]] || \
+             [[ "${{ needs.security-monitoring.result }}" == "failure" ]] || \
+             [[ "${{ needs.dependency-monitoring.result }}" == "failure" ]] || \
+             [[ "${{ needs.compliance-check.result }}" == "failure" ]]; then
+            echo "## ⚠️ Issues Detected" >> monitoring-summary.md
+            echo "One or more monitoring checks failed. Please review the workflow logs for details." >> monitoring-summary.md
+          else
+            echo "## ✅ All Checks Passed" >> monitoring-summary.md
+            echo "Repository monitoring completed successfully." >> monitoring-summary.md
+          fi
+
+      - name: Create issue for failures
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('monitoring-summary.md', 'utf8');
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Repository Monitoring Alert - ${new Date().toISOString().split('T')[0]}`,
+              body: summary,
+              labels: ['monitoring', 'alert', 'needs-attention']
+            });
+
+      - name: Upload monitoring summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: monitoring-summary
+          path: monitoring-summary.md
+          retention-days: 90

@@ -1,0 +1,123 @@
+# Services Configuration
+# Base service settings and feature flags
+
+services:
+  # Infrastructure services
+  cert-manager:
+    enabled: true
+    namespace: cert-manager
+    priority: 1
+    dependencies: []
+
+  ingress-nginx:
+    enabled: true
+    namespace: ingress-nginx
+    priority: 2
+    dependencies: ["cert-manager"]
+
+  metallb:
+    enabled: true
+    namespace: metallb-system
+    priority: 1
+    dependencies: []
+
+  longhorn:
+    enabled: true
+    namespace: longhorn-system
+    priority: 1
+    dependencies: []
+
+  # Authentication services
+  keycloak:
+    enabled: true
+    namespace: keycloak
+    priority: 3
+    dependencies: ["ingress-nginx", "cert-manager"]
+
+  oauth2-proxy:
+    enabled: true
+    namespace: oauth2-proxy
+    priority: 4
+    dependencies: ["keycloak", "ingress-nginx"]
+
+  # Development services
+  gitlab:
+    enabled: true
+    namespace: gitlab
+    priority: 5
+    dependencies: ["keycloak", "longhorn", "ingress-nginx"]
+    features:
+      pages: true
+      registry: true
+      runners: true
+
+  gitlab-runner:
+    enabled: true
+    namespace: gitlab-runner
+    priority: 6
+    dependencies: ["gitlab"]
+
+  # Monitoring services
+  prometheus:
+    enabled: true
+    namespace: monitoring
+    priority: 4
+    dependencies: ["ingress-nginx", "longhorn"]
+
+  grafana:
+    enabled: true
+    namespace: monitoring
+    priority: 5
+    dependencies: ["prometheus", "keycloak"]
+
+  loki:
+    enabled: true
+    namespace: monitoring
+    priority: 5
+    dependencies: ["longhorn"]
+
+  alertmanager:
+    enabled: true
+    namespace: monitoring
+    priority: 5
+    dependencies: ["prometheus"]
+
+  # AI/ML services
+  jupyter:
+    enabled: true
+    namespace: ai-ml
+    priority: 6
+    dependencies: ["keycloak", "longhorn", "ingress-nginx"]
+
+  ollama:
+    enabled: true
+    namespace: ai-ml
+    priority: 6
+    dependencies: ["longhorn", "ingress-nginx"]
+
+  # Feature flags
+  features:
+    # Security features
+    network_policies: true
+    pod_security_policies: false # Deprecated in favor of Pod Security Standards
+    pod_security_standards: true
+    rbac: true
+    service_mesh: false
+
+    # Monitoring features
+    metrics: true
+    logging: true
+    tracing: false
+    profiling: false
+
+    # Backup features
+    automated_backups: true
+    disaster_recovery: true
+
+    # Development features
+    ci_cd: true
+    gitops: true
+
+    # AI/ML features
+    gpu_support: true
+    distributed_training: false

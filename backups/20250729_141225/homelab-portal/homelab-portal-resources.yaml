@@ -1,0 +1,671 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      generateName: landing-page-55f76dd48f-
+      labels:
+        app: landing-page
+        pod-template-hash: 55f76dd48f
+      name: landing-page-55f76dd48f-ztgbm
+      namespace: homelab-portal
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: landing-page-55f76dd48f
+          uid: 4b2caca6-039c-4254-97c9-27354de87fcf
+      resourceVersion: "5443"
+      uid: 15209c53-c98a-433f-9d60-5a631be36d97
+    spec:
+      containers:
+        - image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          name: nginx
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: landing-page-content
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-q7w7c
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: landing-page-config
+          name: landing-page-content
+        - name: kube-api-access-q7w7c
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:21:25Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:21:31Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:21:31Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:21:25Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://03a256bd0be87c53c944aa52d545f9b6325f736136dcb3d585d9e526c8c74341
+          image: docker.io/library/nginx:alpine
+          imageID: docker.io/library/nginx@sha256:d67ea0d64d518b1bb04acde3b00f722ac3e9764b3209a9b0a98924ba35e4b779
+          lastState: {}
+          name: nginx
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:21:30Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.29
+      podIPs:
+        - ip: 10.42.0.29
+      qosClass: Burstable
+      startTime: "2025-07-29T00:21:25Z"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"landing-page","namespace":"homelab-portal"},"spec":{"ports":[{"port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"landing-page"}}}
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      name: landing-page
+      namespace: homelab-portal
+      resourceVersion: "5388"
+      uid: 62acbd39-980f-49c8-bc8b-bf5b06fa04f1
+    spec:
+      clusterIP: 10.43.39.178
+      clusterIPs:
+        - 10.43.39.178
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 80
+          protocol: TCP
+          targetPort: 80
+      selector:
+        app: landing-page
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"landing-page","namespace":"homelab-portal"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"landing-page"}},"template":{"metadata":{"labels":{"app":"landing-page"}},"spec":{"containers":[{"image":"nginx:alpine","name":"nginx","ports":[{"containerPort":80}],"resources":{"limits":{"cpu":"50m","memory":"64Mi"},"requests":{"cpu":"10m","memory":"32Mi"}},"volumeMounts":[{"mountPath":"/usr/share/nginx/html","name":"landing-page-content"}]}],"volumes":[{"configMap":{"name":"landing-page-config"},"name":"landing-page-content"}]}}}}
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      generation: 1
+      name: landing-page
+      namespace: homelab-portal
+      resourceVersion: "5447"
+      uid: 26fa5258-81a8-4108-8a28-4dd733db2b44
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: landing-page
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: landing-page
+        spec:
+          containers:
+            - image: nginx:alpine
+              imagePullPolicy: IfNotPresent
+              name: nginx
+              ports:
+                - containerPort: 80
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: 50m
+                  memory: 64Mi
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /usr/share/nginx/html
+                  name: landing-page-content
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: landing-page-config
+              name: landing-page-content
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:21:31Z"
+          lastUpdateTime: "2025-07-29T00:21:31Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:21:25Z"
+          lastUpdateTime: "2025-07-29T00:21:31Z"
+          message: ReplicaSet "landing-page-55f76dd48f" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      generation: 1
+      labels:
+        app: landing-page
+        pod-template-hash: 55f76dd48f
+      name: landing-page-55f76dd48f
+      namespace: homelab-portal
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: landing-page
+          uid: 26fa5258-81a8-4108-8a28-4dd733db2b44
+      resourceVersion: "5446"
+      uid: 4b2caca6-039c-4254-97c9-27354de87fcf
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: landing-page
+          pod-template-hash: 55f76dd48f
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: landing-page
+            pod-template-hash: 55f76dd48f
+        spec:
+          containers:
+            - image: nginx:alpine
+              imagePullPolicy: IfNotPresent
+              name: nginx
+              ports:
+                - containerPort: 80
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: 50m
+                  memory: 64Mi
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /usr/share/nginx/html
+                  name: landing-page-content
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - configMap:
+                defaultMode: 420
+                name: landing-page-config
+              name: landing-page-content
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNtekNDQWtDZ0F3SUJBZ0lSQUpJQ3BVNldHV01KRFdZZlpRdzVzVjB3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWprd01ESXhNalZhRncweU5URXdNamN3TURJeE1qVmEKTUFBd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURmZFJ3bVBJS3haejFhcERNNgpaTWdiUG9yMTJnc1dEV3JhcTdHLzJ1VmlmUzNGN1dLZW9UNlMrMExLYm5rb255NW12eUVsenZ6cjZpRmFXMTVjCm9XMldqa0xLTTNHdzRmOGVnaWdTRVpxY1NVQXNHdGg5YmJDQldOc2Zhekh4Z2cwaHJhNjZvVVpvd284Nk9obS8KbWRKdnJ1VzNGR2I0RmNTdi8rTEowK0wzbXNrMDljWDFVZzJURnRrVkoxUHZVaE1DejFORTlsdnh0NU9PQWh0ZQpKaFF3bWtWREJUREd1MzF4Zm1ZTjZCWEFXWUN0QlJFWXBKZWZoQnJGUUc3SEJNQ1B6Z283TVhjVXYwOWt5MWVOCkduc043ZDQxQ0NjZFR0dDBpOEtTMEQvQzZzYmJMQnhwekNRazM4Uno1YUlhdWlIRUx5cUtGYUc1YlpmL0phTVAKMGEycEFnTUJBQUdqWGpCY01BNEdBMVVkRHdFQi93UUVBd0lGb0RBTUJnTlZIUk1CQWY4RUFqQUFNQjhHQTFVZApJd1FZTUJhQUZMN1V1NU41b0ZuZm4vMDhMdlMvVGMzMDJNSE1NQnNHQTFVZEVRRUIvd1FSTUErQ0RXaHZiV1ZzCllXSXViRzlqWVd3d0NnWUlLb1pJemowRUF3SURTUUF3UmdJaEFPcHVIclJwWjRQdG1YUFd4M3hESU5ha2hCcFAKVzNpT1UxbFkraTJXdWlyNUFpRUFvNTlJN2J5ZHBJaU1DOUVrS25Dd0pmYUI4S0Z4OXd6Zzc4amNwcmhLTnpZPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBMzNVY0pqeUNzV2M5V3FRek9tVElHejZLOWRvTEZnMXEycXV4djlybFluMHR4ZTFpCm5xRStrdnRDeW01NUtKOHVacjhoSmM3ODYrb2hXbHRlWEtGdGxvNUN5ak54c09IL0hvSW9FaEdhbkVsQUxCclkKZlcyd2dWamJIMnN4OFlJTklhMnV1cUZHYU1LUE9qb1p2NW5TYjY3bHR4Um0rQlhFci8vaXlkUGk5NXJKTlBYRgo5VklOa3hiWkZTZFQ3MUlUQXM5VFJQWmI4YmVUamdJYlhpWVVNSnBGUXdVd3hydDljWDVtRGVnVndGbUFyUVVSCkdLU1huNFFheFVCdXh3VEFqODRLT3pGM0ZMOVBaTXRYalJwN0RlM2VOUWduSFU3YmRJdkNrdEEvd3VyRzJ5d2MKYWN3a0pOL0VjK1dpR3JvaHhDOHFpaFdodVcyWC95V2pEOUd0cVFJREFRQUJBb0lCQUFQQUozVE0xelM3RXVDTwptUDJGNjRYcGl0T05rVm9SWjVXOEJBUEFYTkZHWUpwTjNiWGo1dlQ0bXFwaktFMXlQb2tpOUI5NlZleHZ4WmVLCnFRN005dFhzRlZybmVpVUo1Z3BSRFBNZ3NJT25CeGkyYXFQUVQ0SWNSN0ZEVDFkS1k0WUpNRUdacTJEZXd5Q3IKRVB1U1RXSHFnWmlORXgxZTRDcEVGVDVsL0ExRDE4d24xQlZ6Snh6bUFlbW1yR2ZpaVdPeVRYYlhmL1V4cGNzWQpkc2ttb0huYWZlcCtKcXg5MGQzWFh1UDZ0MUl0bGwzSmRqR1p6M3JXYnBCN1IrOEkydW04RzFiOUFRK2tSWkZQCkVmVC9TdmNReHlkMmtNK0E2VmRLY3c3VVFTVEpOVkNCWW5oVHhiRHZwUEMzVktHc0NYcHhYSHdIZG1SV0lpVE8KSHo2QWc4RUNnWUVBOTBxWFpxcGkzcVg5cWJWMlNCV0RCdEVNVHRhOTRaNW5Sa1RtS2hqYzFXNWxiTm50YlVnYQphNTFmN0k3UXRIV09icDE0bnFrQXFISWpiYm9Qd2pCemlPQlplekt6dHZEMEZ2US9uNmFoZkEwT3hvekZYZGR4CmRTcXNaYXN1YUYyQVB4c0tQNnF0QUovRHdjQW5PaFRqV01keSs3VXBQSEUxYzZPdmlnVFVITlVDZ1lFQTUxT2wKL3h5UkI5RHBEZkRHNk0vUW5PVi91TUsxZjcvYlBqZlQweHNSQXhHUzY3ci9TZHlKUDRXaWZrMWhGYTR3YWJZNApxM0NSL3RvVThpOFE3VGFBQWdWVHVoREtFdGNtS3duL1VtcGU4SDJzVG9aWkVIaXFBTVc3Y1JaV2NhOVhiRnIzClIyY1lKeFFvbTBtT25jZytVRkttRnp4RVJMOUEzN2VQT0l4eFo0VUNnWUJKLzVVY2tLSHpWQ0o2MVNVbTN1RU4KZWlLL3VMeXJOZlpiYmFTZU5rQm0wWmtpSUhoT3VrUEZyaHNWTTRzNlpPOFJKS2dDZWpvTExkUnlNam9pOXRLcgp3ODZpOGdJYkhURTlhU3RjdjhVVTFPZDEvSXZXei9CUWlrdDZST1luTHN1QWxydlRYMlJUaW50T2tBeHM4ZkV5CkVNVFVrMXBhanRuYTE4RmdnSjlrWFFLQmdFVGdFZ2VnUU1wYitGZ1BQWm9wN2dvWkJ1dERCZmxRYlgzYjczVG0KbFMwZHVXbjRsblF1ZHFyMEpncUhEWVlBQkNnbGVrQUpWMTdUSGZOeDhnOCs3K1FxSStDOWlQME5GQzh5WGRQegpHZXR1NzdPOXFwME40RWcwbDNlM1YrdW5jbGN2eW5wM0JxajBCcGNkMHBuRitrKytHL2ZGR09xREsxU3crYkt6CmxqeGxBb0dBQjlDaHJvVWFVem41NEtxRTNXTTlyNkhIUmw5WGh3aTVJOXJhOHlUTStKOFQrVGVyY3c5SzFuemEKVDVlWmN4Y0o5MWx3bXU3RU9lYmR2U1lhR214SzQxQ3pGbmlSKzJqUjhKMitBbi80K2czNCsxUkE4NEpweVQ5RApPVytub2t0VGllZ0JTMDY1Vk9VdWNXb1ovMVFDTG5jaldWakcwVERneUZncVJOQ1B5dTA9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: homelab.local
+        cert-manager.io/certificate-name: homelab-portal-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: homelab-portal-tls-cert
+      namespace: homelab-portal
+      resourceVersion: "5422"
+      uid: 2f191458-be3d-42b4-ab9d-748afc662a98
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+        dmVyLWNhQDE3NTM3NDE3OTQwHhcNMjUwNzI4MjIyOTU0WhcNMzUwNzI2MjIyOTU0
+        WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTM3NDE3OTQwWTATBgcqhkjO
+        PQIBBggqhkjOPQMBBwNCAASReyR7DvPvrR4y88wrDNeAy5Zs4CfRRD+qgBkyGa0J
+        IzvoOKZvz8+/bh356xwa1tqqBaSrmQvt5fuMvHZcQLPQo0IwQDAOBgNVHQ8BAf8E
+        BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUrNWcwCmEcL5ksfQVxIE8
+        NdaNIvkwCgYIKoZIzj0EAwIDRwAwRAIgC286fMwQojlX9gm5tsCNDuBlUYrs4KBu
+        wR88SXVxn8ACIGHyBM8IYYTP6tn7gjjyKAUUX2WDwBnYno+NzZgUaEil
+        -----END CERTIFICATE-----
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubernetes.io/description:
+          Contains a CA bundle that can be used to verify the kube-apiserver when using internal
+          endpoints such as the internal service IP or kubernetes.default.svc. No other usage is
+          guaranteed across distributions of Kubernetes clusters.
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      name: kube-root-ca.crt
+      namespace: homelab-portal
+      resourceVersion: "5381"
+      uid: 4e0bf74b-0fb7-42d5-9a98-a58d85d6bcbc
+  - apiVersion: v1
+    data:
+      index.html:
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n \   <meta
+        name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n \   <title>Homelab
+        Portal</title>\n    <style>\n        * {\n            margin: 0;\n            padding:
+        0;\n            box-sizing: border-box;\n        }\n\n \       body
+        {\n            font-family: 'Segoe UI', Tahoma, Geneva, Verdana,
+        sans-serif;\n            background: linear-gradient(135deg, #667eea 0%, #764ba2
+        100%);\n            min-height: 100vh;\n            display: flex;\n            align-items:
+        center;\n            justify-content: center;\n            padding: 20px;\n
+        \       }\n\n        .container {\n            background:
+        white;\n            border-radius: 20px;\n            box-shadow: 0 20px 60px rgba(0, 0, 0,
+        0.1);\n            padding: 40px;\n            max-width: 1200px;\n            width:
+        100%;\n        }\n\n \       .header {\n            text-align:
+        center;\n            margin-bottom: 40px;\n        }\n\n        .header h1
+        {\n            color: #333;\n            font-size: 2.5rem;\n            margin-bottom:
+        10px;\n        }\n\n        .header p {\n \           color: #666;\n            font-size:
+        1.1rem;\n        }\n\n        .services-grid {\n            display:
+        grid;\n            grid-template-columns: repeat(auto-fit, minmax(300px,
+        1fr));\n            gap: 20px;\n            margin-bottom: 30px;\n
+        \       }\n\n        .service-card {\n            background:
+        #f8f9fa;\n            border-radius: 15px;\n            padding:
+        25px;\n            text-decoration: none;\n            color:
+        inherit;\n            transition: all 0.3s ease;\n            border: 2px solid
+        transparent;\n        }\n\n        .service-card:hover {\n            transform:
+        translateY(-5px);\n            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);\n
+        \           border-color: #667eea;\n        }\n\n        .service-icon
+        {\n            font-size: 2.5rem;\n            margin-bottom: 15px;\n            display:
+        block;\n        }\n\n \       .service-title {\n            font-size:
+        1.3rem;\n            font-weight: 600;\n            color: #333;\n            margin-bottom:
+        8px;\n        }\n\n \       .service-description {\n            color:
+        #666;\n            font-size: 0.95rem;\n            line-height:
+        1.4;\n            margin-bottom: 15px;\n \       }\n\n        .service-status
+        {\n            padding: 5px 12px;\n            border-radius: 20px;\n            font-size:
+        0.8rem;\n            font-weight: 500;\n            text-transform:
+        uppercase;\n        }\n\n        .status-running {\n            background:
+        #d4edda;\n            color: #155724;\n        }\n\n        .status-starting
+        {\n            background: #fff3cd;\n            color: #856404;\n        }\n\n
+        \       .footer {\n            text-align: center;\n            padding-top:
+        30px;\n            border-top: 1px solid #eee;\n            color:
+        #666;\n            font-size: 0.9rem;\n        }\n\n        .cluster-info
+        {\n            display: grid;\n \           grid-template-columns: repeat(auto-fit,
+        minmax(200px, 1fr));\n            gap: 20px;\n            margin-bottom:
+        30px;\n            padding: 20px;\n            background:
+        #f1f3f4;\n            border-radius: 10px;\n        }\n\n        .info-item
+        {\n            text-align: center;\n        }\n\n        .info-label
+        {\n            font-size: 0.8rem;\n            color: #666;\n            text-transform:
+        uppercase;\n \           margin-bottom: 5px;\n        }\n\n        .info-value
+        {\n            font-size: 1.1rem;\n            font-weight: 600;\n            color:
+        #333;\n        }\n \   </style>\n</head>\n<body>\n    <div
+        class=\"container\">\n        <div class=\"header\">\n \           <h1>\U0001F3E0 Homelab
+        Portal</h1>\n            <p>Your self-hosted infrastructure
+        dashboard</p>\n        </div>\n\n        <div class=\"cluster-info\">\n \           <div
+        class=\"info-item\">\n                <div class=\"info-label\">Cluster</div>\n
+        \               <div class=\"info-value\">MicroK8s</div>\n            </div>\n
+        \           <div class=\"info-item\">\n                <div class=\"info-label\">Load
+        Balancer</div>\n                <div class=\"info-value\">192.168.16.100</div>\n
+        \           </div>\n            <div class=\"info-item\">\n                <div
+        class=\"info-label\">SSL</div>\n                <div class=\"info-value\">CA
+        Secured</div>\n            </div>\n            <div
+        class=\"info-item\">\n                <div
+        class=\"info-label\">Services</div>\n                <div class=\"info-value\">5</div>\n
+        \           </div>\n        </div>\n\n        <div class=\"services-grid\">\n \           <a
+        href=\"https://grafana.homelab.local\" class=\"service-card\">\n \               <span
+        class=\"service-icon\">\U0001F4CA</span>\n                <div
+        class=\"service-title\">Grafana</div>\n                <div
+        class=\"service-description\">Data visualization and monitoring dashboards with Prometheus
+        integration</div>\n \               <span class=\"service-status
+        status-running\">Running</span>\n \           </a>\n\n            <a
+        href=\"https://prometheus.homelab.local\" class=\"service-card\">\n                <span
+        class=\"service-icon\">\U0001F50D</span>\n \               <div
+        class=\"service-title\">Prometheus</div>\n                <div
+        class=\"service-description\">Metrics collection and monitoring system for cluster
+        observability</div>\n                <span class=\"service-status
+        status-running\">Running</span>\n \           </a>\n\n            <a
+        href=\"https://ollama.homelab.local\" class=\"service-card\">\n \               <span
+        class=\"service-icon\">\U0001F916</span>\n                <div
+        class=\"service-title\">Ollama + Open-WebUI</div>\n                <div
+        class=\"service-description\">Local LLM hosting with web interface for AI model
+        interactions</div>\n                <span class=\"service-status
+        status-running\">Running</span>\n            </a>\n\n \           <a
+        href=\"https://jupyter.homelab.local\" class=\"service-card\">\n \               <span
+        class=\"service-icon\">\U0001F4D3</span>\n                <div
+        class=\"service-title\">JupyterLab</div>\n                <div
+        class=\"service-description\">Interactive development environment for data science and
+        machine learning</div>\n                <span class=\"service-status
+        status-running\">Running</span>\n            </a>\n\n \           <a
+        href=\"https://gitlab.homelab.local\" class=\"service-card\">\n \               <span
+        class=\"service-icon\">\U0001F680</span>\n                <div
+        class=\"service-title\">GitLab</div>\n                <div
+        class=\"service-description\">Self-hosted Git repository with CI/CD pipelines and project
+        management</div>\n                <span class=\"service-status
+        status-starting\">Initializing</span>\n            </a>\n \       </div>\n\n        <div
+        class=\"footer\">\n            <p>Homelab Infrastructure • Kubernetes-powered • HTTPS
+        Secured</p>\n            <p style=\"margin-top: 10px; font-size:
+        0.8rem;\">\n                Add <code>192.168.16.100 homelab.local</code> to your /etc/hosts
+        file to access this portal\n            </p>\n        </div>\n
+        \   </div>\n</body>\n</html>\n"
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration:
+          "{\"apiVersion\":\"v1\",\"data\":{\"index.html\":\"\\u003c!DOCTYPE
+          html\\u003e\\n\\u003chtml lang=\\\"en\\\"\\u003e\\n\\u003chead\\u003e\\n    \\u003cmeta
+          charset=\\\"UTF-8\\\"\\u003e\\n    \\u003cmeta name=\\\"viewport\\\"
+          content=\\\"width=device-width,
+          initial-scale=1.0\\\"\\u003e\\n    \\u003ctitle\\u003eHomelab
+          Portal\\u003c/title\\u003e\\n \   \\u003cstyle\\u003e\\n        * {\\n            margin:
+          0;\\n            padding: 0;\\n            box-sizing:
+          border-box;\\n        }\\n\\n        body {\\n \           font-family: 'Segoe UI',
+          Tahoma, Geneva, Verdana, sans-serif;\\n \           background: linear-gradient(135deg,
+          #667eea 0%, #764ba2 100%);\\n \           min-height: 100vh;\\n            display:
+          flex;\\n            align-items: center;\\n            justify-content:
+          center;\\n            padding: 20px;\\n \       }\\n\\n        .container
+          {\\n            background: white;\\n            border-radius:
+          20px;\\n            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);\\n            padding:
+          40px;\\n            max-width: 1200px;\\n            width: 100%;\\n        }\\n\\n
+          \       .header {\\n            text-align: center;\\n            margin-bottom:
+          40px;\\n        }\\n\\n        .header h1 {\\n            color: #333;\\n
+          \           font-size: 2.5rem;\\n            margin-bottom: 10px;\\n        }\\n\\n
+          \       .header p {\\n            color: #666;\\n            font-size: 1.1rem;\\n
+          \       }\\n\\n        .services-grid {\\n            display:
+          grid;\\n            grid-template-columns: repeat(auto-fit, minmax(300px,
+          1fr));\\n            gap: 20px;\\n            margin-bottom:
+          30px;\\n        }\\n\\n        .service-card {\\n            background: #f8f9fa;\\n
+          \           border-radius: 15px;\\n            padding:
+          25px;\\n            text-decoration: none;\\n            color:
+          inherit;\\n            transition: all 0.3s ease;\\n \           border: 2px solid
+          transparent;\\n        }\\n\\n        .service-card:hover {\\n            transform:
+          translateY(-5px);\\n            box-shadow: 0 10px 30px rgba(0, 0, 0,
+          0.1);\\n            border-color: #667eea;\\n        }\\n\\n \       .service-icon
+          {\\n            font-size: 2.5rem;\\n            margin-bottom:
+          15px;\\n            display: block;\\n        }\\n\\n        .service-title
+          {\\n            font-size: 1.3rem;\\n            font-weight: 600;\\n            color:
+          #333;\\n            margin-bottom: 8px;\\n        }\\n\\n        .service-description
+          {\\n            color: #666;\\n            font-size: 0.95rem;\\n            line-height:
+          1.4;\\n            margin-bottom: 15px;\\n        }\\n\\n        .service-status
+          {\\n            padding: 5px 12px;\\n            border-radius:
+          20px;\\n            font-size: 0.8rem;\\n            font-weight:
+          500;\\n            text-transform: uppercase;\\n \       }\\n\\n        .status-running
+          {\\n            background: #d4edda;\\n \           color:
+          #155724;\\n        }\\n\\n        .status-starting {\\n \           background:
+          #fff3cd;\\n            color: #856404;\\n        }\\n\\n \       .footer
+          {\\n            text-align: center;\\n            padding-top:
+          30px;\\n            border-top: 1px solid #eee;\\n            color: #666;\\n
+          \           font-size: 0.9rem;\\n        }\\n\\n        .cluster-info {\\n
+          \           display: grid;\\n            grid-template-columns: repeat(auto-fit,
+          minmax(200px, 1fr));\\n            gap: 20px;\\n            margin-bottom:
+          30px;\\n            padding: 20px;\\n            background:
+          #f1f3f4;\\n            border-radius: 10px;\\n        }\\n\\n        .info-item
+          {\\n            text-align: center;\\n \       }\\n\\n        .info-label
+          {\\n            font-size: 0.8rem;\\n            color:
+          #666;\\n            text-transform: uppercase;\\n            margin-bottom:
+          5px;\\n        }\\n\\n        .info-value {\\n            font-size: 1.1rem;\\n
+          \           font-weight: 600;\\n            color:
+          #333;\\n        }\\n    \\u003c/style\\u003e\\n\\u003c/head\\u003e\\n\\u003cbody\\u003e\\n
+          \   \\u003cdiv class=\\\"container\\\"\\u003e\\n        \\u003cdiv
+          class=\\\"header\\\"\\u003e\\n \           \\u003ch1\\u003e\U0001F3E0 Homelab
+          Portal\\u003c/h1\\u003e\\n \           \\u003cp\\u003eYour self-hosted infrastructure
+          dashboard\\u003c/p\\u003e\\n \       \\u003c/div\\u003e\\n\\n        \\u003cdiv
+          class=\\\"cluster-info\\\"\\u003e\\n \           \\u003cdiv
+          class=\\\"info-item\\\"\\u003e\\n                \\u003cdiv
+          class=\\\"info-label\\\"\\u003eCluster\\u003c/div\\u003e\\n                \\u003cdiv
+          class=\\\"info-value\\\"\\u003eMicroK8s\\u003c/div\\u003e\\n            \\u003c/div\\u003e\\n
+          \           \\u003cdiv class=\\\"info-item\\\"\\u003e\\n                \\u003cdiv
+          class=\\\"info-label\\\"\\u003eLoad
+          Balancer\\u003c/div\\u003e\\n                \\u003cdiv
+          class=\\\"info-value\\\"\\u003e192.168.16.100\\u003c/div\\u003e\\n            \\u003c/div\\u003e\\n
+          \           \\u003cdiv class=\\\"info-item\\\"\\u003e\\n                \\u003cdiv
+          class=\\\"info-label\\\"\\u003eSSL\\u003c/div\\u003e\\n                \\u003cdiv
+          class=\\\"info-value\\\"\\u003eCA
+          Secured\\u003c/div\\u003e\\n            \\u003c/div\\u003e\\n \           \\u003cdiv
+          class=\\\"info-item\\\"\\u003e\\n                \\u003cdiv
+          class=\\\"info-label\\\"\\u003eServices\\u003c/div\\u003e\\n                \\u003cdiv
+          class=\\\"info-value\\\"\\u003e5\\u003c/div\\u003e\\n            \\u003c/div\\u003e\\n
+          \       \\u003c/div\\u003e\\n\\n        \\u003cdiv class=\\\"services-grid\\\"\\u003e\\n
+          \           \\u003ca href=\\\"https://grafana.homelab.local\\\"
+          class=\\\"service-card\\\"\\u003e\\n \               \\u003cspan
+          class=\\\"service-icon\\\"\\u003e\U0001F4CA\\u003c/span\\u003e\\n
+          \               \\u003cdiv class=\\\"service-title\\\"\\u003eGrafana\\u003c/div\\u003e\\n
+          \               \\u003cdiv class=\\\"service-description\\\"\\u003eData visualization and
+          monitoring dashboards with Prometheus integration\\u003c/div\\u003e\\n
+          \               \\u003cspan class=\\\"service-status
+          status-running\\\"\\u003eRunning\\u003c/span\\u003e\\n
+          \           \\u003c/a\\u003e\\n\\n            \\u003ca
+          href=\\\"https://prometheus.homelab.local\\\"
+          class=\\\"service-card\\\"\\u003e\\n                \\u003cspan
+          class=\\\"service-icon\\\"\\u003e\U0001F50D\\u003c/span\\u003e\\n
+          \               \\u003cdiv
+          class=\\\"service-title\\\"\\u003ePrometheus\\u003c/div\\u003e\\n
+          \               \\u003cdiv class=\\\"service-description\\\"\\u003eMetrics collection and
+          monitoring system for cluster observability\\u003c/div\\u003e\\n
+          \               \\u003cspan class=\\\"service-status
+          status-running\\\"\\u003eRunning\\u003c/span\\u003e\\n
+          \           \\u003c/a\\u003e\\n\\n            \\u003ca
+          href=\\\"https://ollama.homelab.local\\\"
+          class=\\\"service-card\\\"\\u003e\\n                \\u003cspan
+          class=\\\"service-icon\\\"\\u003e\U0001F916\\u003c/span\\u003e\\n
+          \               \\u003cdiv class=\\\"service-title\\\"\\u003eOllama +
+          Open-WebUI\\u003c/div\\u003e\\n \               \\u003cdiv
+          class=\\\"service-description\\\"\\u003eLocal LLM hosting with web interface for AI model
+          interactions\\u003c/div\\u003e\\n \               \\u003cspan class=\\\"service-status
+          status-running\\\"\\u003eRunning\\u003c/span\\u003e\\n
+          \           \\u003c/a\\u003e\\n\\n            \\u003ca
+          href=\\\"https://jupyter.homelab.local\\\"
+          class=\\\"service-card\\\"\\u003e\\n                \\u003cspan
+          class=\\\"service-icon\\\"\\u003e\U0001F4D3\\u003c/span\\u003e\\n
+          \               \\u003cdiv
+          class=\\\"service-title\\\"\\u003eJupyterLab\\u003c/div\\u003e\\n
+          \               \\u003cdiv class=\\\"service-description\\\"\\u003eInteractive development
+          environment for data science and machine learning\\u003c/div\\u003e\\n
+          \               \\u003cspan class=\\\"service-status
+          status-running\\\"\\u003eRunning\\u003c/span\\u003e\\n
+          \           \\u003c/a\\u003e\\n\\n            \\u003ca
+          href=\\\"https://gitlab.homelab.local\\\"
+          class=\\\"service-card\\\"\\u003e\\n                \\u003cspan
+          class=\\\"service-icon\\\"\\u003e\U0001F680\\u003c/span\\u003e\\n
+          \               \\u003cdiv class=\\\"service-title\\\"\\u003eGitLab\\u003c/div\\u003e\\n
+          \               \\u003cdiv class=\\\"service-description\\\"\\u003eSelf-hosted Git
+          repository with CI/CD pipelines and project management\\u003c/div\\u003e\\n
+          \               \\u003cspan class=\\\"service-status
+          status-starting\\\"\\u003eInitializing\\u003c/span\\u003e\\n
+          \           \\u003c/a\\u003e\\n        \\u003c/div\\u003e\\n\\n        \\u003cdiv
+          class=\\\"footer\\\"\\u003e\\n            \\u003cp\\u003eHomelab Infrastructure •
+          Kubernetes-powered • HTTPS Secured\\u003c/p\\u003e\\n            \\u003cp
+          style=\\\"margin-top: 10px; font-size: 0.8rem;\\\"\\u003e\\n                Add
+          \\u003ccode\\u003e192.168.16.100 homelab.local\\u003c/code\\u003e to your /etc/hosts file
+          to access this portal\\n            \\u003c/p\\u003e\\n        \\u003c/div\\u003e\\n
+          \   \\u003c/div\\u003e\\n\\u003c/body\\u003e\\n\\u003c/html\\u003e\\n\"},\"kind\":\"ConfigMap\",\"metadata\":{\"annotations\":{},\"name\":\"landing-page-config\",\"namespace\":\"homelab-portal\"}}\n"
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      name: landing-page-config
+      namespace: homelab-portal
+      resourceVersion: "38853"
+      uid: 60e50f06-ccff-4449-ab4a-ec7afd5244e7
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/auth-response-headers":"X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token","nginx.ingress.kubernetes.io/auth-signin":"https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri","nginx.ingress.kubernetes.io/auth-url":"http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"homelab-portal-ingress","namespace":"homelab-portal"},"spec":{"ingressClassName":"nginx","rules":[{"host":"homelab.local","http":{"paths":[{"backend":{"service":{"name":"landing-page","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["homelab.local"],"secretName":"homelab-portal-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token
+        nginx.ingress.kubernetes.io/auth-signin: https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri
+        nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      generation: 1
+      name: homelab-portal-ingress
+      namespace: homelab-portal
+      resourceVersion: "38854"
+      uid: 395d786a-90fd-4e97-9dcb-55ddfdd8e509
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: landing-page
+                    port:
+                      number: 80
+                path: /
+                pathType: Prefix
+      tls:
+        - hosts:
+            - homelab.local
+          secretName: homelab-portal-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"cert-manager.io/v1","kind":"Certificate","metadata":{"annotations":{},"name":"homelab-portal-tls-cert","namespace":"homelab-portal"},"spec":{"commonName":"homelab.local","dnsNames":["homelab.local"],"issuerRef":{"kind":"ClusterIssuer","name":"homelab-ca-issuer"},"secretName":"homelab-portal-tls-cert"}}
+      creationTimestamp: "2025-07-29T00:21:25Z"
+      generation: 3
+      name: homelab-portal-tls-cert
+      namespace: homelab-portal
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: homelab-portal-ingress
+          uid: 395d786a-90fd-4e97-9dcb-55ddfdd8e509
+      resourceVersion: "38859"
+      uid: 4a9cfa33-a44c-4e9b-95dd-674de22408fd
+    spec:
+      dnsNames:
+        - homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: homelab-portal-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:21:26Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 3
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-27T00:21:25Z"
+      notBefore: "2025-07-29T00:21:25Z"
+      renewalTime: "2025-09-27T00:21:25Z"
+      revision: 1
+kind: List
+metadata:
+  resourceVersion: ""

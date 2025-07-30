@@ -11,16 +11,11 @@ import json
 import logging
 import sys
 from pathlib import Path
-<<<<<<< HEAD
 from typing import TYPE_CHECKING, Any
-=======
-from typing import Any
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 import click
 from rich.console import Console
 from rich.panel import Panel
-<<<<<<< HEAD
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
@@ -32,13 +27,6 @@ from .core.ui import console, progress_bar
 
 if TYPE_CHECKING:
     from .core.orchestrator import HomelabOrchestrator
-=======
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.table import Table
-
-from .core.config_manager import ConfigContext, ConfigManager
-from .core.orchestrator import HomelabOrchestrator
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 console = Console()
@@ -77,10 +65,7 @@ def setup_logging(level: str) -> None:
     help="Cluster deployment type",
 )
 @click.option("--project-root", type=click.Path(exists=True), help="Project root directory")
-<<<<<<< HEAD
 @click.version_option(version=__version__, prog_name="Homelab Orchestrator")
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -120,17 +105,12 @@ def deploy(ctx: click.Context) -> None:
 @click.option("--components", multiple=True, help="Specific components to deploy")
 @click.option("--dry-run", is_flag=True, help="Perform validation without deployment")
 @click.option("--skip-hooks", is_flag=True, help="Skip deployment hooks")
-<<<<<<< HEAD
 @with_orchestrator
-=======
-@click.pass_context
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def deploy_infrastructure(
     ctx: click.Context,
     components: list[str],
     dry_run: bool,
     skip_hooks: bool,
-<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy complete homelab infrastructure."""
@@ -148,48 +128,6 @@ def deploy_infrastructure(
 
         # Display results
         _display_deployment_result(result)
-=======
-) -> None:
-    """Deploy complete homelab infrastructure."""
-
-    async def _deploy() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Initializing orchestrator...", total=None)
-
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
-            )
-
-            try:
-                progress.update(task, description="Starting orchestrator...")
-                await orchestrator.start()
-
-                progress.update(task, description="Deploying infrastructure...")
-                result = await orchestrator.deploy_full_infrastructure(
-                    environment=config_manager.context.environment,
-                    components=list(components) if components else None,
-                    dry_run=dry_run,
-                )
-
-                progress.update(task, description="Deployment completed", completed=100)
-
-                # Display results
-                _display_deployment_result(result)
-
-            finally:
-                progress.update(task, description="Cleaning up...")
-                await orchestrator.stop()
-
-    asyncio.run(_deploy())
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @deploy.command("service")
@@ -197,16 +135,12 @@ def deploy_infrastructure(
 @click.option("--namespace", help="Target namespace")
 @click.option("--dry-run", is_flag=True, help="Validate without deployment")
 @click.pass_context
-<<<<<<< HEAD
 @with_orchestrator
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def deploy_service(
     ctx: click.Context,
     service_name: str,
     namespace: str | None,
     dry_run: bool,
-<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy specific service."""
@@ -307,17 +241,6 @@ def manage_recover(
 
         progress.update(task, description="Recovery completed", completed=100)
         _display_deployment_result(result)
-=======
-) -> None:
-    """Deploy specific service."""
-    console.print(f"[yellow]Deploying service: {service_name}[/yellow]")
-
-    if dry_run:
-        console.print("[blue]Dry run mode - no actual deployment[/blue]")
-
-    # Implementation for service deployment
-    console.print(f"[green]Service {service_name} deployment completed[/green]")
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @cli.group()
@@ -351,25 +274,47 @@ def manage_backup(ctx: click.Context, components: list[str]) -> None:
 
 
 @manage.command("teardown")
-@click.option("--components", multiple=True, help="Specific components to teardown")
+@click.option("--force", is_flag=True, help="Force teardown without confirmation")
+@click.option("--no-backup", is_flag=True, help="Skip backup before teardown")
 @click.pass_context
-def manage_teardown(ctx: click.Context, components: list[str]) -> None:
-    """Teardown infrastructure components."""
+def manage_teardown(ctx: click.Context, force: bool, no_backup: bool) -> None:
+    """Teardown complete infrastructure."""
 
     async def _teardown() -> None:
         config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
 
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.teardown_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Initializing orchestrator...", total=None)
+
+            orchestrator = HomelabOrchestrator(
+                config_manager=config_manager,
+                project_root=ctx.obj["project_root"],
+                log_level=ctx.obj["log_level"],
+            )
+
+            try:
+                progress.update(task, description="Starting orchestrator...")
+                await orchestrator.start()
+
+                progress.update(task, description="Tearing down infrastructure...")
+                result = await orchestrator.teardown_infrastructure(
+                    environment=config_manager.context.environment,
+                    force=force,
+                    backup=not no_backup,
+                )
+
+                progress.update(task, description="Teardown completed", completed=100)
+
+                # Display results
+                _display_teardown_result(result)
+
+            finally:
+                progress.update(task, description="Cleaning up...")
+                await orchestrator.stop()
 
     asyncio.run(_teardown())
 
@@ -932,6 +877,9 @@ def _display_deployment_result(result: Any) -> None:
     )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
     # Display comprehensive validation results if available
     if hasattr(result, "details") and "comprehensive_validation" in result.details:
         validation = result.details["comprehensive_validation"]
@@ -939,9 +887,12 @@ def _display_deployment_result(result: Any) -> None:
             _display_validation_details(validation["validation_details"])
 
     if hasattr(result, "components_deployed") and result.components_deployed:
+<<<<<<< HEAD
 =======
     if result.components_deployed:
 >>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
+=======
+>>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
         table = Table(title="Deployed Components")
         table.add_column("Component", style="green")
         table.add_column("Status", style="bold")
@@ -952,10 +903,14 @@ def _display_deployment_result(result: Any) -> None:
         console.print(table)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     if hasattr(result, "components_failed") and result.components_failed:
 =======
     if result.components_failed:
 >>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
+=======
+    if hasattr(result, "components_failed") and result.components_failed:
+>>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
         table = Table(title="Failed Components")
         table.add_column("Component", style="red")
         table.add_column("Status", style="bold")
@@ -972,6 +927,9 @@ def _display_deployment_result(result: Any) -> None:
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
 def _display_teardown_result(result: Any) -> None:
     """Display teardown results in a nice format."""
     status_color = {
@@ -1032,8 +990,11 @@ def _display_validation_details(validation_details: dict[str, Any]) -> None:
     console.print(table)
 
 
+<<<<<<< HEAD
 =======
 >>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
+=======
+>>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
 def _display_health_result(result: Any, output_format: str) -> None:
     """Display health check results."""
     if output_format == "json":

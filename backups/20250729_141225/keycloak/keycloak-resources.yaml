@@ -1,0 +1,1180 @@
+apiVersion: v1
+items:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generateName: postgres-7bd5d69c5-
+      labels:
+        app: postgres
+        pod-template-hash: 7bd5d69c5
+      name: postgres-7bd5d69c5-h2x6s
+      namespace: keycloak
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: postgres-7bd5d69c5
+          uid: fa177450-4cae-4465-ad21-7c974f4315ff
+      resourceVersion: "6676"
+      uid: 33cd5ba9-bca1-4d9a-b373-d38a45ed42c6
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: keycloak
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: keycloak-db-secret
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: keycloak-db-secret
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          image: postgres:15
+          imagePullPolicy: IfNotPresent
+          name: postgres
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "1"
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-data
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-tnwf7
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: kube-api-access-tnwf7
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:49:59Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:50:11Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:50:11Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:49:59Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://5a4b1a5cb855d88d4bf7cab45dd9438d8a160e79553c35d650bc8a31ad9b9f30
+          image: docker.io/library/postgres:15
+          imageID: docker.io/library/postgres@sha256:5ab68e212eab9cd4a16ecbf40d9449c88e1073abdca3ecc3aa5514d4a1af2ed0
+          lastState: {}
+          name: postgres
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:50:10Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.34
+      podIPs:
+        - ip: 10.42.0.34
+      qosClass: Burstable
+      startTime: "2025-07-29T00:49:59Z"
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generateName: keycloak-577ff64d59-
+      labels:
+        app: keycloak
+        pod-template-hash: 577ff64d59
+      name: keycloak-577ff64d59-hw2g9
+      namespace: keycloak
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: ReplicaSet
+          name: keycloak-577ff64d59
+          uid: cf9c19f3-3c74-4031-9b21-fca8f1399287
+      resourceVersion: "6837"
+      uid: 813d3301-65ca-428e-9776-eae69672fad1
+    spec:
+      containers:
+        - args:
+            - start
+            - --hostname-strict=false
+            - --hostname-strict-https=false
+            - --proxy=edge
+            - --http-enabled=true
+            - --import-realm
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/keycloak
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: keycloak-db-secret
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: keycloak-db-secret
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: keycloak-admin-secret
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: keycloak-admin-secret
+            - name: KC_HOSTNAME_URL
+              value: https://auth.homelab.local
+            - name: KC_HOSTNAME_ADMIN_URL
+              value: https://auth.homelab.local
+          image: quay.io/keycloak/keycloak:23.0
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /realms/master
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: keycloak
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /realms/master
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: "3"
+              memory: 6Gi
+            requests:
+              cpu: 1500m
+              memory: 3Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /opt/keycloak/data
+              name: keycloak-data
+            - mountPath: /opt/keycloak/data/import
+              name: realm-config
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: kube-api-access-xj55w
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      nodeName: homelab
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: default
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 300
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 300
+      volumes:
+        - name: keycloak-data
+          persistentVolumeClaim:
+            claimName: keycloak-data
+        - configMap:
+            defaultMode: 420
+            name: keycloak-realm-config
+          name: realm-config
+        - name: kube-api-access-xj55w
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3607
+                  path: token
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+    status:
+      conditions:
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:49:59Z"
+          status: "True"
+          type: Initialized
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:51:19Z"
+          status: "True"
+          type: Ready
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:51:19Z"
+          status: "True"
+          type: ContainersReady
+        - lastProbeTime: null
+          lastTransitionTime: "2025-07-29T00:49:59Z"
+          status: "True"
+          type: PodScheduled
+      containerStatuses:
+        - containerID: containerd://dce07d99dc43729516940cef4220447eb0ab65c8781ce29e11c7f03aae8f4e15
+          image: quay.io/keycloak/keycloak:23.0
+          imageID: quay.io/keycloak/keycloak@sha256:14e99d6f5dd0516a5bdc82537b732cb85469ecdb15ad7fe5f11ff67521544db8
+          lastState: {}
+          name: keycloak
+          ready: true
+          restartCount: 0
+          started: true
+          state:
+            running:
+              startedAt: "2025-07-29T00:50:12Z"
+      hostIP: 192.168.16.26
+      phase: Running
+      podIP: 10.42.0.35
+      podIPs:
+        - ip: 10.42.0.35
+      qosClass: Burstable
+      startTime: "2025-07-29T00:49:59Z"
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"postgres","namespace":"keycloak"},"spec":{"ports":[{"port":5432,"protocol":"TCP","targetPort":5432}],"selector":{"app":"postgres"}}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: postgres
+      namespace: keycloak
+      resourceVersion: "6561"
+      uid: 552f941b-4aca-45d0-9a7d-9711e2bdff2d
+    spec:
+      clusterIP: 10.43.158.38
+      clusterIPs:
+        - 10.43.158.38
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 5432
+          protocol: TCP
+          targetPort: 5432
+      selector:
+        app: postgres
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"keycloak","namespace":"keycloak"},"spec":{"ports":[{"port":8080,"protocol":"TCP","targetPort":8080}],"selector":{"app":"keycloak"}}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: keycloak
+      namespace: keycloak
+      resourceVersion: "6589"
+      uid: b62aa258-2d3d-487b-b773-4be61d900ae6
+    spec:
+      clusterIP: 10.43.189.73
+      clusterIPs:
+        - 10.43.189.73
+      internalTrafficPolicy: Cluster
+      ipFamilies:
+        - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        - port: 8080
+          protocol: TCP
+          targetPort: 8080
+      selector:
+        app: keycloak
+      sessionAffinity: None
+      type: ClusterIP
+    status:
+      loadBalancer: {}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"postgres","namespace":"keycloak"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_DB","value":"keycloak"},{"name":"POSTGRES_USER","valueFrom":{"secretKeyRef":{"key":"username","name":"keycloak-db-secret"}}},{"name":"POSTGRES_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"keycloak-db-secret"}}},{"name":"PGDATA","value":"/var/lib/postgresql/data/pgdata"}],"image":"postgres:15","name":"postgres","ports":[{"containerPort":5432}],"resources":{"limits":{"cpu":"2000m","memory":"4Gi"},"requests":{"cpu":"1000m","memory":"2Gi"}},"volumeMounts":[{"mountPath":"/var/lib/postgresql/data","name":"postgres-data"}]}],"volumes":[{"name":"postgres-data","persistentVolumeClaim":{"claimName":"postgres-data"}}]}}}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 1
+      name: postgres
+      namespace: keycloak
+      resourceVersion: "6680"
+      uid: e3f7d54d-8d73-46a0-a1d8-b6d9ba07586c
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: postgres
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: postgres
+        spec:
+          containers:
+            - env:
+                - name: POSTGRES_DB
+                  value: keycloak
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-db-secret
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-db-secret
+                - name: PGDATA
+                  value: /var/lib/postgresql/data/pgdata
+              image: postgres:15
+              imagePullPolicy: IfNotPresent
+              name: postgres
+              ports:
+                - containerPort: 5432
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                requests:
+                  cpu: "1"
+                  memory: 2Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /var/lib/postgresql/data
+                  name: postgres-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: postgres-data
+              persistentVolumeClaim:
+                claimName: postgres-data
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:50:11Z"
+          lastUpdateTime: "2025-07-29T00:50:11Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:49:55Z"
+          lastUpdateTime: "2025-07-29T00:50:11Z"
+          message: ReplicaSet "postgres-7bd5d69c5" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"keycloak","namespace":"keycloak"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"keycloak"}},"template":{"metadata":{"labels":{"app":"keycloak"}},"spec":{"containers":[{"args":["start","--hostname-strict=false","--hostname-strict-https=false","--proxy=edge","--http-enabled=true","--import-realm"],"env":[{"name":"KC_DB","value":"postgres"},{"name":"KC_DB_URL","value":"jdbc:postgresql://postgres:5432/keycloak"},{"name":"KC_DB_USERNAME","valueFrom":{"secretKeyRef":{"key":"username","name":"keycloak-db-secret"}}},{"name":"KC_DB_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"keycloak-db-secret"}}},{"name":"KEYCLOAK_ADMIN","valueFrom":{"secretKeyRef":{"key":"username","name":"keycloak-admin-secret"}}},{"name":"KEYCLOAK_ADMIN_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"keycloak-admin-secret"}}},{"name":"KC_HOSTNAME_URL","value":"https://auth.homelab.local"},{"name":"KC_HOSTNAME_ADMIN_URL","value":"https://auth.homelab.local"}],"image":"quay.io/keycloak/keycloak:23.0","livenessProbe":{"httpGet":{"path":"/realms/master","port":8080},"initialDelaySeconds":120,"periodSeconds":30},"name":"keycloak","ports":[{"containerPort":8080}],"readinessProbe":{"httpGet":{"path":"/realms/master","port":8080},"initialDelaySeconds":60,"periodSeconds":10},"resources":{"limits":{"cpu":"3000m","memory":"6Gi"},"requests":{"cpu":"1500m","memory":"3Gi"}},"volumeMounts":[{"mountPath":"/opt/keycloak/data","name":"keycloak-data"},{"mountPath":"/opt/keycloak/data/import","name":"realm-config"}]}],"volumes":[{"name":"keycloak-data","persistentVolumeClaim":{"claimName":"keycloak-data"}},{"configMap":{"name":"keycloak-realm-config"},"name":"realm-config"}]}}}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 1
+      name: keycloak
+      namespace: keycloak
+      resourceVersion: "6841"
+      uid: 1d65f0aa-db0d-4ec8-9dbc-9ea674eee586
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app: keycloak
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: keycloak
+        spec:
+          containers:
+            - args:
+                - start
+                - --hostname-strict=false
+                - --hostname-strict-https=false
+                - --proxy=edge
+                - --http-enabled=true
+                - --import-realm
+              env:
+                - name: KC_DB
+                  value: postgres
+                - name: KC_DB_URL
+                  value: jdbc:postgresql://postgres:5432/keycloak
+                - name: KC_DB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-db-secret
+                - name: KC_DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-db-secret
+                - name: KEYCLOAK_ADMIN
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-admin-secret
+                - name: KEYCLOAK_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-admin-secret
+                - name: KC_HOSTNAME_URL
+                  value: https://auth.homelab.local
+                - name: KC_HOSTNAME_ADMIN_URL
+                  value: https://auth.homelab.local
+              image: quay.io/keycloak/keycloak:23.0
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /realms/master
+                  port: 8080
+                  scheme: HTTP
+                initialDelaySeconds: 120
+                periodSeconds: 30
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: keycloak
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /realms/master
+                  port: 8080
+                  scheme: HTTP
+                initialDelaySeconds: 60
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: "3"
+                  memory: 6Gi
+                requests:
+                  cpu: 1500m
+                  memory: 3Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /opt/keycloak/data
+                  name: keycloak-data
+                - mountPath: /opt/keycloak/data/import
+                  name: realm-config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: keycloak-data
+              persistentVolumeClaim:
+                claimName: keycloak-data
+            - configMap:
+                defaultMode: 420
+                name: keycloak-realm-config
+              name: realm-config
+    status:
+      availableReplicas: 1
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:51:19Z"
+          lastUpdateTime: "2025-07-29T00:51:19Z"
+          message: Deployment has minimum availability.
+          reason: MinimumReplicasAvailable
+          status: "True"
+          type: Available
+        - lastTransitionTime: "2025-07-29T00:49:55Z"
+          lastUpdateTime: "2025-07-29T00:51:19Z"
+          message: ReplicaSet "keycloak-577ff64d59" has successfully progressed.
+          reason: NewReplicaSetAvailable
+          status: "True"
+          type: Progressing
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 1
+      labels:
+        app: postgres
+        pod-template-hash: 7bd5d69c5
+      name: postgres-7bd5d69c5
+      namespace: keycloak
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: postgres
+          uid: e3f7d54d-8d73-46a0-a1d8-b6d9ba07586c
+      resourceVersion: "6679"
+      uid: fa177450-4cae-4465-ad21-7c974f4315ff
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: postgres
+          pod-template-hash: 7bd5d69c5
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: postgres
+            pod-template-hash: 7bd5d69c5
+        spec:
+          containers:
+            - env:
+                - name: POSTGRES_DB
+                  value: keycloak
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-db-secret
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-db-secret
+                - name: PGDATA
+                  value: /var/lib/postgresql/data/pgdata
+              image: postgres:15
+              imagePullPolicy: IfNotPresent
+              name: postgres
+              ports:
+                - containerPort: 5432
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                requests:
+                  cpu: "1"
+                  memory: 2Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /var/lib/postgresql/data
+                  name: postgres-data
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: postgres-data
+              persistentVolumeClaim:
+                claimName: postgres-data
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+      annotations:
+        deployment.kubernetes.io/desired-replicas: "1"
+        deployment.kubernetes.io/max-replicas: "2"
+        deployment.kubernetes.io/revision: "1"
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 1
+      labels:
+        app: keycloak
+        pod-template-hash: 577ff64d59
+      name: keycloak-577ff64d59
+      namespace: keycloak
+      ownerReferences:
+        - apiVersion: apps/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Deployment
+          name: keycloak
+          uid: 1d65f0aa-db0d-4ec8-9dbc-9ea674eee586
+      resourceVersion: "6840"
+      uid: cf9c19f3-3c74-4031-9b21-fca8f1399287
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: keycloak
+          pod-template-hash: 577ff64d59
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: keycloak
+            pod-template-hash: 577ff64d59
+        spec:
+          containers:
+            - args:
+                - start
+                - --hostname-strict=false
+                - --hostname-strict-https=false
+                - --proxy=edge
+                - --http-enabled=true
+                - --import-realm
+              env:
+                - name: KC_DB
+                  value: postgres
+                - name: KC_DB_URL
+                  value: jdbc:postgresql://postgres:5432/keycloak
+                - name: KC_DB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-db-secret
+                - name: KC_DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-db-secret
+                - name: KEYCLOAK_ADMIN
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: keycloak-admin-secret
+                - name: KEYCLOAK_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: keycloak-admin-secret
+                - name: KC_HOSTNAME_URL
+                  value: https://auth.homelab.local
+                - name: KC_HOSTNAME_ADMIN_URL
+                  value: https://auth.homelab.local
+              image: quay.io/keycloak/keycloak:23.0
+              imagePullPolicy: IfNotPresent
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /realms/master
+                  port: 8080
+                  scheme: HTTP
+                initialDelaySeconds: 120
+                periodSeconds: 30
+                successThreshold: 1
+                timeoutSeconds: 1
+              name: keycloak
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /realms/master
+                  port: 8080
+                  scheme: HTTP
+                initialDelaySeconds: 60
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  cpu: "3"
+                  memory: 6Gi
+                requests:
+                  cpu: 1500m
+                  memory: 3Gi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /opt/keycloak/data
+                  name: keycloak-data
+                - mountPath: /opt/keycloak/data/import
+                  name: realm-config
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: keycloak-data
+              persistentVolumeClaim:
+                claimName: keycloak-data
+            - configMap:
+                defaultMode: 420
+                name: keycloak-realm-config
+              name: realm-config
+    status:
+      availableReplicas: 1
+      fullyLabeledReplicas: 1
+      observedGeneration: 1
+      readyReplicas: 1
+      replicas: 1
+  - apiVersion: v1
+    data:
+      password: a2V5Y2xvYWsxMjMh
+      username: a2V5Y2xvYWs=
+    kind: Secret
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"password":"a2V5Y2xvYWsxMjMh","username":"a2V5Y2xvYWs="},"kind":"Secret","metadata":{"annotations":{},"name":"keycloak-db-secret","namespace":"keycloak"},"type":"Opaque"}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: keycloak-db-secret
+      namespace: keycloak
+      resourceVersion: "6549"
+      uid: 2b5162c1-7611-4cc8-a0fe-3138cd12c482
+    type: Opaque
+  - apiVersion: v1
+    data:
+      password: YWRtaW4xMjMh
+      username: YWRtaW4=
+    kind: Secret
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"password":"YWRtaW4xMjMh","username":"YWRtaW4="},"kind":"Secret","metadata":{"annotations":{},"name":"keycloak-admin-secret","namespace":"keycloak"},"type":"Opaque"}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: keycloak-admin-secret
+      namespace: keycloak
+      resourceVersion: "6550"
+      uid: 1ad41616-9e66-43e7-b520-daf9461c9a28
+    type: Opaque
+  - apiVersion: v1
+    data:
+      ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNKVENDQWN1Z0F3SUJBZ0lSQUtUSWo5bVZ6Sm5OZ0RKNG42dzVHeVl3Q2dZSUtvWkl6ajBFQXdJd2NqRUwKTUFrR0ExVUVCaE1DVlZNeERUQUxCZ05WQkFnVEJFaHZiV1V4RERBS0JnTlZCQWNUQTB4aFlqRVFNQTRHQTFVRQpDaE1IU0c5dFpXeGhZakVmTUIwR0ExVUVDeE1XU0c5dFpXeGhZaUJKYm1aeVlYTjBjblZqZEhWeVpURVRNQkVHCkExVUVBeE1LU0c5dFpXeGhZaUJEUVRBZUZ3MHlOVEEzTWpneU16QXdNekphRncweU5URXdNall5TXpBd016SmEKTUhJeEN6QUpCZ05WQkFZVEFsVlRNUTB3Q3dZRFZRUUlFd1JJYjIxbE1Rd3dDZ1lEVlFRSEV3Tk1ZV0l4RURBTwpCZ05WQkFvVEIwaHZiV1ZzWVdJeEh6QWRCZ05WQkFzVEZraHZiV1ZzWVdJZ1NXNW1jbUZ6ZEhKMVkzUjFjbVV4CkV6QVJCZ05WQkFNVENraHZiV1ZzWVdJZ1EwRXdXVEFUQmdjcWhrak9QUUlCQmdncWhrak9QUU1CQndOQ0FBUmoKUVZLQUg1L3B2aUdPU1ppTGRnOXNyQVVOZlI4Y0hCNkJMaWE1NDNicFZ4M095Zjc4L1VzKy9jZ0RsRjZrSFB1Uwp1WHM1TjJvOEExRVJ3UjJZUHdZbm8wSXdRREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdEd1lEVlIwVEFRSC9CQVV3CkF3RUIvekFkQmdOVkhRNEVGZ1FVdnRTN2szbWdXZCtmL1R3dTlMOU56ZlRZd2N3d0NnWUlLb1pJemowRUF3SUQKU0FBd1JRSWhBT0tVY0ZIVFFPQ2ZCb2RzNVNKbDRxaGhWYVRoSVcyRFRjY0EzNW9GV3RKL0FpQTJkTG9VUktTQQo0YlhFTU83bi9zSU91NGo2NlVWUFlVQXcyVTFvNlpINkhRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+      tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNuakNDQWtTZ0F3SUJBZ0lRTlFPekNmMnVXSUk3ZUFwSkFSd3JvVEFLQmdncWhrak9QUVFEQWpCeU1Rc3cKQ1FZRFZRUUdFd0pWVXpFTk1Bc0dBMVVFQ0JNRVNHOXRaVEVNTUFvR0ExVUVCeE1EVEdGaU1SQXdEZ1lEVlFRSwpFd2RJYjIxbGJHRmlNUjh3SFFZRFZRUUxFeFpJYjIxbGJHRmlJRWx1Wm5KaGMzUnlkV04wZFhKbE1STXdFUVlEClZRUURFd3BJYjIxbGJHRmlJRU5CTUI0WERUSTFNRGN5T1RBd05EazFOVm9YRFRJMU1UQXlOekF3TkRrMU5Wb3cKQURDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTUNZLzRGZFZKS2tLOE04bC9JaApSci80dzNUdGNtbXZWa0QvWUFvUXBNN1c5NncydmxIdmp2a2JQUVRUekhGTzlZdzBHdDJ0MlZLeFVmWno5bk1mCjJrUVpHd3RZdHlSVXdGRlgvVFNQdjJJVlZBTitVNTU4RGhJU05oNmJUUG5Wd2h0YjFURHBHMFB3bXBFR2o4UlUKVXR0ekxER3R2dncvR0dyYVZEOVk2TEJ5VXBUUStNanRla1Vlb2pSV0NZb1Z4dSt5R3IrSmI2bnkySlZyU2k2egowS1RIeERFaDBrandDTEt6alpKcjRwWVk2M252WCtyUS94RU9YRmVjWlhJMzlaelZUQ3B4WDFqMVhJZ0ltTkkyCnAxWUxnWXd6YTRpdjZJWWd4N2dnUHpaUFVlc2l3M2czamdmUDdCU3hnN2dCT2J5a3VkWWZFVjVOZ1FnRDRrZ2kKVHlFQ0F3RUFBYU5qTUdFd0RnWURWUjBQQVFIL0JBUURBZ1dnTUF3R0ExVWRFd0VCL3dRQ01BQXdId1lEVlIwagpCQmd3Rm9BVXZ0UzdrM21nV2QrZi9Ud3U5TDlOemZUWXdjd3dJQVlEVlIwUkFRSC9CQll3RklJU1lYVjBhQzVvCmIyMWxiR0ZpTG14dlkyRnNNQW9HQ0NxR1NNNDlCQU1DQTBnQU1FVUNJUUNOYkdJNlJndVVwK1FPSm1FbCsyTGYKN1U3dnlLT1dnOFV6UHRURktuV1hUUUlnRHNUZmNmaVh3S25HL29Fd1FadWVBczVsNUYrdzlEMTFiT1NzbXVJUQpWYkU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+      tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBd0pqL2dWMVVrcVFyd3p5WDhpRkd2L2pEZE8xeWFhOVdRUDlnQ2hDa3p0YjNyRGErClVlK08rUnM5Qk5QTWNVNzFqRFFhM2EzWlVyRlI5blAyY3gvYVJCa2JDMWkzSkZUQVVWZjlOSSsvWWhWVUEzNVQKbm53T0VoSTJIcHRNK2RYQ0cxdlZNT2tiUS9DYWtRYVB4RlJTMjNNc01hMisvRDhZYXRwVVAxam9zSEpTbE5ENAp5TzE2UlI2aU5GWUppaFhHNzdJYXY0bHZxZkxZbFd0S0xyUFFwTWZFTVNIU1NQQUlzck9Oa212aWxoanJlZTlmCjZ0RC9FUTVjVjV4bGNqZjFuTlZNS25GZldQVmNpQWlZMGphblZndUJqRE5yaUsvb2hpREh1Q0EvTms5UjZ5TEQKZURlT0I4L3NGTEdEdUFFNXZLUzUxaDhSWGsyQkNBUGlTQ0pQSVFJREFRQUJBb0lCQUc1QUp5TmExZXNMNTdGZgpvbXVNK1A4ejNFKzNEV1BLWjBuVjVwaGNacnV3K3g2dVI4eUhvZ1NmdnhKZ1hBd1E4eWRMUElYaDJ5SW5ONUFwCldjOFZVTkRpdmtTRWlISlh3YS9PK3JkNEFrcVhndnhzK0ZrbEVyanRpK1dCYVZNck5tNks1ME9VYlhNNjdJQlEKalVRS01WUkdYZW9pVjgzMklIZ3FlMGU0RVp2UEZmRTIxN1RMY2xMaFBOdHIreDFRdm1RL2M1a3dOQ0I4WDBMNgpXdnNqSTlFMFo3cDF5NGkvMVFlMklMeUR1MFowSG9pZXFPcDlsYnd3cEV3V2oxQVJqZmJxM21oU0xPSDBCeno0ClZVSmJQQXViOGJYc1RGUDh1RkZmYndOdktFT0hINlZZcVUzYnZQTk16d1UyNnFrNWFBdWpCZDFiYXBOYXE5WGkKOGNJMWRrRUNnWUVBK01oL001bzdUbkpmSG9US0ZQbU56S0hXbUZraDJmNEc0WUFRU0JXdFBQeE1nSzJsRkF4TgpDeXQwazIrc3gxdkc0V3NtMHV5R1hFTkRGdkFaeDkxL1JoNWhsKy9Idy94L0hEN3hJMkVkSW5oOWxYMm54TGlzCnlCUzhxbzFpSnlCaGpHQXJTcy9Zcys3TE5YNjdYbFZJOW5LNVNkV1JuK3ZLbGJUMjZvNlhWaFVDZ1lFQXhpOUMKTGJLUVlzNk1NNWoreTZQM1YrdFdUNHVHOXdjNFhadWl6dHJWU2dPSlFudnhobCszRVQwSlhkcU1TTktvZWRObwptU2kzM254cFRsTW42eFN6clRtcHJ6MWNXby9hSzRqVUZGWEdKTVIvWkdOSWFKcnhpL0dZOUZkaDVNQ3d6TnJOCmNqbm1oQzM0RDA3ZlB4RzhLRWx2U2gwMEcyVDk2b2R3S1FML3c5MENnWUVBalFOQUxtU2VkeEdXM3JxUHZLSFQKQVFrK2xLMzQ1Ukg2bm5pelFkaWZrRERGd0M0c29wZHlXQUZ5bTFzeVNQRzVZZTRWWEhyYWtaTkNoTTdsSGdkcgphN2d1d3lzVFJRQnFuLzBCTzNlQlJ4ZWF2MUF3OXUxaWFpcHU0aEV2Y0ZRSFZzVHY1UUM0cVF5U1BDa3dWUURzClVWeW5yN1VSVE44ZXZncUw1bG1hYUIwQ2dZRUFzWnYydGhkNkdHSzgrUnphODh0dFJvaXM0RHJONktLNjNBRTMKNWlQdDFCZlpNaEQ3d2c0VGRVcDdFM1ppRkgxZDZWZ1NQSGhtVitpdFF6bDQ0OCs0dXJ5Ym1tWG1WMjdsK2UvMQpDSWhhTytjeHQ5aldNcER4ZWhZNW1uaVpUYlYyZlJCMTRER05xZFc4b3BOdnRRa0MxQ1FEcmFzQVlMQ2dja2VRCnQrQnRNSzBDZ1lFQWlMUFZndEZOTzdSSlE4VkoxY1pzSDBCZXAveUF3dmNtTFRDNzJDQkIwYkVaaUlDMWs2WmIKOHQxeEdFZW8yR1ptdTdxUGJ4OEJUZWVGd2U2RDdiTUlTRzhIVTRBdlpuTmVzMnB6MkhERlRGVzV0eCt2U1hnQwpDZkswMmxwOTRhS2RMVUltaDh6aVZKZHYzcmUxU3BYL3JWTTFoWGtXME9DZmhOTUVOSXpTSjM0PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+    kind: Secret
+    metadata:
+      annotations:
+        cert-manager.io/alt-names: auth.homelab.local
+        cert-manager.io/certificate-name: keycloak-tls-cert
+        cert-manager.io/common-name: ""
+        cert-manager.io/ip-sans: ""
+        cert-manager.io/issuer-group: cert-manager.io
+        cert-manager.io/issuer-kind: ClusterIssuer
+        cert-manager.io/issuer-name: homelab-ca-issuer
+        cert-manager.io/uri-sans: ""
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      labels:
+        controller.cert-manager.io/fao: "true"
+      name: keycloak-tls-cert
+      namespace: keycloak
+      resourceVersion: "6623"
+      uid: 987e8b67-7f45-422d-a867-400847afe367
+    type: kubernetes.io/tls
+  - apiVersion: v1
+    data:
+      ca.crt: |
+        -----BEGIN CERTIFICATE-----
+        MIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy
+        dmVyLWNhQDE3NTM3NDE3OTQwHhcNMjUwNzI4MjIyOTU0WhcNMzUwNzI2MjIyOTU0
+        WjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTM3NDE3OTQwWTATBgcqhkjO
+        PQIBBggqhkjOPQMBBwNCAASReyR7DvPvrR4y88wrDNeAy5Zs4CfRRD+qgBkyGa0J
+        IzvoOKZvz8+/bh356xwa1tqqBaSrmQvt5fuMvHZcQLPQo0IwQDAOBgNVHQ8BAf8E
+        BAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUrNWcwCmEcL5ksfQVxIE8
+        NdaNIvkwCgYIKoZIzj0EAwIDRwAwRAIgC286fMwQojlX9gm5tsCNDuBlUYrs4KBu
+        wR88SXVxn8ACIGHyBM8IYYTP6tn7gjjyKAUUX2WDwBnYno+NzZgUaEil
+        -----END CERTIFICATE-----
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubernetes.io/description:
+          Contains a CA bundle that can be used to verify the kube-apiserver when using internal
+          endpoints such as the internal service IP or kubernetes.default.svc. No other usage is
+          guaranteed across distributions of Kubernetes clusters.
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: kube-root-ca.crt
+      namespace: keycloak
+      resourceVersion: "6547"
+      uid: 6d1c3e6f-7a66-49d4-a113-4301f55ec7b8
+  - apiVersion: v1
+    data:
+      homelab-realm.json: |
+        {
+          "realm": "homelab",
+          "displayName": "Homelab Infrastructure",
+          "enabled": true,
+          "sslRequired": "external",
+          "registrationAllowed": false,
+          "loginWithEmailAllowed": true,
+          "duplicateEmailsAllowed": false,
+          "resetPasswordAllowed": true,
+          "editUsernameAllowed": false,
+          "bruteForceProtected": true,
+          "rememberMe": true,
+          "verifyEmail": false,
+          "loginTheme": "keycloak",
+          "accountTheme": "keycloak",
+          "adminTheme": "keycloak",
+          "emailTheme": "keycloak",
+          "defaultRoles": ["default-roles-homelab"],
+          "requiredCredentials": ["password"],
+          "users": [
+            {
+              "username": "admin",
+              "enabled": true,
+              "firstName": "Admin",
+              "lastName": "User",
+              "email": "admin@homelab.local",
+              "credentials": [
+                {
+                  "type": "password",
+                  "value": "homelab123!",
+                  "temporary": false
+                }
+              ],
+              "realmRoles": ["admin", "user"],
+              "clientRoles": {
+                "account": ["manage-account", "view-profile"]
+              }
+            }
+          ],
+          "roles": {
+            "realm": [
+              {
+                "name": "admin",
+                "description": "Administrator role"
+              },
+              {
+                "name": "user",
+                "description": "Standard user role"
+              }
+            ]
+          },
+          "clients": [
+            {
+              "clientId": "homelab-portal",
+              "name": "Homelab Portal",
+              "enabled": true,
+              "clientAuthenticatorType": "client-secret",
+              "secret": "homelab-portal-secret",
+              "redirectUris": [
+                "https://homelab.local/*",
+                "https://grafana.homelab.local/*",
+                "https://prometheus.homelab.local/*",
+                "https://gitlab.homelab.local/*",
+                "https://gitlab.homelab.local/users/auth/openid_connect/callback",
+                "https://ollama.homelab.local/*",
+                "https://jupyter.homelab.local/*"
+              ],
+              "webOrigins": [
+                "https://homelab.local",
+                "https://grafana.homelab.local",
+                "https://prometheus.homelab.local",
+                "https://gitlab.homelab.local",
+                "https://ollama.homelab.local",
+                "https://jupyter.homelab.local"
+              ],
+              "protocol": "openid-connect",
+              "publicClient": false,
+              "standardFlowEnabled": true,
+              "implicitFlowEnabled": false,
+              "directAccessGrantsEnabled": true,
+              "serviceAccountsEnabled": false,
+              "protocolMappers": [
+                {
+                  "name": "username",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-usermodel-property-mapper",
+                  "config": {
+                    "userinfo.token.claim": "true",
+                    "user.attribute": "username",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                    "claim.name": "preferred_username"
+                  }
+                },
+                {
+                  "name": "email",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-usermodel-property-mapper",
+                  "config": {
+                    "userinfo.token.claim": "true",
+                    "user.attribute": "email",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                    "claim.name": "email"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+    kind: ConfigMap
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","data":{"homelab-realm.json":"{\n  \"realm\": \"homelab\",\n  \"displayName\": \"Homelab Infrastructure\",\n  \"enabled\": true,\n  \"sslRequired\": \"external\",\n  \"registrationAllowed\": false,\n  \"loginWithEmailAllowed\": true,\n  \"duplicateEmailsAllowed\": false,\n  \"resetPasswordAllowed\": true,\n  \"editUsernameAllowed\": false,\n  \"bruteForceProtected\": true,\n  \"rememberMe\": true,\n  \"verifyEmail\": false,\n  \"loginTheme\": \"keycloak\",\n  \"accountTheme\": \"keycloak\",\n  \"adminTheme\": \"keycloak\",\n  \"emailTheme\": \"keycloak\",\n  \"defaultRoles\": [\"default-roles-homelab\"],\n  \"requiredCredentials\": [\"password\"],\n  \"users\": [\n    {\n      \"username\": \"admin\",\n      \"enabled\": true,\n      \"firstName\": \"Admin\",\n      \"lastName\": \"User\",\n      \"email\": \"admin@homelab.local\",\n      \"credentials\": [\n        {\n          \"type\": \"password\",\n          \"value\": \"homelab123!\",\n          \"temporary\": false\n        }\n      ],\n      \"realmRoles\": [\"admin\", \"user\"],\n      \"clientRoles\": {\n        \"account\": [\"manage-account\", \"view-profile\"]\n      }\n    }\n  ],\n  \"roles\": {\n    \"realm\": [\n      {\n        \"name\": \"admin\",\n        \"description\": \"Administrator role\"\n      },\n      {\n        \"name\": \"user\",\n        \"description\": \"Standard user role\"\n      }\n    ]\n  },\n  \"clients\": [\n    {\n      \"clientId\": \"homelab-portal\",\n      \"name\": \"Homelab Portal\",\n      \"enabled\": true,\n      \"clientAuthenticatorType\": \"client-secret\",\n      \"secret\": \"homelab-portal-secret\",\n      \"redirectUris\": [\n        \"https://homelab.local/*\",\n        \"https://grafana.homelab.local/*\",\n        \"https://prometheus.homelab.local/*\",\n        \"https://gitlab.homelab.local/*\",\n        \"https://gitlab.homelab.local/users/auth/openid_connect/callback\",\n        \"https://ollama.homelab.local/*\",\n        \"https://jupyter.homelab.local/*\"\n      ],\n      \"webOrigins\": [\n        \"https://homelab.local\",\n        \"https://grafana.homelab.local\",\n        \"https://prometheus.homelab.local\",\n        \"https://gitlab.homelab.local\",\n        \"https://ollama.homelab.local\",\n        \"https://jupyter.homelab.local\"\n      ],\n      \"protocol\": \"openid-connect\",\n      \"publicClient\": false,\n      \"standardFlowEnabled\": true,\n      \"implicitFlowEnabled\": false,\n      \"directAccessGrantsEnabled\": true,\n      \"serviceAccountsEnabled\": false,\n      \"protocolMappers\": [\n        {\n          \"name\": \"username\",\n          \"protocol\": \"openid-connect\",\n          \"protocolMapper\": \"oidc-usermodel-property-mapper\",\n          \"config\": {\n            \"userinfo.token.claim\": \"true\",\n            \"user.attribute\": \"username\",\n            \"id.token.claim\": \"true\",\n            \"access.token.claim\": \"true\",\n            \"claim.name\": \"preferred_username\"\n          }\n        },\n        {\n          \"name\": \"email\",\n          \"protocol\": \"openid-connect\",\n          \"protocolMapper\": \"oidc-usermodel-property-mapper\",\n          \"config\": {\n            \"userinfo.token.claim\": \"true\",\n            \"user.attribute\": \"email\",\n            \"id.token.claim\": \"true\",\n            \"access.token.claim\": \"true\",\n            \"claim.name\": \"email\"\n          }\n        }\n      ]\n    }\n  ]\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"keycloak-realm-config","namespace":"keycloak"}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      name: keycloak-realm-config
+      namespace: keycloak
+      resourceVersion: "43527"
+      uid: faa87c23-5f74-44c9-96dc-15d07aaf0a5c
+  - apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      annotations:
+        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"cert-manager.io/cluster-issuer":"homelab-ca-issuer","nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/proxy-buffer-size":"16k","nginx.ingress.kubernetes.io/proxy-buffers-number":"8","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"name":"keycloak-https-ingress","namespace":"keycloak"},"spec":{"ingressClassName":"nginx","rules":[{"host":"auth.homelab.local","http":{"paths":[{"backend":{"service":{"name":"keycloak","port":{"number":8080}}},"path":"/","pathType":"Prefix"}]}}],"tls":[{"hosts":["auth.homelab.local"],"secretName":"keycloak-tls-cert"}]}}
+        nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+        nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 1
+      name: keycloak-https-ingress
+      namespace: keycloak
+      resourceVersion: "6668"
+      uid: 0b02c967-1b31-4747-b48d-fa2cd75ddded
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: auth.homelab.local
+          http:
+            paths:
+              - backend:
+                  service:
+                    name: keycloak
+                    port:
+                      number: 8080
+                path: /
+                pathType: Prefix
+      tls:
+        - hosts:
+            - auth.homelab.local
+          secretName: keycloak-tls-cert
+    status:
+      loadBalancer:
+        ingress:
+          - ip: 192.168.16.100
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"cert-manager.io/v1","kind":"Certificate","metadata":{"annotations":{},"name":"keycloak-tls-cert","namespace":"keycloak"},"spec":{"commonName":"auth.homelab.local","dnsNames":["auth.homelab.local"],"issuerRef":{"kind":"ClusterIssuer","name":"homelab-ca-issuer"},"secretName":"keycloak-tls-cert"}}
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      generation: 3
+      name: keycloak-tls-cert
+      namespace: keycloak
+      ownerReferences:
+        - apiVersion: networking.k8s.io/v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Ingress
+          name: keycloak-https-ingress
+          uid: 0b02c967-1b31-4747-b48d-fa2cd75ddded
+      resourceVersion: "43531"
+      uid: 9e6a0a73-22c3-44f9-ab0a-f9f4bd1ac8c4
+    spec:
+      dnsNames:
+        - auth.homelab.local
+      issuerRef:
+        group: cert-manager.io
+        kind: ClusterIssuer
+        name: homelab-ca-issuer
+      secretName: keycloak-tls-cert
+      usages:
+        - digital signature
+        - key encipherment
+    status:
+      conditions:
+        - lastTransitionTime: "2025-07-29T00:49:55Z"
+          message: Certificate is up to date and has not expired
+          observedGeneration: 3
+          reason: Ready
+          status: "True"
+          type: Ready
+      notAfter: "2025-10-27T00:49:55Z"
+      notBefore: "2025-07-29T00:49:55Z"
+      renewalTime: "2025-09-27T00:49:55Z"
+      revision: 1
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"postgres-data","namespace":"keycloak"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"50Gi"}}}}
+        pv.kubernetes.io/bind-completed: "yes"
+        pv.kubernetes.io/bound-by-controller: "yes"
+        volume.beta.kubernetes.io/storage-provisioner: rancher.io/local-path
+        volume.kubernetes.io/selected-node: homelab
+        volume.kubernetes.io/storage-provisioner: rancher.io/local-path
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      finalizers:
+        - kubernetes.io/pvc-protection
+      name: postgres-data
+      namespace: keycloak
+      resourceVersion: "6647"
+      uid: b2e31898-b0f7-4543-87e7-7b31871d96de
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 50Gi
+      storageClassName: local-path
+      volumeMode: Filesystem
+      volumeName: pvc-b2e31898-b0f7-4543-87e7-7b31871d96de
+    status:
+      accessModes:
+        - ReadWriteOnce
+      capacity:
+        storage: 50Gi
+      phase: Bound
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"keycloak-data","namespace":"keycloak"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"20Gi"}}}}
+        pv.kubernetes.io/bind-completed: "yes"
+        pv.kubernetes.io/bound-by-controller: "yes"
+        volume.beta.kubernetes.io/storage-provisioner: rancher.io/local-path
+        volume.kubernetes.io/selected-node: homelab
+        volume.kubernetes.io/storage-provisioner: rancher.io/local-path
+      creationTimestamp: "2025-07-29T00:49:55Z"
+      finalizers:
+        - kubernetes.io/pvc-protection
+      name: keycloak-data
+      namespace: keycloak
+      resourceVersion: "6653"
+      uid: 8524bbc0-8a99-4de5-8838-2712b9a907e5
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: local-path
+      volumeMode: Filesystem
+      volumeName: pvc-8524bbc0-8a99-4de5-8838-2712b9a907e5
+    status:
+      accessModes:
+        - ReadWriteOnce
+      capacity:
+        storage: 20Gi
+      phase: Bound
+kind: List
+metadata:
+  resourceVersion: ""

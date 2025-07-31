@@ -229,6 +229,9 @@ temp/
 backups/
 **/backups/
 
+# Exclude all backup files that may contain secrets
+deploy-homelab-with-sso.sh
+
 # Branch consolidation and management files (local only)
 docs/consolidation-reports/
 **/consolidation-reports/
@@ -275,7 +278,8 @@ code-quality-output.txt
 **/security-scans/
 *.sarif
 *.trivy.json
-gitleaks-report.*
+gitleaks-report*.json
+working-dir-scan.json
 
 # Test reports and logs
 testing/**/reports/

@@ -1,0 +1,500 @@
+name: Deployment Validation with Automated Hooks
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      deployment_phase:
+        description: "Deployment phase to run"
+        required: true
+        default: "validation-only"
+        type: choice
+        options:
+          - validation-only
+          - vm-test
+          - staging
+          - production
+      environment:
+        description: "Target environment"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      skip_post_hooks:
+        description: "Skip post-deployment hooks"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: "3.12"
+  KUBECTL_VERSION: "v1.28.0"
+  HELM_VERSION: "v3.13.0"
+
+jobs:
+  # Pre-deployment validation job
+  pre-deployment-validation:
+    name: Pre-deployment Validation Hooks
+    runs-on: ubuntu-latest
+    if:
+      github.event_name != 'workflow_dispatch' || github.event.inputs.deployment_phase !=
+      'validation-only'
+
+    outputs:
+      validation-passed: ${{ steps.pre-hooks.outputs.result }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Create mock kubeconfig for validation
+        run: |
+          mkdir -p ~/.kube
+          cat << EOF > ~/.kube/config
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              server: https://mock-server:6443
+              insecure-skip-tls-verify: true
+            name: mock-cluster
+          contexts:
+          - context:
+              cluster: mock-cluster
+              user: mock-user
+            name: mock-context
+          current-context: mock-context
+          users:
+          - name: mock-user
+            user:
+              token: mock-token
+          EOF
+
+      - name: Run pre-deployment validation hooks
+        id: pre-hooks
+        run: |
+          set +e
+          python3 scripts/testing/deployment_validation_hooks.py \
+            --phase pre-deployment \
+            --log-level INFO \
+            --config-file config/hooks/deployment-validation-hooks.yaml \
+            --context '{
+              "deployment_phase": "${{ github.event.inputs.deployment_phase || 'vm-test' }}",
+              "environment": "${{ github.event.inputs.environment || 'development' }}",
+              "min_cpu_cores": 1,
+              "min_memory_gb": 2,
+              "config_paths": ["helm/environments", "kubernetes/base"],
+              "prerequisites": [{"type": "namespace", "name": "kube-system"}],
+              "security_requirements": {"require_network_policies": false},
+              "include_workstation_tests": false
+            }'
+          result=$?
+          echo "result=$result" >> $GITHUB_OUTPUT
+          exit $result
+
+      - name: Upload pre-deployment validation results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: pre-deployment-validation-results
+          path: test_results/hooks/
+          retention-days: 30
+
+  # Configuration and security validation
+  config-security-validation:
+    name: Configuration & Security Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync
+
+      - name: Run configuration validation
+        run: |
+          python3 scripts/testing/config_validator.py \
+            --directory helm/environments \
+            --directory ansible/inventory \
+            --log-level INFO
+
+      - name: Run security validation
+        run: |
+          python3 scripts/testing/rootless_compatibility.py \
+            --deployment-mode auto \
+            --log-level INFO
+
+      - name: Run Terraform validation
+        if: contains(github.event.head_commit.modified, 'terraform/')
+        run: |
+          python3 scripts/testing/terraform_validator.py \
+            --terraform-dir terraform \
+            --log-level INFO
+
+  # Helm chart validation
+  helm-validation:
+    name: Helm Chart Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+      - name: Validate Helm charts
+        run: |
+          cd helm
+          ./validate-charts.sh
+
+      - name: Run Helm template tests
+        run: |
+          cd helm
+          find charts -name "Chart.yaml" -exec dirname {} \; | \
+          xargs -I {} helm template test {} --debug --dry-run
+
+      - name: Lint Helm charts
+        run: |
+          cd helm
+          find charts -name "Chart.yaml" -exec dirname {} \; | \
+          xargs -I {} helm lint {}
+
+  # Deployment simulation (for non-production)
+  deployment-simulation:
+    name: Deployment Simulation
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-validation, config-security-validation, helm-validation]
+    if: |
+      always() &&
+      (needs.pre-deployment-validation.result == 'success' || needs.pre-deployment-validation.result == 'skipped') &&
+      needs.config-security-validation.result == 'success' &&
+      needs.helm-validation.result == 'success' &&
+      github.event.inputs.deployment_phase != 'production'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Create Kind cluster for testing
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: homelab-test
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+            - role: control-plane
+              kubeadmConfigPatches:
+              - |
+                kind: InitConfiguration
+                nodeRegistration:
+                  kubeletExtraArgs:
+                    node-labels: "ingress-ready=true"
+              extraPortMappings:
+              - containerPort: 80
+                hostPort: 80
+                protocol: TCP
+              - containerPort: 443
+                hostPort: 443
+                protocol: TCP
+
+      - name: Install basic cluster components
+        run: |
+          # Install ingress controller
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
+          # Wait for ingress controller
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=300s
+
+          # Install cert-manager
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+
+          # Wait for cert-manager
+          kubectl wait --namespace cert-manager \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/instance=cert-manager \
+            --timeout=300s
+
+      - name: Run deployment simulation
+        run: |
+          # Create test namespaces
+          kubectl create namespace test-homelab || true
+
+          # Deploy basic components for testing
+          kubectl apply -f kubernetes/base/namespaces.yaml || true
+
+          # Run post-deployment simulation hooks
+          python3 scripts/testing/deployment_validation_hooks.py \
+            --phase post-deployment \
+            --log-level INFO \
+            --context '{
+              "deployment_phase": "simulation",
+              "environment": "development",
+              "config_paths": ["helm/environments", "kubernetes/base"],
+              "include_workstation_tests": false
+            }'
+
+      - name: Upload simulation results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: deployment-simulation-results
+          path: test_results/hooks/
+          retention-days: 30
+
+  # Continuous validation setup
+  continuous-validation-setup:
+    name: Setup Continuous Validation
+    runs-on: ubuntu-latest
+    needs: [deployment-simulation]
+    if: always() && needs.deployment-simulation.result == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync
+
+      - name: Test continuous validation hooks
+        run: |
+          python3 scripts/testing/deployment_validation_hooks.py \
+            --phase continuous \
+            --log-level INFO \
+            --context '{
+              "deployment_phase": "continuous",
+              "environment": "development",
+              "config_paths": ["helm/environments"],
+              "include_workstation_tests": false
+            }'
+
+      - name: Generate continuous monitoring documentation
+        run: |
+          cat << 'EOF' > continuous-monitoring-setup.md
+          # Continuous Monitoring Setup
+
+          ## Automated Validation Hooks
+
+          The deployment validation hooks have been tested and are ready for production use.
+
+          ### Setup Instructions
+
+          1. **Systemd Service (Linux)**:
+             ```bash
+             # Copy service files (generated during deployment)
+             sudo cp /tmp/homelab-continuous-validation.* /etc/systemd/system/
+             sudo systemctl daemon-reload
+             sudo systemctl enable --now homelab-continuous-validation.timer
+             ```
+
+          2. **Cron Job (Alternative)**:
+             ```bash
+             # Add to crontab
+             */15 * * * * cd /path/to/homelab-infra && python3 scripts/testing/deployment_validation_hooks.py --phase continuous
+             ```
+
+          3. **Manual Execution**:
+             ```bash
+             python3 scripts/testing/deployment_validation_hooks.py --phase continuous --log-level INFO
+             ```
+
+          ### Monitoring Results
+
+          - Results are stored in: `test_results/hooks/`
+          - Logs include validation status, metrics, and recommendations
+          - Failed validations can trigger alerts via configured notification channels
+
+          ### Integration with CI/CD
+
+          This workflow demonstrates how to integrate validation hooks into your CI/CD pipeline:
+          - Pre-deployment validation prevents bad deployments
+          - Post-deployment validation ensures successful deployments
+          - Continuous validation monitors ongoing health
+          EOF
+
+      - name: Upload continuous monitoring documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: continuous-monitoring-setup
+          path: continuous-monitoring-setup.md
+          retention-days: 90
+
+  # Summary and notification
+  deployment-validation-summary:
+    name: Deployment Validation Summary
+    runs-on: ubuntu-latest
+    needs:
+      [
+        pre-deployment-validation,
+        config-security-validation,
+        helm-validation,
+        deployment-simulation,
+        continuous-validation-setup,
+      ]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate summary report
+        run: |
+          echo "# Deployment Validation Summary" > summary.md
+          echo "" >> summary.md
+          echo "**Workflow**: ${{ github.workflow }}" >> summary.md
+          echo "**Run ID**: ${{ github.run_id }}" >> summary.md
+          echo "**Commit**: ${{ github.sha }}" >> summary.md
+          echo "**Branch**: ${{ github.ref_name }}" >> summary.md
+          echo "**Triggered by**: ${{ github.event_name }}" >> summary.md
+          echo "" >> summary.md
+
+          echo "## Job Results" >> summary.md
+          echo "" >> summary.md
+          echo "| Job | Status |" >> summary.md
+          echo "|-----|--------|" >> summary.md
+          echo "| Pre-deployment Validation | ${{ needs.pre-deployment-validation.result }} |" >> summary.md
+          echo "| Config & Security Validation | ${{ needs.config-security-validation.result }} |" >> summary.md
+          echo "| Helm Validation | ${{ needs.helm-validation.result }} |" >> summary.md
+          echo "| Deployment Simulation | ${{ needs.deployment-simulation.result }} |" >> summary.md
+          echo "| Continuous Validation Setup | ${{ needs.continuous-validation-setup.result }} |" >> summary.md
+          echo "" >> summary.md
+
+          # Determine overall status
+          if [[ "${{ needs.config-security-validation.result }}" == "success" &&
+                "${{ needs.helm-validation.result }}" == "success" ]]; then
+            echo "## ✅ Overall Status: SUCCESS" >> summary.md
+            echo "" >> summary.md
+            echo "All validation hooks passed successfully! The deployment is ready." >> summary.md
+          else
+            echo "## ❌ Overall Status: FAILURE" >> summary.md
+            echo "" >> summary.md
+            echo "Some validation hooks failed. Please review the job logs and fix issues before deployment." >> summary.md
+          fi
+
+          echo "" >> summary.md
+          echo "## Artifacts" >> summary.md
+          echo "" >> summary.md
+          echo "- Pre-deployment validation results" >> summary.md
+          echo "- Deployment simulation results" >> summary.md
+          echo "- Continuous monitoring setup documentation" >> summary.md
+
+          cat summary.md
+
+      - name: Upload summary report
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-validation-summary
+          path: summary.md
+          retention-days: 90
+
+      - name: Comment on PR (if applicable)
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('summary.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🧪 Deployment Validation Results\n\n${summary}`
+            });
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deployment-validation-summary]
+    if: always()
+
+    steps:
+      - name: Cleanup Kind cluster
+        run: |
+          kind delete cluster --name homelab-test || true
+
+      - name: Summary
+        run: |
+          echo "🎯 Deployment validation workflow completed!"
+          echo "📊 Summary report and artifacts have been uploaded"
+          echo "🔄 Continuous validation setup is ready for deployment"

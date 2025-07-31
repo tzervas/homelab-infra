@@ -1,0 +1,336 @@
+# Staging Environment Configuration
+# Production-like settings for testing and validation
+
+environment: "staging"
+
+# Global overrides for staging
+global:
+  domain:
+    base: "staging.homelab.local"
+
+  # Staging-specific labels
+  labels:
+    homelab.local/environment: "staging"
+    homelab.local/tier: "staging"
+    homelab.local/purpose: "testing"
+
+# Networking overrides for staging
+networking:
+  # Staging network ranges
+  loadbalancer:
+    pools:
+      default:
+        addresses:
+          - "192.168.25.220-192.168.25.230"
+
+  # Staging cluster network
+  cluster:
+    pod_cidr: "10.42.0.0/16"
+    service_cidr: "10.43.0.0/16"
+
+    # Staging DNS settings
+    dns:
+      upstream_servers:
+        - "8.8.8.8"
+        - "1.1.1.1"
+
+# Security overrides for staging
+security:
+  # Production-like security but with some flexibility for testing
+  pod_security_standards:
+    enforce: true
+    audit: true
+    warn: true
+
+  # Staging TLS settings
+  tls:
+    # Use staging certificates to avoid rate limits
+    issuer: "letsencrypt-staging"
+    min_version: "1.2"
+
+  # Production-like RBAC
+  rbac:
+    service_accounts:
+      automount_service_account_token: false
+
+  # Enable network policies but allow some flexibility
+  network_policies:
+    default_deny_all: false
+
+  # Enable image scanning but with relaxed thresholds
+  images:
+    scanning:
+      enabled: true
+      severity_threshold: "HIGH"
+
+# Resource overrides for staging
+resources:
+  # Production-like but slightly reduced resources
+  services:
+    gitlab:
+      webservice:
+        requests:
+          cpu: "750m"
+          memory: "4Gi"
+        limits:
+          cpu: "1500m"
+          memory: "8Gi"
+      sidekiq:
+        requests:
+          cpu: "300m"
+          memory: "1Gi"
+        limits:
+          cpu: "750m"
+          memory: "2Gi"
+      postgresql:
+        requests:
+          cpu: "300m"
+          memory: "512Mi"
+        limits:
+          cpu: "750m"
+          memory: "1Gi"
+
+    keycloak:
+      main:
+        requests:
+          cpu: "150m"
+          memory: "384Mi"
+        limits:
+          cpu: "750m"
+          memory: "1.5Gi"
+
+    prometheus:
+      server:
+        requests:
+          cpu: "300m"
+          memory: "1.5Gi"
+        limits:
+          cpu: "1500m"
+          memory: "6Gi"
+
+    loki:
+      main:
+        requests:
+          cpu: "150m"
+          memory: "512Mi"
+        limits:
+          cpu: "750m"
+          memory: "2Gi"
+
+  # Staging autoscaling settings
+  autoscaling:
+    defaults:
+      min_replicas: 1
+      max_replicas: 5
+      target_cpu_utilization: 70
+      target_memory_utilization: 75
+
+# Storage overrides for staging
+storage:
+  # Moderate storage sizes for staging
+  sizes:
+    # Core Infrastructure
+    cert_manager_certs: "1Gi"
+
+    # Monitoring Stack
+    prometheus_data: "50Gi"
+    grafana_data: "10Gi"
+    loki_data: "100Gi"
+    alertmanager_data: "5Gi"
+
+    # Application Services
+    gitlab_data: "100Gi"
+    gitlab_config: "5Gi"
+    gitlab_logs: "10Gi"
+    gitlab_registry: "200Gi"
+    keycloak_data: "5Gi"
+
+    # AI/ML Services
+    jupyter_notebooks: "20Gi"
+    jupyter_datasets: "200Gi"
+    ollama_models: "500Gi"
+
+  # Staging backup settings
+  backup:
+    retention:
+      daily_backups: 14
+      weekly_backups: 6
+      monthly_backups: 6
+
+    destinations:
+      local:
+        enabled: true
+        size: "500Gi"
+      s3:
+        enabled: true
+        bucket: "homelab-backups-staging"
+        encryption: true
+      nfs:
+        enabled: false
+
+# Service-specific staging overrides
+services:
+  cert-manager:
+    # Use staging ACME server to avoid rate limits
+    email: "admin+staging@{{ .Values.global.domain.base }}"
+    server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+  gitlab:
+    # Staging GitLab settings
+    replicas: 1
+    domain: "gitlab.{{ .Values.global.domain.base }}"
+    registry:
+      enabled: true
+      domain: "registry.{{ .Values.global.domain.base }}"
+    # Test GitLab Pages in staging
+    pages:
+      enabled: true
+      domain: "pages.{{ .Values.global.domain.base }}"
+
+  keycloak:
+    # Staging Keycloak settings
+    replicas: 1
+    domain: "auth.{{ .Values.global.domain.base }}"
+    clustering:
+      enabled: false # Single instance for staging
+
+  monitoring:
+    prometheus:
+      domain: "prometheus.{{ .Values.global.domain.base }}"
+      retention: "30d"
+      high_availability:
+        enabled: false
+
+    grafana:
+      domain: "grafana.{{ .Values.global.domain.base }}"
+      high_availability:
+        enabled: false
+
+    loki:
+      retention: "720h" # 30 days
+
+    alertmanager:
+      high_availability:
+        enabled: false
+
+# Staging-specific features
+features:
+  # Enable testing tools in staging
+  debug:
+    enabled: true
+    log_level: "debug"
+
+  # Staging-specific services
+  services:
+    # Enable testing tools
+    jupyter:
+      enabled: true
+      domain: "jupyter.{{ .Values.global.domain.base }}"
+
+    # Enable load testing tools
+    load_testing:
+      enabled: true
+
+    # Enable chaos engineering tools
+    chaos_testing:
+      enabled: true
+
+    # Enable security testing
+    security_testing:
+      enabled: true
+
+# Staging testing and validation
+testing:
+  # Enhanced testing in staging
+  validation:
+    enabled: true
+    strict_mode: true
+
+  # Load testing configuration
+  load_testing:
+    enabled: true
+    scenarios:
+      - name: "basic_load"
+        users: 10
+        duration: "5m"
+      - name: "stress_test"
+        users: 50
+        duration: "10m"
+
+  # Integration testing
+  integration_testing:
+    enabled: true
+    external_services: true
+
+  # Security testing
+  security_testing:
+    enabled: true
+    vulnerability_scanning: true
+    penetration_testing: false # Manual only
+
+# Staging monitoring and alerting
+monitoring:
+  # Testing-focused monitoring
+  alerts:
+    enabled: true
+    severity_levels:
+      - "critical"
+      - "warning"
+
+    # Test alert routing
+    routing:
+      critical: "slack"
+      warning: "email"
+
+  # SLA testing
+  sla:
+    uptime_target: "99.5%"
+    response_time_target: "300ms"
+
+# Staging health checks
+health_checks:
+  # Standard health check settings
+  initial_delay: "45s"
+  period: "20s"
+  timeout: "8s"
+  failure_threshold: 3
+  success_threshold: 1
+
+  # Readiness probe settings
+  readiness:
+    initial_delay: "30s"
+    period: "10s"
+    timeout: "5s"
+    failure_threshold: 3
+
+# Staging deployment settings
+deployment:
+  # Blue-green deployment testing
+  strategy:
+    type: "RollingUpdate"
+    rolling_update:
+      max_surge: "25%"
+      max_unavailable: "25%"
+
+  # Canary deployment testing
+  canary:
+    enabled: false # Manual testing only
+
+  # Rollback settings
+  rollback:
+    enabled: true
+    revision_history_limit: 10
+
+# Data management for staging
+data_management:
+  # Use production-like data but anonymized
+  data_sources:
+    production_copy: false
+    synthetic_data: true
+    anonymized_data: true
+
+  # Data refresh schedule
+  refresh:
+    enabled: true
+    schedule: "0 2 * * 1" # Monday 2 AM
+    retention: "30d"

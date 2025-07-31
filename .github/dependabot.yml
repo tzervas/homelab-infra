@@ -1,0 +1,135 @@
+version: 2
+updates:
+  # Enable version updates for Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "homelab-team"
+    assignees:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # Enable version updates for Go dependencies (Terratest)
+  - package-ecosystem: "gomod"
+    directory: "/testing/terraform/terratest"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "go"
+      - "testing"
+    commit-message:
+      prefix: "deps(terratest)"
+
+  # Enable version updates for Docker images in Kubernetes manifests
+  - package-ecosystem: "docker"
+    directory: "/kubernetes"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "kubernetes"
+    commit-message:
+      prefix: "deps(k8s)"
+
+  # Enable version updates for Helm chart dependencies
+  - package-ecosystem: "docker"
+    directory: "/helm"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "helm"
+      - "docker"
+    commit-message:
+      prefix: "deps(helm)"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci/cd"
+    commit-message:
+      prefix: "deps(actions)"
+
+  # Enable version updates for Terraform modules
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "06:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "terraform"
+      - "infrastructure"
+    commit-message:
+      prefix: "deps(terraform)"
+
+  # Node.js dependencies for any frontend components
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "06:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "homelab-team"
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "frontend"
+    commit-message:
+      prefix: "deps(npm)"
+    ignore:
+      # Ignore major version updates for critical dependencies
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+# Global configuration for all package ecosystems
+registries:
+  # Private registry configuration (if needed)
+  # private-registry:
+  #   type: docker-registry
+  #   url: registry.homelab.local
+  #   username: ${{secrets.REGISTRY_USERNAME}}
+  #   password: ${{secrets.REGISTRY_PASSWORD}}

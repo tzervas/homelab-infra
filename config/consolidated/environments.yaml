@@ -1,0 +1,218 @@
+# Centralized Environment Configuration
+# Single source of truth for environment-specific overrides
+
+environments:
+  # Development Environment
+  development:
+    # Basic settings
+    name: "development"
+    short_name: "dev"
+    domain_suffix: "dev"
+
+    # Resource scaling
+    resource_scaling: 0.5
+    replica_count: 1
+
+    # Feature flags
+    features:
+      tls_enabled: true
+      monitoring_enabled: true
+      backup_enabled: false
+      high_availability: false
+      auto_scaling: false
+      network_policies: false
+
+    # TLS configuration
+    tls:
+      issuer: "letsencrypt-staging"
+
+    # Storage configuration
+    storage:
+      default_size_factor: 0.5 # Smaller volumes for dev
+      replica_count: 1
+
+    # Monitoring retention
+    monitoring:
+      prometheus_retention: "7d"
+      loki_retention: "3d"
+      log_level: "debug"
+
+    # Security settings (relaxed for dev)
+    security:
+      pod_security_standard: "baseline"
+      network_policies_enabled: false
+
+    # Networking
+    networking:
+      metallb_pool: "192.168.25.200-192.168.25.210"
+
+    # Service overrides
+    services:
+      prometheus:
+        storage: "10Gi"
+      grafana:
+        storage: "2Gi"
+      loki:
+        storage: "5Gi"
+
+  # Staging Environment
+  staging:
+    # Basic settings
+    name: "staging"
+    short_name: "staging"
+    domain_suffix: "staging"
+
+    # Resource scaling
+    resource_scaling: 0.75
+    replica_count: 2
+
+    # Feature flags
+    features:
+      tls_enabled: true
+      monitoring_enabled: true
+      backup_enabled: true
+      high_availability: false
+      auto_scaling: false
+      network_policies: true
+
+    # TLS configuration
+    tls:
+      issuer: "letsencrypt-staging"
+
+    # Storage configuration
+    storage:
+      default_size_factor: 0.75
+      replica_count: 2
+
+    # Monitoring retention
+    monitoring:
+      prometheus_retention: "15d"
+      loki_retention: "7d"
+      log_level: "info"
+
+    # Security settings
+    security:
+      pod_security_standard: "restricted"
+      network_policies_enabled: true
+
+    # Networking
+    networking:
+      metallb_pool: "192.168.25.211-192.168.25.220"
+
+    # Service overrides
+    services:
+      prometheus:
+        storage: "25Gi"
+      grafana:
+        storage: "5Gi"
+      loki:
+        storage: "20Gi"
+
+  # Production Environment
+  production:
+    # Basic settings
+    name: "production"
+    short_name: "prod"
+    domain_suffix: ""
+
+    # Resource scaling
+    resource_scaling: 1.0
+    replica_count: 3
+
+    # Feature flags
+    features:
+      tls_enabled: true
+      monitoring_enabled: true
+      backup_enabled: true
+      high_availability: true
+      auto_scaling: true
+      network_policies: true
+
+    # TLS configuration
+    tls:
+      issuer: "letsencrypt-production"
+
+    # Storage configuration
+    storage:
+      default_size_factor: 1.0
+      replica_count: 3
+
+    # Monitoring retention
+    monitoring:
+      prometheus_retention: "30d"
+      loki_retention: "15d"
+      log_level: "warn"
+
+    # Security settings (strictest)
+    security:
+      pod_security_standard: "restricted"
+      network_policies_enabled: true
+
+    # Networking
+    networking:
+      metallb_pool: "192.168.25.221-192.168.25.230"
+
+    # Service overrides
+    services:
+      prometheus:
+        storage: "50Gi"
+      grafana:
+        storage: "10Gi"
+      loki:
+        storage: "30Gi"
+
+# Global Environment Settings
+global:
+  # Default environment if not specified
+  default_environment: "development"
+
+  # Environment validation
+  validation:
+    required_features:
+      - "tls_enabled"
+      - "monitoring_enabled"
+
+    production_requirements:
+      - "backup_enabled"
+      - "high_availability"
+      - "network_policies"
+
+  # Cross-environment settings
+  common:
+    timezone: "UTC"
+    cluster_name: "homelab-k3s"
+
+# Environment-specific Helm values merge strategy
+helm_merge_strategy:
+  # Development gets base + dev overrides
+  development:
+    values_files:
+      - "config/consolidated/domains.yaml"
+      - "config/consolidated/networking.yaml"
+      - "config/consolidated/storage.yaml"
+      - "config/consolidated/security.yaml"
+      - "config/consolidated/resources.yaml"
+      - "config/consolidated/namespaces.yaml"
+      - "config/environments/development.yaml"
+
+  # Staging gets base + staging overrides
+  staging:
+    values_files:
+      - "config/consolidated/domains.yaml"
+      - "config/consolidated/networking.yaml"
+      - "config/consolidated/storage.yaml"
+      - "config/consolidated/security.yaml"
+      - "config/consolidated/resources.yaml"
+      - "config/consolidated/namespaces.yaml"
+      - "config/environments/staging.yaml"
+
+  # Production gets base + production overrides
+  production:
+    values_files:
+      - "config/consolidated/domains.yaml"
+      - "config/consolidated/networking.yaml"
+      - "config/consolidated/storage.yaml"
+      - "config/consolidated/security.yaml"
+      - "config/consolidated/resources.yaml"
+      - "config/consolidated/namespaces.yaml"
+      - "config/environments/production.yaml"

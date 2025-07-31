@@ -1,0 +1,41 @@
+# Gitleaks ignore file
+
+# Ignore files that contain dummy/template values
+*template.yaml
+*template.yml
+*.template
+*.example
+*-template.*
+*-patterns.*
+
+# Ignore documentation
+docs/**
+README.md
+ATTRIBUTIONS.md
+
+# Ignore test files
+**/test/**
+**/tests/**
+**/*_test.*
+**/*_test_*
+
+# Ignore backup and historical files 
+untracked_backup/**
+**/backups/**
+
+# Ignore deployment patterns and sealed secrets examples
+deployments/security/sealed-secrets-patterns.yaml
+deployments/gitops/argocd/repositories.yaml
+
+# Ignore configuration templates and examples
+kubernetes/base/oauth2-proxy.yaml
+kubernetes/keycloak/oauth2-proxy-multi-client.yaml
+
+# Ignore generated files
+*.generated
+
+# Ignore virtual environments and dependencies
+.venv/**
+venv/**
+node_modules/**
+**/.git/**

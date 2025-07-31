@@ -1,0 +1,205 @@
+# Centralized Security Configuration
+# Single source of truth for all security-related settings
+
+security:
+  # Default Security Contexts
+  default_security_context:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+
+  # Service-specific security contexts
+  service_contexts:
+    # Nginx Ingress needs special privileges
+    nginx_ingress:
+      runAsNonRoot: false
+      runAsUser: 101
+      runAsGroup: 101
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_BIND_SERVICE
+      seccompProfile:
+        type: RuntimeDefault
+
+    # MetalLB Speaker needs network privileges
+    metallb_speaker:
+      runAsNonRoot: false
+      runAsUser: 0
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_ADMIN
+          - NET_RAW
+          - SYS_ADMIN
+
+    # Prometheus/Grafana contexts
+    monitoring:
+      prometheus:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      grafana:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+      loki:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+
+# Pod Security Standards
+pod_security_standards:
+  # Default enforcement
+  default:
+    enforce: "baseline"
+    audit: "restricted"
+    warn: "restricted"
+
+  # Namespace-specific standards
+  namespaces:
+    # System namespaces need privileged access
+    metallb-system:
+      enforce: "privileged"
+      audit: "privileged"
+      warn: "privileged"
+
+    longhorn-system:
+      enforce: "privileged"
+      audit: "privileged"
+      warn: "privileged"
+
+    kube-system:
+      enforce: "privileged"
+      audit: "privileged"
+      warn: "privileged"
+
+    # Infrastructure can use baseline
+    cert-manager:
+      enforce: "restricted"
+      audit: "restricted"
+      warn: "restricted"
+
+    ingress-nginx:
+      enforce: "baseline"
+      audit: "baseline"
+      warn: "baseline"
+
+    # Applications should be restricted
+    monitoring:
+      enforce: "restricted"
+      audit: "restricted"
+      warn: "restricted"
+
+    gitlab:
+      enforce: "baseline"
+      audit: "restricted"
+      warn: "restricted"
+
+    keycloak:
+      enforce: "baseline"
+      audit: "restricted"
+      warn: "restricted"
+
+# RBAC Configuration
+rbac:
+  # Default service account settings
+  default_service_account:
+    create: true
+    automount_token: false
+
+  # Common roles and bindings
+  common_roles:
+    - name: "pod-reader"
+      rules:
+        - apiGroups: [""]
+          resources: ["pods"]
+          verbs: ["get", "list", "watch"]
+    - name: "config-reader"
+      rules:
+        - apiGroups: [""]
+          resources: ["configmaps", "secrets"]
+          verbs: ["get", "list"]
+
+# Network Policies
+network_policies:
+  # Default deny all
+  default_deny:
+    enabled: true
+
+  # Allow DNS traffic
+  allow_dns:
+    enabled: true
+    to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+
+  # Allow traffic to ingress
+  allow_ingress:
+    enabled: true
+    from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+
+  # Allow monitoring scraping
+  allow_monitoring:
+    enabled: true
+    from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+
+# Image Security
+image_security:
+  # Default image pull policy
+  pull_policy: "IfNotPresent"
+
+  # Registry allowlist
+  allowed_registries:
+    - "docker.io"
+    - "quay.io"
+    - "gcr.io"
+    - "k8s.gcr.io"
+    - "registry.k8s.io"
+    - "ghcr.io"
+
+  # Image signing verification (future)
+  cosign:
+    enabled: false
+
+  # Vulnerability scanning
+  trivy:
+    enabled: false
+
+# Secrets Management
+secrets:
+  # Sealed Secrets configuration
+  sealed_secrets:
+    enabled: true
+    namespace: "kube-system"
+
+  # External secrets (future)
+  external_secrets:
+    enabled: false
+    provider: "vault" # Options: vault, aws, azure, gcp
+
+  # Secret rotation
+  rotation:
+    enabled: false
+    schedule: "0 0 1 * *" # Monthly

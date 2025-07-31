@@ -15,15 +15,15 @@ __email__ = "tz-dev@vectorweight.com"
 try:
     from .config_validator import ConfigValidator, ValidationResult
     from .infrastructure_health import ClusterHealth, InfrastructureHealthMonitor
-    from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
-    from .network_security import NetworkSecurityValidator, SecurityStatus
-    from .service_checker import ServiceDeploymentChecker, ServiceStatus
-    from .test_reporter import HomelabTestReporter, TestSuiteResult
     from .integrated_test_orchestrator import (
         IntegratedTestOrchestrator,
         IntegratedTestResults,
         K3sValidationResult,
     )
+    from .integration_tester import IntegrationConnectivityTester, IntegrationTestResult
+    from .network_security import NetworkSecurityValidator, SecurityStatus
+    from .service_checker import ServiceDeploymentChecker, ServiceStatus
+    from .test_reporter import HomelabTestReporter, TestSuiteResult
 except ImportError as e:
     import warnings
 

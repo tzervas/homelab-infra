@@ -1,0 +1,239 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+  namespace: keycloak
+data:
+  homelab-realm.json: |
+    {
+      "realm": "homelab",
+      "displayName": "Homelab Infrastructure",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "rememberMe": true,
+      "verifyEmail": false,
+      "loginTheme": "keycloak",
+      "accountTheme": "keycloak",
+      "adminTheme": "keycloak",
+      "emailTheme": "keycloak",
+      "defaultRoles": ["default-roles-homelab", "user"],
+      "requiredCredentials": ["password"],
+      "users": [
+        {
+          "username": "admin",
+          "enabled": true,
+          "firstName": "Administrator",
+          "lastName": "User",
+          "email": "admin@homelab.local",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "homelab123!",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["admin", "user", "grafana-admin", "prometheus-admin", "gitlab-admin"],
+          "clientRoles": {
+            "account": ["manage-account", "view-profile"]
+          },
+          "attributes": {
+            "department": ["IT"],
+            "role_level": ["administrator"]
+          }
+        },
+        {
+          "username": "tzervas",
+          "enabled": true,
+          "firstName": "Tzervas",
+          "lastName": "User",
+          "email": "tzervas@homelab.local",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "tzervas123!",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["user", "developer", "grafana-user", "prometheus-user"],
+          "clientRoles": {
+            "account": ["manage-account", "view-profile"]
+          },
+          "attributes": {
+            "department": ["Development"],
+            "role_level": ["user"],
+            "can_assume_roles": ["admin", "developer", "user"]
+          }
+        },
+        {
+          "username": "user",
+          "enabled": true,
+          "firstName": "Regular",
+          "lastName": "User",
+          "email": "user@homelab.local",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "user123!",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["user"],
+          "clientRoles": {
+            "account": ["manage-account", "view-profile"]
+          },
+          "attributes": {
+            "department": ["General"],
+            "role_level": ["user"]
+          }
+        }
+      ],
+      "roles": {
+        "realm": [
+          {
+            "name": "admin",
+            "description": "Administrator role with full access"
+          },
+          {
+            "name": "user",
+            "description": "Standard user role"
+          },
+          {
+            "name": "developer",
+            "description": "Developer role with elevated permissions"
+          },
+          {
+            "name": "grafana-admin",
+            "description": "Grafana administrator access"
+          },
+          {
+            "name": "grafana-user",
+            "description": "Grafana user access"
+          },
+          {
+            "name": "prometheus-admin",
+            "description": "Prometheus administrator access"
+          },
+          {
+            "name": "prometheus-user",
+            "description": "Prometheus user access"
+          },
+          {
+            "name": "gitlab-admin",
+            "description": "GitLab administrator access"
+          },
+          {
+            "name": "gitlab-user",
+            "description": "GitLab user access"
+          }
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "homelab-portal",
+          "name": "Homelab Portal",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "homelab-portal-secret",
+          "redirectUris": [
+            "https://homelab.local/oauth2/callback",
+            "https://grafana.homelab.local/oauth2/callback",
+            "https://prometheus.homelab.local/oauth2/callback",
+            "https://gitlab.homelab.local/oauth2/callback",
+            "https://ollama.homelab.local/oauth2/callback",
+            "https://jupyter.homelab.local/oauth2/callback"
+          ],
+          "webOrigins": [
+            "https://homelab.local",
+            "https://grafana.homelab.local",
+            "https://prometheus.homelab.local",
+            "https://gitlab.homelab.local",
+            "https://ollama.homelab.local",
+            "https://jupyter.homelab.local"
+          ],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "fullScopeAllowed": true,
+          "protocolMappers": [
+            {
+              "name": "username",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "username",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "preferred_username"
+              }
+            },
+            {
+              "name": "email",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "email",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "email"
+              }
+            },
+            {
+              "name": "roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "roles",
+                "multivalued": "true"
+              }
+            },
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "groups",
+                "full.path": "false"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "administrators",
+          "path": "/administrators",
+          "realmRoles": ["admin"],
+          "subGroups": []
+        },
+        {
+          "name": "developers",
+          "path": "/developers",
+          "realmRoles": ["developer"],
+          "subGroups": []
+        },
+        {
+          "name": "users",
+          "path": "/users",
+          "realmRoles": ["user"],
+          "subGroups": []
+        }
+      ]
+    }

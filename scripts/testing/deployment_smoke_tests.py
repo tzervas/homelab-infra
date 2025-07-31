@@ -458,7 +458,7 @@ class DeploymentSmokeTests:
                         test_name=test.__name__,
                         passed=False,
                         message=f"Test failed with exception: {e}",
-                    )
+                    ),
                 )
 
         return results

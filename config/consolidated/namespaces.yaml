@@ -1,0 +1,257 @@
+# Centralized Namespace Configuration
+# Single source of truth for all Kubernetes namespace definitions
+
+namespaces:
+  # Core Infrastructure Namespaces
+  core:
+    metallb-system:
+      labels:
+        name: "metallb-system"
+        tier: "infrastructure"
+        component: "load-balancer"
+      pod_security:
+        enforce: "privileged"
+        audit: "privileged"
+        warn: "privileged"
+      annotations:
+        description: "MetalLB load balancer system"
+
+    cert-manager:
+      labels:
+        name: "cert-manager"
+        tier: "infrastructure"
+        component: "certificate-management"
+        cert-manager.io/disable-validation: "true"
+      pod_security:
+        enforce: "restricted"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "Certificate management and TLS automation"
+
+    ingress-nginx:
+      labels:
+        name: "ingress-nginx"
+        tier: "infrastructure"
+        component: "ingress-controller"
+      pod_security:
+        enforce: "baseline"
+        audit: "baseline"
+        warn: "baseline"
+      annotations:
+        description: "NGINX ingress controller"
+
+    longhorn-system:
+      labels:
+        name: "longhorn-system"
+        tier: "infrastructure"
+        component: "storage"
+      pod_security:
+        enforce: "privileged"
+        audit: "privileged"
+        warn: "privileged"
+      annotations:
+        description: "Longhorn distributed storage system"
+
+  # Application Namespaces
+  applications:
+    monitoring:
+      labels:
+        name: "monitoring"
+        tier: "platform"
+        component: "observability"
+      pod_security:
+        enforce: "restricted"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "Monitoring and observability stack"
+      resource_quota:
+        enabled: true
+        requests:
+          cpu: "2000m"
+          memory: "4Gi"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+        persistentvolumeclaims: "10"
+
+    gitlab:
+      labels:
+        name: "gitlab"
+        tier: "application"
+        component: "devops"
+      pod_security:
+        enforce: "baseline"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "GitLab DevOps platform"
+      resource_quota:
+        enabled: true
+        requests:
+          cpu: "1000m"
+          memory: "2Gi"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+        persistentvolumeclaims: "5"
+
+    keycloak:
+      labels:
+        name: "keycloak"
+        tier: "platform"
+        component: "identity"
+      pod_security:
+        enforce: "baseline"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "Keycloak identity and access management"
+      resource_quota:
+        enabled: true
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+        persistentvolumeclaims: "2"
+
+    ai-ml:
+      labels:
+        name: "ai-ml"
+        tier: "application"
+        component: "artificial-intelligence"
+      pod_security:
+        enforce: "baseline"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "AI/ML workloads and tools"
+      resource_quota:
+        enabled: true
+        requests:
+          cpu: "1000m"
+          memory: "2Gi"
+        limits:
+          cpu: "8000m"
+          memory: "16Gi"
+        persistentvolumeclaims: "5"
+        requests.nvidia.com/gpu: "2"
+
+    jupyter:
+      labels:
+        name: "jupyter"
+        tier: "application"
+        component: "data-science"
+      pod_security:
+        enforce: "baseline"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "JupyterLab data science environment"
+      resource_quota:
+        enabled: true
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+        persistentvolumeclaims: "3"
+
+  # Security and System Namespaces
+  security:
+    security-system:
+      labels:
+        name: "security-system"
+        tier: "security"
+        component: "baseline"
+      pod_security:
+        enforce: "baseline"
+        audit: "restricted"
+        warn: "restricted"
+      annotations:
+        description: "Security baseline and policy enforcement"
+
+# Network Policies per Namespace
+network_policies:
+  # Default deny all traffic
+  default_deny:
+    enabled: true
+    applies_to:
+      - "monitoring"
+      - "gitlab"
+      - "keycloak"
+      - "ai-ml"
+      - "jupyter"
+
+  # Allow specific traffic patterns
+  ingress_access:
+    enabled: true
+    from_namespaces:
+      - "ingress-nginx"
+    to_namespaces:
+      - "monitoring"
+      - "gitlab"
+      - "keycloak"
+      - "ai-ml"
+      - "jupyter"
+
+  # Allow monitoring scraping
+  monitoring_access:
+    enabled: true
+    from_namespaces:
+      - "monitoring"
+    to_namespaces:
+      - "metallb-system"
+      - "cert-manager"
+      - "ingress-nginx"
+      - "longhorn-system"
+      - "gitlab"
+      - "keycloak"
+      - "ai-ml"
+      - "jupyter"
+
+  # Allow DNS resolution
+  dns_access:
+    enabled: true
+    to_namespaces:
+      - "kube-system"
+    applies_to: "all"
+
+# Environment-specific namespace configurations
+environments:
+  development:
+    namespace_suffix: "-dev"
+    resource_quotas_enabled: false
+
+  staging:
+    namespace_suffix: "-staging"
+    resource_quotas_enabled: true
+    quota_scaling_factor: 0.75
+
+  production:
+    namespace_suffix: ""
+    resource_quotas_enabled: true
+    quota_scaling_factor: 1.0
+
+# Namespace lifecycle management
+lifecycle:
+  # Automatic cleanup for development
+  cleanup:
+    development:
+      enabled: false
+      retention_days: 7
+
+  # Finalizers to prevent accidental deletion
+  finalizers:
+    production:
+      - "homelab.local/production-protection"
+
+  # Backup annotations
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"
+    retention: "30d"

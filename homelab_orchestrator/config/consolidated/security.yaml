@@ -1,0 +1,18 @@
+security:
+  ssl:
+    enabled: true
+    issuer: homelab-ca-issuer
+    provider: cert-manager
+  auth:
+    provider: oauth2-proxy
+    backend: keycloak
+    domain: homelab.local
+  certificates:
+    - name: homelab-portal-tls
+      domains:
+        - homelab.local
+      status: active
+    - name: oauth2-proxy-tls
+      domains:
+        - homelab.local
+      status: active

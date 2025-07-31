@@ -1,0 +1,188 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitlab
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitlab-data
+  namespace: gitlab
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      containers:
+      - name: gitlab
+        image: gitlab/gitlab-ce:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 22
+        env:
+        - name: GITLAB_OMNIBUS_CONFIG
+          value: |
+            external_url 'https://gitlab.homelab.local'
+            nginx['listen_port'] = 80
+            nginx['listen_https'] = false
+            gitlab_rails['gitlab_shell_ssh_port'] = 22
+
+            # Memory optimization settings
+            postgresql['shared_buffers'] = "128MB"
+            postgresql['max_connections'] = 200
+
+            # Reduce Puma workers and threads
+            puma['worker_processes'] = 2
+            puma['min_threads'] = 1
+            puma['max_threads'] = 8
+
+            # Reduce Sidekiq concurrency
+            sidekiq['max_concurrency'] = 10
+
+            # Disable some features during initial setup
+            gitlab_rails['monitoring_whitelist'] = ['127.0.0.1/32', '10.0.0.0/8']
+
+            # Optimize GitLab for single-node deployment
+            unicorn['worker_processes'] = 2
+
+            # Reduce memory usage
+            gitlab_rails['env'] = {
+              'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+            }
+
+            # Keycloak OAuth2 Integration
+            gitlab_rails['omniauth_enabled'] = true
+            gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
+            gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'openid_connect'
+            gitlab_rails['omniauth_block_auto_created_users'] = false
+            gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
+
+            gitlab_rails['omniauth_providers'] = [
+              {
+                'name' => 'openid_connect',
+                'label' => 'Keycloak SSO',
+                'args' => {
+                  'name' => 'openid_connect',
+                  'scope' => ['openid','profile','email'],
+                  'response_type' => 'code',
+                  'issuer' => 'https://auth.homelab.local/realms/homelab',
+                  'discovery' => true,
+                  'client_auth_method' => 'query',
+                  'uid_field' => 'preferred_username',
+                  'client_options' => {
+                    'identifier' => 'homelab-portal',
+                    'secret' => 'homelab-portal-secret',
+                    'redirect_uri' => 'https://gitlab.homelab.local/users/auth/openid_connect/callback'
+                  }
+                }
+              }
+            ]
+
+            # Allow automatic user creation from Keycloak
+            gitlab_rails['omniauth_external_providers'] = ['openid_connect']
+        volumeMounts:
+        - name: gitlab-data
+          mountPath: /var/opt/gitlab
+        - name: gitlab-logs
+          mountPath: /var/log/gitlab
+        - name: gitlab-config
+          mountPath: /etc/gitlab
+        resources:
+          requests:
+            memory: "6Gi"
+            cpu: "1000m"
+          limits:
+            memory: "12Gi"
+            cpu: "2000m"
+      volumes:
+      - name: gitlab-data
+        persistentVolumeClaim:
+          claimName: gitlab-data
+      - name: gitlab-logs
+        emptyDir: {}
+      - name: gitlab-config
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  selector:
+    app: gitlab
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: ssh
+      protocol: TCP
+      port: 22
+      targetPort: 22
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitlab-https-ingress
+  namespace: gitlab
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+    # OAuth2 Proxy annotations
+    nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.oauth2-proxy.svc.cluster.local:4180/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://homelab.local/oauth2/start?rd=$scheme://$best_http_host$request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - gitlab.homelab.local
+    secretName: gitlab-tls-cert
+  rules:
+  - host: gitlab.homelab.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitlab
+            port:
+              number: 80
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gitlab-tls-cert
+  namespace: gitlab
+spec:
+  secretName: gitlab-tls-cert
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: gitlab.homelab.local
+  dnsNames:
+  - gitlab.homelab.local

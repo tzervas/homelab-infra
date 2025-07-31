@@ -1,0 +1,378 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-db-secret
+  namespace: keycloak
+type: Opaque
+data:
+  # keycloak
+  username: a2V5Y2xvYWs=
+  # keycloak123!
+  password: a2V5Y2xvYWsxMjMh
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-admin-secret
+  namespace: keycloak
+type: Opaque
+data:
+  # admin
+  username: YWRtaW4=
+  # admin123!
+  password: YWRtaW4xMjMh
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: keycloak
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-data
+  namespace: keycloak
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: keycloak
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: keycloak
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:23.0
+        args:
+        - start
+        - --hostname-strict=false
+        - --hostname-strict-https=false
+        - --proxy=edge
+        - --http-enabled=true
+        - --import-realm
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://postgres:5432/keycloak
+        - name: KC_DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: username
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-secret
+              key: password
+        - name: KEYCLOAK_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-secret
+              key: username
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-secret
+              key: password
+        - name: KC_HOSTNAME_URL
+          value: https://auth.homelab.local
+        - name: KC_HOSTNAME_ADMIN_URL
+          value: https://auth.homelab.local
+        volumeMounts:
+        - name: keycloak-data
+          mountPath: /opt/keycloak/data
+        - name: realm-config
+          mountPath: /opt/keycloak/data/import
+        resources:
+          requests:
+            memory: "3Gi"
+            cpu: "1500m"
+          limits:
+            memory: "6Gi"
+            cpu: "3000m"
+        readinessProbe:
+          httpGet:
+            path: /realms/master
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /realms/master
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+      volumes:
+      - name: keycloak-data
+        persistentVolumeClaim:
+          claimName: keycloak-data
+      - name: realm-config
+        configMap:
+          name: keycloak-realm-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+  namespace: keycloak
+data:
+  homelab-realm.json: |
+    {
+      "realm": "homelab",
+      "displayName": "Homelab Infrastructure",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "rememberMe": true,
+      "verifyEmail": false,
+      "loginTheme": "keycloak",
+      "accountTheme": "keycloak",
+      "adminTheme": "keycloak",
+      "emailTheme": "keycloak",
+      "defaultRoles": ["default-roles-homelab"],
+      "requiredCredentials": ["password"],
+      "users": [
+        {
+          "username": "admin",
+          "enabled": true,
+          "firstName": "Admin",
+          "lastName": "User",
+          "email": "admin@homelab.local",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "homelab123!",
+              "temporary": false
+            }
+          ],
+          "realmRoles": ["admin", "user"],
+          "clientRoles": {
+            "account": ["manage-account", "view-profile"]
+          }
+        }
+      ],
+      "roles": {
+        "realm": [
+          {
+            "name": "admin",
+            "description": "Administrator role"
+          },
+          {
+            "name": "user",
+            "description": "Standard user role"
+          }
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "homelab-portal",
+          "name": "Homelab Portal",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "homelab-portal-secret",
+          "redirectUris": [
+            "https://homelab.local/*",
+            "https://grafana.homelab.local/*",
+            "https://prometheus.homelab.local/*",
+            "https://gitlab.homelab.local/*",
+            "https://gitlab.homelab.local/users/auth/openid_connect/callback",
+            "https://ollama.homelab.local/*",
+            "https://jupyter.homelab.local/*"
+          ],
+          "webOrigins": [
+            "https://homelab.local",
+            "https://grafana.homelab.local",
+            "https://prometheus.homelab.local",
+            "https://gitlab.homelab.local",
+            "https://ollama.homelab.local",
+            "https://jupyter.homelab.local"
+          ],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "protocolMappers": [
+            {
+              "name": "username",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "username",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "preferred_username"
+              }
+            },
+            {
+              "name": "email",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "email",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "email"
+              }
+            }
+          ]
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-https-ingress
+  namespace: keycloak
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - auth.homelab.local
+    secretName: keycloak-tls-cert
+  rules:
+  - host: auth.homelab.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls-cert
+  namespace: keycloak
+spec:
+  secretName: keycloak-tls-cert
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: auth.homelab.local
+  dnsNames:
+  - auth.homelab.local

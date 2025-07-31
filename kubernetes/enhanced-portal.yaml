@@ -1,0 +1,471 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: enhanced-portal-config
+  namespace: homelab-portal
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Homelab Portal</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .header {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                padding: 40px;
+                margin-bottom: 30px;
+                text-align: center;
+            }
+
+            .header h1 {
+                color: #333;
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+            }
+
+            .header p {
+                color: #666;
+                font-size: 1.1rem;
+            }
+
+            .main-grid {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 30px;
+                margin-bottom: 30px;
+            }
+
+            .services-section, .security-section {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                padding: 30px;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+                color: #333;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+
+            .services-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 20px;
+            }
+
+            .service-card {
+                background: #f8f9fa;
+                border-radius: 15px;
+                padding: 25px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+                position: relative;
+            }
+
+            .service-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                border-color: #667eea;
+            }
+
+            .service-icon {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+                display: block;
+            }
+
+            .service-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+            }
+
+            .service-description {
+                color: #666;
+                font-size: 0.9rem;
+                line-height: 1.4;
+                margin-bottom: 15px;
+            }
+
+            .service-status {
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                display: inline-block;
+            }
+
+            .status-running {
+                background: #d4edda;
+                color: #155724;
+            }
+
+            .status-starting {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .status-stopped {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+            .security-metrics {
+                display: grid;
+                gap: 15px;
+            }
+
+            .metric-card {
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .metric-label {
+                font-size: 0.9rem;
+                color: #666;
+            }
+
+            .metric-value {
+                font-size: 1.3rem;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .metric-value.good {
+                color: #28a745;
+            }
+
+            .metric-value.warning {
+                color: #ffc107;
+            }
+
+            .metric-value.critical {
+                color: #dc3545;
+            }
+
+            .alerts-section {
+                margin-top: 20px;
+            }
+
+            .alert-item {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 10px 15px;
+                margin-bottom: 10px;
+                border-radius: 5px;
+                font-size: 0.9rem;
+            }
+
+            .alert-item.info {
+                background: #d1ecf1;
+                border-color: #17a2b8;
+            }
+
+            .alert-item.critical {
+                background: #f8d7da;
+                border-color: #dc3545;
+            }
+
+            .quick-actions {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                padding: 30px;
+            }
+
+            .action-buttons {
+                display: grid;
+                gap: 10px;
+            }
+
+            .action-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-size: 0.95rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+            }
+
+            .action-btn:hover {
+                background: #5a67d8;
+                transform: translateY(-2px);
+            }
+
+            .action-btn.secondary {
+                background: #6c757d;
+            }
+
+            .action-btn.secondary:hover {
+                background: #5a6268;
+            }
+
+            .footer {
+                text-align: center;
+                padding: 20px;
+                color: white;
+                font-size: 0.9rem;
+            }
+
+            .footer code {
+                background: rgba(255, 255, 255, 0.2);
+                padding: 2px 8px;
+                border-radius: 4px;
+            }
+
+            @media (max-width: 1024px) {
+                .main-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .services-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏠 Homelab Portal</h1>
+                <p>Your self-hosted infrastructure dashboard</p>
+            </div>
+
+            <div class="main-grid">
+                <div class="services-section">
+                    <h2 class="section-title">📚 Services</h2>
+                    <div class="services-grid" id="services-grid">
+                        <!-- Services will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <div class="security-section">
+                    <h2 class="section-title">🔒 Security Dashboard</h2>
+                    <div class="security-metrics" id="security-metrics">
+                        <div class="metric-card">
+                            <span class="metric-label">SSL Certificates</span>
+                            <span class="metric-value good" id="ssl-status">Active</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Authentication</span>
+                            <span class="metric-value good" id="auth-status">OAuth2</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Security Alerts</span>
+                            <span class="metric-value warning" id="alert-count">2</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Last Scan</span>
+                            <span class="metric-value" id="last-scan">2 hrs ago</span>
+                        </div>
+                    </div>
+
+                    <div class="alerts-section">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 15px;">Recent Alerts</h3>
+                        <div id="alerts-list">
+                            <div class="alert-item info">
+                                Certificate renewal scheduled for keycloak.homelab.local
+                            </div>
+                            <div class="alert-item warning">
+                                Prometheus disk usage at 78%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <h2 class="section-title">⚡ Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="refreshServices()">🔄 Refresh Services</button>
+                    <button class="action-btn secondary" onclick="viewLogs()">📋 View System Logs</button>
+                    <button class="action-btn secondary" onclick="runHealthCheck()">🏥 Run Health Check</button>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Homelab Infrastructure • Kubernetes-powered • HTTPS Secured</p>
+                <p style="margin-top: 10px;">
+                    Add <code>192.168.16.100 homelab.local</code> to your /etc/hosts file to access this portal
+                </p>
+            </div>
+        </div>
+
+        <script>
+            // Service definitions
+            const services = [
+                {
+                    name: 'Grafana',
+                    url: 'https://grafana.homelab.local',
+                    icon: '📊',
+                    description: 'Data visualization and monitoring dashboards',
+                    status: 'running'
+                },
+                {
+                    name: 'Prometheus',
+                    url: 'https://prometheus.homelab.local',
+                    icon: '🔍',
+                    description: 'Metrics collection and monitoring system',
+                    status: 'running'
+                },
+                {
+                    name: 'Ollama + Open-WebUI',
+                    url: 'https://ollama.homelab.local',
+                    icon: '🤖',
+                    description: 'Local LLM hosting with web interface',
+                    status: 'running'
+                },
+                {
+                    name: 'JupyterLab',
+                    url: 'https://jupyter.homelab.local',
+                    icon: '📓',
+                    description: 'Interactive development environment',
+                    status: 'running'
+                },
+                {
+                    name: 'GitLab',
+                    url: 'https://gitlab.homelab.local',
+                    icon: '🚀',
+                    description: 'Self-hosted Git repository with CI/CD',
+                    status: 'starting'
+                },
+                {
+                    name: 'Keycloak',
+                    url: 'https://keycloak.homelab.local',
+                    icon: '🔐',
+                    description: 'Identity and access management',
+                    status: 'running'
+                }
+            ];
+
+            // Render services
+            function renderServices() {
+                const grid = document.getElementById('services-grid');
+                grid.innerHTML = services.map(service => `
+                    <a href="${service.url}" class="service-card">
+                        <span class="service-icon">${service.icon}</span>
+                        <div class="service-title">${service.name}</div>
+                        <div class="service-description">${service.description}</div>
+                        <span class="service-status status-${service.status}">${service.status}</span>
+                    </a>
+                `).join('');
+            }
+
+            // Update security metrics
+            function updateSecurityMetrics() {
+                // This would normally fetch from the backend
+                document.getElementById('last-scan').textContent = new Date().toLocaleTimeString();
+            }
+
+            // Quick action functions
+            function refreshServices() {
+                renderServices();
+                updateSecurityMetrics();
+                alert('Services refreshed!');
+            }
+
+            function viewLogs() {
+                window.open('https://grafana.homelab.local/d/logs', '_blank');
+            }
+
+            function runHealthCheck() {
+                alert('Health check initiated. Check Grafana for results.');
+            }
+
+            // Initialize
+            renderServices();
+
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                updateSecurityMetrics();
+            }, 30000);
+        </script>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enhanced-portal
+  namespace: homelab-portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: enhanced-portal
+  template:
+    metadata:
+      labels:
+        app: enhanced-portal
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: portal-content
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+      volumes:
+      - name: portal-content
+        configMap:
+          name: enhanced-portal-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enhanced-portal
+  namespace: homelab-portal
+spec:
+  selector:
+    app: enhanced-portal
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

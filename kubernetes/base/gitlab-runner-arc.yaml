@@ -1,0 +1,225 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitlab-runner
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-runner-secret
+  namespace: gitlab-runner
+type: Opaque
+stringData:
+  # Replace with actual GitLab Runner registration token
+  registration-token: "REPLACE_WITH_GITLAB_RUNNER_TOKEN"
+  # GitLab instance URL
+  gitlab-url: "https://gitlab.homelab.local"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-runner-config
+  namespace: gitlab-runner
+data:
+  config.toml: |
+    concurrent = 2
+    check_interval = 0
+    log_level = "info"
+
+    [session_server]
+      session_timeout = 1800
+
+    [[runners]]
+      name = "homelab-k8s-runner"
+      url = "https://gitlab.homelab.local"
+      token = ""
+      executor = "kubernetes"
+
+      [runners.kubernetes]
+        host = ""
+        namespace = "gitlab-runner"
+        privileged = false
+        image = "alpine:latest"
+
+        [runners.kubernetes.node_selector]
+
+        [runners.kubernetes.pod_security_context]
+          run_as_non_root = true
+          run_as_user = 1000
+          run_as_group = 1000
+          fs_group = 1000
+
+        [[runners.kubernetes.volumes.empty_dir]]
+          name = "docker-certs"
+          mount_path = "/certs/client"
+          medium = "Memory"
+
+        # Resource limits
+        cpu_limit = "1000m"
+        memory_limit = "2Gi"
+        cpu_request = "500m"
+        memory_request = "1Gi"
+
+        # Service account for build operations
+        service_account = "gitlab-runner"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: gitlab-runner
+  name: gitlab-runner
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list", "get", "watch", "create", "delete"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["list", "get", "watch", "create", "update", "delete"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["list", "get", "watch", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner
+subjects:
+- kind: ServiceAccount
+  name: gitlab-runner
+  namespace: gitlab-runner
+roleRef:
+  kind: Role
+  name: gitlab-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: gitlab-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      serviceAccountName: gitlab-runner
+      containers:
+      - name: gitlab-runner
+        image: gitlab/gitlab-runner:latest
+        imagePullPolicy: Always
+        env:
+        - name: CI_SERVER_URL
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-runner-secret
+              key: gitlab-url
+        - name: REGISTRATION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-runner-secret
+              key: registration-token
+        - name: RUNNER_EXECUTOR
+          value: "kubernetes"
+        - name: KUBERNETES_NAMESPACE
+          value: "gitlab-runner"
+        - name: KUBERNETES_PRIVILEGED
+          value: "false"
+        - name: KUBERNETES_IMAGE
+          value: "alpine:latest"
+        - name: KUBERNETES_PULL_POLICY
+          value: "if-not-present"
+        - name: RUNNER_REQUEST_CONCURRENCY
+          value: "2"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/gitlab-runner
+        - name: runner-secrets
+          mountPath: /secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - /usr/bin/pgrep
+            - gitlab-runner
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /usr/bin/pgrep
+            - gitlab-runner
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: config
+        configMap:
+          name: gitlab-runner-config
+      - name: runner-secrets
+        secret:
+          secretName: gitlab-runner-secret
+      restartPolicy: Always
+---
+# Optional: NetworkPolicy for GitLab Runner security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gitlab-runner-netpol
+  namespace: gitlab-runner
+spec:
+  podSelector:
+    matchLabels:
+      app: gitlab-runner
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []  # No ingress allowed
+  egress:
+  - to: []  # Allow all egress for builds and GitLab communication
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 22
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53

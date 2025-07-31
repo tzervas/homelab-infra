@@ -480,14 +480,18 @@ class HomelabTestReporter:
 
         for result in config_results:
             if not result.is_valid:
+                # Combine all errors into a single message
+                error_message = (
+                    "; ".join(result.errors) if result.errors else "Configuration validation failed"
+                )
                 severity = (
                     IssueSeverity.HIGH
-                    if "critical" in result.message.lower()
+                    if any("critical" in error.lower() for error in result.errors)
                     else IssueSeverity.MEDIUM
                 )
                 self.issue_tracker.add_issue(
                     component=f"config_{result.file_type}",
-                    message=result.message,
+                    message=error_message,
                     severity=severity,
                     category=IssueCategory.CONFIGURATION,
                     details={"file_path": result.file_path, "errors": result.errors},
@@ -705,13 +709,13 @@ class HomelabTestReporter:
                     cert = result.certificate_info
                     if cert.days_until_expiry < 30:
                         recommendations.append(
-                            f"Certificate expires in {cert.days_until_expiry} days - renew soon"
+                            f"Certificate expires in {cert.days_until_expiry} days - renew soon",
                         )
                     if cert.is_self_signed:
                         recommendations.append("Consider using a proper CA-signed certificate")
                     if not cert.is_valid_key_size:
                         recommendations.append(
-                            f"Upgrade key size from {cert.key_size} to at least 2048 bits"
+                            f"Upgrade key size from {cert.key_size} to at least 2048 bits",
                         )
 
                 self.issue_tracker.add_issue(

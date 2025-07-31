@@ -161,7 +161,7 @@ class TLSValidator:
                 "-A",
                 "-o",
                 "json",
-            ]
+            ],
         )
 
         if exit_code == 0:
@@ -181,7 +181,7 @@ class TLSValidator:
                 "-A",
                 "-o",
                 "json",
-            ]
+            ],
         )
 
         if exit_code == 0:
@@ -219,7 +219,7 @@ class TLSValidator:
                     issues=["No TLS configuration found"],
                     recommendations=["Configure TLS for all ingress rules"],
                     raw_data=ingress_data,
-                )
+                ),
             )
             return results
 
@@ -597,7 +597,9 @@ class TLSValidator:
         return issues
 
     def _calculate_compliance_level(
-        self, issues: list[str], vulnerabilities: list[str]
+        self,
+        issues: list[str],
+        vulnerabilities: list[str],
     ) -> TLSCompliance:
         """Calculate overall compliance level."""
         if len(vulnerabilities) > 0:
@@ -643,7 +645,7 @@ class TLSValidator:
         compliance_counts = {}
         for level in TLSCompliance:
             compliance_counts[level.value] = len(
-                [r for r in self.validation_results if r.compliance_level == level]
+                [r for r in self.validation_results if r.compliance_level == level],
             )
 
         # Group issues by type
@@ -664,7 +666,7 @@ class TLSValidator:
             },
             "compliance_distribution": compliance_counts,
             "common_issues": dict(
-                sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)[:10],
             ),
             "detailed_results": [
                 {

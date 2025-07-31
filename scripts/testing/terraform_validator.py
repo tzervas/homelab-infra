@@ -164,7 +164,7 @@ class TerraformStateValidator:
                     {
                         "attributes": resource_data.get("values", {}),
                         "schema_version": resource_data.get("schema_version", 0),
-                    }
+                    },
                 ],
             )
             resources.append(resource)
@@ -181,7 +181,7 @@ class TerraformStateValidator:
                         {
                             "attributes": resource_data.get("values", {}),
                             "schema_version": resource_data.get("schema_version", 0),
-                        }
+                        },
                     ],
                 )
                 resources.append(resource)
@@ -286,7 +286,7 @@ class TerraformStateValidator:
                     "chart": chart,
                     "status": status,
                     "valid": is_valid,
-                }
+                },
             )
 
         validation_percentage = (len(valid_releases) / len(helm_resources)) * 100
@@ -385,11 +385,13 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Validate Terraform state for homelab infrastructure"
+        description="Validate Terraform state for homelab infrastructure",
     )
     parser.add_argument("--terraform-dir", default="terraform", help="Path to Terraform directory")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument(
         "--component",
@@ -437,7 +439,7 @@ def main() -> int:
         if result.resources_checked > 0:
             percentage = result.validation_percentage
             print(
-                f"    📊 Resources: {result.resources_valid}/{result.resources_checked} ({percentage:.1f}%)"
+                f"    📊 Resources: {result.resources_valid}/{result.resources_checked} ({percentage:.1f}%)",
             )
 
     print(f"\nOverall: {passed_checks}/{total_checks} validations passed")

@@ -1,0 +1,61 @@
+{
+  "hook_name": "pre-deployment-validation",
+  "phase": "DeploymentPhase.POST_DEPLOYMENT",
+  "result": "HookResult.FAILURE",
+  "timestamp": "2025-07-29T04:50:41.942998+00:00",
+  "duration": 2.4557113647460938e-5,
+  "message": "Pre-deployment validation failed (2/5 checks)",
+  "details": {
+    "validation_results": [
+      {
+        "name": "cluster_connectivity",
+        "success": false,
+        "message": "Kubernetes client not available"
+      },
+      {
+        "name": "resource_availability",
+        "success": false,
+        "message": "Kubernetes client not available"
+      },
+      {
+        "name": "prerequisites",
+        "success": true,
+        "message": "No prerequisites specified",
+        "details": {}
+      },
+      {
+        "name": "configurations",
+        "success": true,
+        "message": "No configuration validation specified",
+        "details": {}
+      },
+      {
+        "name": "security_context",
+        "success": false,
+        "message": "Security validation: 0/1 checks passed",
+        "details": {
+          "security_checks": [
+            {
+              "name": "pod_security_standards",
+              "success": false,
+              "message": "Failed to check Pod Security Standards"
+            }
+          ]
+        }
+      }
+    ],
+    "success_rate": 0.4,
+    "total_checks": 5,
+    "passed_checks": 2
+  },
+  "metrics": {
+    "success_rate": 0.4,
+    "execution_time": 2.4557113647460938e-5,
+    "checks_performed": 5
+  },
+  "recommendations": [
+    "Verify kubectl configuration and cluster accessibility",
+    "Ensure sufficient CPU and memory resources are available",
+    "Review and configure security policies and contexts"
+  ]
+}

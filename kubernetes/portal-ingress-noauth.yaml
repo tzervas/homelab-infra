@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homelab-portal-ingress-noauth
+  namespace: homelab-portal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - homelab.local
+    secretName: homelab-portal-tls-cert
+  rules:
+  - host: homelab.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: enhanced-portal
+            port:
+              number: 80

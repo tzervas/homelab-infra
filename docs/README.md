@@ -1,8 +1,14 @@
 # Homelab Infrastructure Documentation
 
-Welcome to the comprehensive documentation for the GitLab + Keycloak Homelab Infrastructure project. This documentation provides everything you need to understand, deploy, customize, and maintain your homelab environment.
+Welcome to the comprehensive documentation for the refactored Homelab Infrastructure project. This documentation provides everything you need to understand, deploy, customize, and maintain your modern homelab environment with unified testing, enhanced deployment interfaces, and standardized processes.
 
 ## 📚 Documentation Overview
+
+### 🎯 New Enhanced Documentation
+
+- **[Comprehensive User Guide](comprehensive-user-guide.md)** - ⭐ **Complete guide to refactored homelab infrastructure**
+- **[Interfaces and Process Guide](interfaces-and-processes.md)** - ⭐ **Detailed documentation of refactored interfaces and new processes**
+- **[Testing Guide](testing-guide.md)** - ⭐ **Complete guide to unified testing framework and procedures**
 
 ### 🚀 Getting Started
 
@@ -17,9 +23,10 @@ Welcome to the comprehensive documentation for the GitLab + Keycloak Homelab Inf
 - **[SSH Key Setup](setup/ssh-keys.md)** - Secure authentication configuration
 - **[DNS Configuration](setup/dns-setup.md)** - Domain and DNS requirements
 
-### 🔧 Configuration Management
+### 🔧 Configuration Management (Unified)
 
-- **[Configuration Structure](../config/README.md)** - Configuration directory organization and management
+- **[Unified Configuration Structure](../config/README.md)** - Consolidated configuration directory organization
+- **[Consolidated Configs](../config/consolidated/README.md)** - Single source of truth for all configuration
 - **[Environment Variables](configuration/environment-variables.md)** - Complete .env configuration guide
 - **[Private Configuration](configuration/private-configuration.md)** - Managing secrets and private settings
 - **[Helm Values](configuration/helm-values.md)** - Customizing application deployments
@@ -113,6 +120,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for 
 ## 📚 Additional Resources
 
 ### Project Structure Documentation
+
 - **[Scripts Directory](../scripts/README.md)** - Automation and utility scripts
 - **[Testing Framework](../testing/k3s-validation/README.md)** - Comprehensive testing suite
 - **[Configuration Directory](../config/README.md)** - Configuration management structure
@@ -120,6 +128,7 @@ This project is licensed under multiple licenses. See [LICENSE](../LICENSE) for 
 - **[Tools Directory](../tools/README.md)** - Development and operational tools
 
 ### Project Organization
+
 - **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** - Complete project structure overview
 - **[Main README](../README.md)** - Project overview and quick start
 

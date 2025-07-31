@@ -1,0 +1,10 @@
+title = "Repository Gitleaks Configuration"
+
+# Rules for scanning for secrets
+[[rules]]
+id = "generic-api-key"
+regex = '''(?i)(apikey|token|key|secret)\s*[=:,-]?\s*([a-z0-9/+=]{20,})'''
+
+[[rules]]
+id = "private-key"
+regex = '''(?i)-----BEGIN (RSA|DSA|EC|OPENSSH)? ?PRIVATE KEY-----'''

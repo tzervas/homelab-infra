@@ -1,0 +1,344 @@
+# Prometheus Monitoring Configuration
+# Centralized Prometheus settings across all environments
+
+prometheus:
+  # Image configuration
+  image:
+    repository: "prom/prometheus"
+    tag: "v2.48.0"
+    pullPolicy: "{{ .Values.global.registry.pullPolicy }}"
+
+  # Service configuration
+  service:
+    type: "ClusterIP"
+    port: 9090
+    targetPort: 9090
+
+  # Ingress configuration
+  ingress:
+    enabled: true
+    className: "{{ .Values.networking.ingress.class }}"
+    annotations:
+      cert-manager.io/cluster-issuer: "{{ .Values.security.tls.issuer }}"
+      nginx.ingress.kubernetes.io/auth-type: "basic"
+      nginx.ingress.kubernetes.io/auth-secret: "prometheus-auth"
+      nginx.ingress.kubernetes.io/auth-realm: "Prometheus Authentication Required"
+    tls:
+      enabled: true
+      secretName: "prometheus-tls"
+    hosts:
+      - host: "prometheus.{{ .Values.global.domain.base }}"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+
+  # Prometheus server configuration
+  server:
+    # Global configuration
+    global:
+      scrape_interval: "15s"
+      evaluation_interval: "15s"
+      external_labels:
+        cluster: "homelab-{{ .Values.environment }}"
+        environment: "{{ .Values.environment }}"
+        region: "homelab"
+
+    # Data retention
+    retention: '{{ .Values.services.monitoring.prometheus.retention | default "15d" }}'
+    retentionSize: '{{ .Values.storage.sizes.prometheus_data | replace "Gi" "GB" }}'
+
+    # Storage configuration
+    persistence:
+      enabled: true
+      storageClass: "{{ .Values.storage.classes.longhorn.name }}"
+      accessMode: "ReadWriteOnce"
+      size: "{{ .Values.storage.sizes.prometheus_data }}"
+
+    # Resource allocation
+    resources: "{{ .Values.resources.services.prometheus.server }}"
+
+    # Replica configuration for HA
+    replicaCount:
+      "{{ .Values.services.monitoring.prometheus.high_availability.replicas | default 1 }}"
+
+    # Security context
+    securityContext: "{{ .Values.security.pod_security.default_context }}"
+
+    # Configuration file
+    config:
+      # Rule files
+      rule_files:
+        - "/etc/prometheus/rules/*.yml"
+
+      # Scrape configurations
+      scrape_configs:
+        # Prometheus self-monitoring
+        - job_name: "prometheus"
+          static_configs:
+            - targets: ["localhost:9090"]
+          scrape_interval: "30s"
+
+        # Kubernetes API server
+        - job_name: "kubernetes-apiservers"
+          kubernetes_sd_configs:
+            - role: "endpoints"
+          scheme: "https"
+          tls_config:
+            ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+          bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          relabel_configs:
+            - source_labels:
+                [
+                  __meta_kubernetes_namespace,
+                  __meta_kubernetes_service_name,
+                  __meta_kubernetes_endpoint_port_name,
+                ]
+              action: "keep"
+              regex: "default;kubernetes;https"
+
+        # Kubernetes nodes
+        - job_name: "kubernetes-nodes"
+          kubernetes_sd_configs:
+            - role: "node"
+          scheme: "https"
+          tls_config:
+            ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+            insecure_skip_verify: true
+          bearer_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          relabel_configs:
+            - action: "labelmap"
+              regex: "__meta_kubernetes_node_label_(.+)"
+
+        # Kubernetes node exporter
+        - job_name: "kubernetes-node-exporter"
+          kubernetes_sd_configs:
+            - role: "endpoints"
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_endpoints_name]
+              action: "keep"
+              regex: "node-exporter"
+            - action: "labelmap"
+              regex: "__meta_kubernetes_node_label_(.+)"
+
+        # Kubernetes pods
+        - job_name: "kubernetes-pods"
+          kubernetes_sd_configs:
+            - role: "pod"
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: "keep"
+              regex: "true"
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              action: "replace"
+              target_label: "__metrics_path__"
+              regex: "(.+)"
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              action: "replace"
+              regex: "([^:]+)(?::\\d+)?;(\\d+)"
+              replacement: "${1}:${2}"
+              target_label: "__address__"
+            - action: "labelmap"
+              regex: "__meta_kubernetes_pod_label_(.+)"
+            - source_labels: [__meta_kubernetes_namespace]
+              action: "replace"
+              target_label: "kubernetes_namespace"
+            - source_labels: [__meta_kubernetes_pod_name]
+              action: "replace"
+              target_label: "kubernetes_pod_name"
+
+        # Kubernetes services
+        - job_name: "kubernetes-service-endpoints"
+          kubernetes_sd_configs:
+            - role: "endpoints"
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+              action: "keep"
+              regex: "true"
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+              action: "replace"
+              target_label: "__scheme__"
+              regex: "(https?)"
+            - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+              action: "replace"
+              target_label: "__metrics_path__"
+              regex: "(.+)"
+            - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+              action: "replace"
+              target_label: "__address__"
+              regex: "([^:]+)(?::\\d+)?;(\\d+)"
+              replacement: "${1}:${2}"
+            - action: "labelmap"
+              regex: "__meta_kubernetes_service_label_(.+)"
+            - source_labels: [__meta_kubernetes_namespace]
+              action: "replace"
+              target_label: "kubernetes_namespace"
+            - source_labels: [__meta_kubernetes_service_name]
+              action: "replace"
+              target_label: "kubernetes_name"
+
+        # GitLab metrics
+        - job_name: "gitlab"
+          static_configs:
+            - targets: ["gitlab.gitlab.svc.cluster.local:80"]
+          metrics_path: "/-/metrics"
+          scrape_interval: "30s"
+
+        # Keycloak metrics
+        - job_name: "keycloak"
+          static_configs:
+            - targets: ["keycloak.keycloak.svc.cluster.local:8080"]
+          metrics_path: "/auth/realms/master/metrics"
+          scrape_interval: "30s"
+
+        # Longhorn metrics
+        - job_name: "longhorn-manager"
+          kubernetes_sd_configs:
+            - role: "service"
+              namespaces:
+                names: ["longhorn-system"]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_service_name]
+              action: "keep"
+              regex: "longhorn-backend"
+
+        # Ingress NGINX metrics
+        - job_name: "ingress-nginx"
+          kubernetes_sd_configs:
+            - role: "pod"
+              namespaces:
+                names: ["ingress-nginx"]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              action: "keep"
+              regex: "ingress-nginx"
+            - source_labels: [__meta_kubernetes_pod_container_port_number]
+              action: "keep"
+              regex: "10254"
+
+      # Alerting configuration
+      alerting:
+        alertmanagers:
+          - static_configs:
+              - targets: ["alertmanager.monitoring.svc.cluster.local:9093"]
+
+  # Alerting rules
+  rules:
+    # Infrastructure alerts
+    infrastructure:
+      - alert: "NodeDown"
+        expr: 'up{job="kubernetes-nodes"} == 0'
+        for: "1m"
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: "NodeHighCPU"
+        expr: '100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80'
+        for: "5m"
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "High CPU usage on node {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes."
+
+      - alert: "NodeHighMemory"
+        expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85"
+        for: "5m"
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "High memory usage on node {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes."
+
+      - alert: "NodeHighDiskUsage"
+        expr:
+          '(1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} /
+          node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90'
+        for: "5m"
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "High disk usage on node {{ $labels.instance }}"
+          description: "Disk usage is above 90% for more than 5 minutes."
+
+    # Kubernetes alerts
+    kubernetes:
+      - alert: "PodCrashLooping"
+        expr: "rate(kube_pod_container_status_restarts_total[15m]) > 0"
+        for: "5m"
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+          description: "Pod has restarted {{ $value }} times in the last 15 minutes."
+
+      - alert: "PodNotReady"
+        expr: 'kube_pod_status_ready{condition="false"} == 1'
+        for: "5m"
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is not ready"
+          description: "Pod has been in not ready state for more than 5 minutes."
+
+      - alert: "DeploymentReplicasMismatch"
+        expr: "kube_deployment_status_replicas != kube_deployment_status_replicas_available"
+        for: "5m"
+        labels:
+          severity: "warning"
+        annotations:
+          summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} replica mismatch"
+          description:
+            "Deployment has {{ $labels.replicas }} replicas but only {{ $labels.replicas_available
+            }} are available."
+
+    # Application alerts
+    applications:
+      - alert: "GitLabDown"
+        expr: 'up{job="gitlab"} == 0'
+        for: "2m"
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "GitLab is down"
+          description: "GitLab has been down for more than 2 minutes."
+
+      - alert: "KeycloakDown"
+        expr: 'up{job="keycloak"} == 0'
+        for: "2m"
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "Keycloak is down"
+          description: "Keycloak has been down for more than 2 minutes."
+
+  # ServiceMonitor for Prometheus to scrape itself
+  serviceMonitor:
+    enabled: true
+    interval: "30s"
+    scrapeTimeout: "10s"
+
+  # Prometheus operator integration
+  operator:
+    enabled: true
+    prometheusSpec:
+      retention: '{{ .Values.services.monitoring.prometheus.retention | default "15d" }}'
+      resources: "{{ .Values.resources.services.prometheus.server }}"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: "{{ .Values.storage.classes.longhorn.name }}"
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: "{{ .Values.storage.sizes.prometheus_data }}"
+
+  # Additional scrape configs (environment-specific)
+  additionalScrapeConfigs: []
+
+  # External labels for federation
+  externalLabels:
+    cluster: "homelab-{{ .Values.environment }}"
+    environment: "{{ .Values.environment }}"

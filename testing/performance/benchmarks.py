@@ -75,7 +75,7 @@ class PerformanceReport:
             "success_rate": len(successful_tests) / len(self.results) * 100 if self.results else 0,
             "components_tested": list({r.component for r in self.results}),
             "avg_response_time_ms": statistics.mean(
-                [r.value for r in successful_tests if r.unit == "ms"]
+                [r.value for r in successful_tests if r.unit == "ms"],
             )
             if successful_tests
             else 0,
@@ -136,7 +136,7 @@ class InfrastructureBenchmarker:
                     "cpu_count": psutil.cpu_count(),
                     "memory_total_gb": round(psutil.virtual_memory().total / (1024**3), 2),
                     "disk_usage_gb": round(psutil.disk_usage("/").total / (1024**3), 2),
-                }
+                },
             )
         except Exception as e:
             self.logger.debug(f"Could not collect system info: {e}")
@@ -152,7 +152,7 @@ class InfrastructureBenchmarker:
                     "kubernetes_version": nodes.items[0].status.node_info.kubelet_version
                     if nodes.items
                     else "unknown",
-                }
+                },
             )
         except Exception as e:
             self.logger.debug(f"Could not collect Kubernetes info: {e}")
@@ -213,7 +213,7 @@ class InfrastructureBenchmarker:
                             value=min_response_time,
                             unit="ms",
                         ),
-                    ]
+                    ],
                 )
             else:
                 results.append(
@@ -225,7 +225,7 @@ class InfrastructureBenchmarker:
                         unit="ms",
                         success=False,
                         error_message="All requests failed",
-                    )
+                    ),
                 )
 
         return results
@@ -288,7 +288,7 @@ class InfrastructureBenchmarker:
                     unit="ms",
                     success=pod_running,
                     error_message="Pod failed to start" if not pod_running else None,
-                )
+                ),
             )
 
             # Test API server response time
@@ -304,7 +304,7 @@ class InfrastructureBenchmarker:
                     value=api_response_time,
                     unit="ms",
                     metadata={"nodes_count": len(nodes.items)},
-                )
+                ),
             )
 
         except Exception as e:
@@ -317,7 +317,7 @@ class InfrastructureBenchmarker:
                     unit="score",
                     success=False,
                     error_message=str(e),
-                )
+                ),
             )
 
         return results
@@ -342,9 +342,9 @@ class InfrastructureBenchmarker:
                     value=len(storage_classes.items),
                     unit="count",
                     metadata={
-                        "storage_classes": [sc.metadata.name for sc in storage_classes.items]
+                        "storage_classes": [sc.metadata.name for sc in storage_classes.items],
                     },
-                )
+                ),
             )
 
             # Test PVC creation time if storage classes are available
@@ -400,7 +400,7 @@ class InfrastructureBenchmarker:
                         success=pvc_bound,
                         error_message="PVC failed to bind" if not pvc_bound else None,
                         metadata={"storage_class": default_sc},
-                    )
+                    ),
                 )
 
         except Exception as e:
@@ -413,7 +413,7 @@ class InfrastructureBenchmarker:
                     unit="score",
                     success=False,
                     error_message=str(e),
-                )
+                ),
             )
 
         return results
@@ -439,7 +439,7 @@ class InfrastructureBenchmarker:
                         metric_name="dns_resolution_time",
                         value=dns_resolution_time,
                         unit="ms",
-                    )
+                    ),
                 )
             except Exception as e:
                 results.append(
@@ -451,7 +451,7 @@ class InfrastructureBenchmarker:
                         unit="ms",
                         success=False,
                         error_message=str(e),
-                    )
+                    ),
                 )
 
             # Test service connectivity
@@ -465,7 +465,7 @@ class InfrastructureBenchmarker:
                     metric_name="services_count",
                     value=len(services.items),
                     unit="count",
-                )
+                ),
             )
 
         except Exception as e:
@@ -478,19 +478,22 @@ class InfrastructureBenchmarker:
                     unit="score",
                     success=False,
                     error_message=str(e),
-                )
+                ),
             )
 
         return results
 
     def run_load_test(
-        self, target_url: str, duration_seconds: int = 60, concurrent_users: int = 10
+        self,
+        target_url: str,
+        duration_seconds: int = 60,
+        concurrent_users: int = 10,
     ) -> list[BenchmarkResult]:
         """Run a load test against a target URL."""
         results = []
 
         self.logger.info(
-            f"Starting load test: {target_url} for {duration_seconds}s with {concurrent_users} users"
+            f"Starting load test: {target_url} for {duration_seconds}s with {concurrent_users} users",
         )
 
         response_times = []
@@ -582,7 +585,7 @@ class InfrastructureBenchmarker:
                         value=(errors / total_requests) * 100 if total_requests > 0 else 0,
                         unit="percent",
                     ),
-                ]
+                ],
             )
         else:
             results.append(
@@ -594,13 +597,15 @@ class InfrastructureBenchmarker:
                     unit="score",
                     success=False,
                     error_message="All requests failed",
-                )
+                ),
             )
 
         return results
 
     def run_comprehensive_benchmark(
-        self, api_endpoints: list[str] | None = None, load_test_targets: list[str] | None = None
+        self,
+        api_endpoints: list[str] | None = None,
+        load_test_targets: list[str] | None = None,
     ) -> PerformanceReport:
         """Run comprehensive performance benchmark suite."""
         report = PerformanceReport(
@@ -653,13 +658,16 @@ class InfrastructureBenchmarker:
 
         report.finalize()
         self.logger.info(
-            f"✅ Benchmark suite completed in {report.total_duration_seconds:.2f} seconds"
+            f"✅ Benchmark suite completed in {report.total_duration_seconds:.2f} seconds",
         )
 
         return report
 
     def export_report(
-        self, report: PerformanceReport, output_file: str, format: str = "json"
+        self,
+        report: PerformanceReport,
+        output_file: str,
+        format: str = "json",
     ) -> None:
         """Export performance report to file."""
         if format.lower() == "json":
@@ -709,7 +717,7 @@ class InfrastructureBenchmarker:
             f.write(f"- **Failed:** {stats.get('failed_tests', 0)}\n")
             f.write(f"- **Success Rate:** {stats.get('success_rate', 0):.1f}%\n")
             f.write(
-                f"- **Average Response Time:** {stats.get('avg_response_time_ms', 0):.2f}ms\n\n"
+                f"- **Average Response Time:** {stats.get('avg_response_time_ms', 0):.2f}ms\n\n",
             )
 
             # Environment Info
@@ -730,7 +738,7 @@ class InfrastructureBenchmarker:
                 for result in component_results:
                     status = "✅" if result.success else "❌"
                     f.write(
-                        f"| {result.test_name} | {result.metric_name} | {result.value:.2f} | {result.unit} | {status} |\n"
+                        f"| {result.test_name} | {result.metric_name} | {result.value:.2f} | {result.unit} | {status} |\n",
                     )
                 f.write("\n")
 
@@ -742,13 +750,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Infrastructure performance benchmarking")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument("--endpoints", nargs="+", help="API endpoints to benchmark")
     parser.add_argument("--load-test", nargs="+", help="URLs to load test")
     parser.add_argument("--output", help="Output file for results")
     parser.add_argument(
-        "--format", choices=["json", "markdown"], default="json", help="Output format"
+        "--format",
+        choices=["json", "markdown"],
+        default="json",
+        help="Output format",
     )
     parser.add_argument("--duration", type=int, default=30, help="Load test duration in seconds")
     parser.add_argument("--users", type=int, default=5, help="Concurrent users for load testing")

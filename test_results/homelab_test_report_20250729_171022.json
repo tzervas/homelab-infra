@@ -1,0 +1,755 @@
+{
+  "timestamp": "2025-07-29T17:09:18.842143+00:00",
+  "duration": 63.1713182926178,
+  "overall_status": "fail",
+  "summary": {
+    "overall_status": "fail",
+    "test_duration": 63.1713182926178,
+    "modules_run": 4,
+    "total_recommendations": 11
+  },
+  "config_validation": [
+    {
+      "file_path": "ansible/inventory/vm-test-inventory.yml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "ansible_inventory"
+    },
+    {
+      "file_path": "ansible/inventory/hosts.yml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "ansible_inventory"
+    },
+    {
+      "file_path": "helm/environments/secrets-dev-plain.yaml",
+      "is_valid": false,
+      "errors": ["Schema validation error: 'environment' is a required property"],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "helm/environments/values-secrets-template.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [
+        "Potential sensitive data at gitlab.global.initialRootPassword.secret",
+        "Potential sensitive data at gitlab.global.initialRootPassword.key",
+        "Potential sensitive data at gitlab.global.smtp.password.secret",
+        "Potential sensitive data at gitlab.global.smtp.password.key"
+      ],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "helm/environments/values-staging.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "helm/environments/values-default.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "helm/environments/values-prod.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": ["Potential sensitive data at grafana.adminPassword"],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "helm/environments/secrets-dev.yaml",
+      "is_valid": false,
+      "errors": ["Schema validation error: 'environment' is a required property"],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "helm/environments/secrets-prod.yaml",
+      "is_valid": false,
+      "errors": ["Schema validation error: 'environment' is a required property"],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "helm/environments/values-dev.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "helm/environments/secrets-staging.yaml",
+      "is_valid": false,
+      "errors": ["Schema validation error: 'environment' is a required property"],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "helm/environments/values-development.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "examples/private-config-template/values/global.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "examples/private-config-template/values/keycloak.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "examples/private-config-template/values/monitoring.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": ["Potential sensitive data at grafana.auth.generic_oauth.token_url"],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "examples/private-config-template/values/gitlab.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [
+        "Potential sensitive data at gitlab.global.appConfig.omniauth.providers[0].secret",
+        "Potential sensitive data at gitlab.global.appConfig.omniauth.providers[0].key",
+        "Potential sensitive data at gitlab.postgresql.postgresqlPassword"
+      ],
+      "file_type": "helm_values"
+    },
+    {
+      "file_path": "examples/private-config-template/secrets/tls-certificates.yaml",
+      "is_valid": false,
+      "errors": ["Failed to load file"],
+      "warnings": [],
+      "file_type": "generic"
+    },
+    {
+      "file_path": "examples/private-config-template/secrets/gitlab-secrets.yaml",
+      "is_valid": false,
+      "errors": ["Failed to load file"],
+      "warnings": [],
+      "file_type": "generic"
+    },
+    {
+      "file_path": "examples/private-config-template/secrets/keycloak-secrets.yaml",
+      "is_valid": false,
+      "errors": ["Failed to load file"],
+      "warnings": [],
+      "file_type": "generic"
+    },
+    {
+      "file_path": "examples/private-config-template/environments/staging.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "examples/private-config-template/environments/production.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "environment_config"
+    },
+    {
+      "file_path": "examples/private-config-template/environments/development.yaml",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [],
+      "file_type": "environment_config"
+    }
+  ],
+  "infrastructure_health": {
+    "cluster_status": "critical",
+    "total_checks": 5,
+    "healthy_checks": 3,
+    "warning_checks": 1,
+    "critical_checks": 1,
+    "component_statuses": [
+      {
+        "component": "cluster_connectivity",
+        "status": "healthy",
+        "message": "Cluster API accessible",
+        "details": {
+          "api_resources_count": 38
+        },
+        "timestamp": 1753808958.878603
+      },
+      {
+        "component": "node_status",
+        "status": "healthy",
+        "message": "All 1 nodes ready",
+        "details": {
+          "total_nodes": 1,
+          "healthy_nodes": 1,
+          "unhealthy_nodes": [],
+          "node_details": {
+            "homelab": {
+              "ready": true,
+              "cpu_capacity": "56",
+              "memory_capacity": "131770276Ki",
+              "cpu_allocatable": "56",
+              "memory_allocatable": "131770276Ki"
+            }
+          }
+        },
+        "timestamp": 1753808958.8846538
+      },
+      {
+        "component": "core_components",
+        "status": "healthy",
+        "message": "All core components healthy",
+        "details": {
+          "components": {},
+          "unhealthy": []
+        },
+        "timestamp": 1753808958.895103
+      },
+      {
+        "component": "namespace_status",
+        "status": "warning",
+        "message": "1 critical namespaces missing",
+        "details": {
+          "namespace_details": {
+            "kube-system": {
+              "exists": true,
+              "total_pods": 4,
+              "running_pods": 4,
+              "pod_health": 1.0
+            },
+            "metallb-system": {
+              "exists": true,
+              "total_pods": 2,
+              "running_pods": 2,
+              "pod_health": 1.0
+            },
+            "cert-manager": {
+              "exists": true,
+              "total_pods": 3,
+              "running_pods": 3,
+              "pod_health": 1.0
+            },
+            "ingress-nginx": {
+              "exists": true,
+              "total_pods": 3,
+              "running_pods": 1,
+              "pod_health": 0.3333333333333333
+            },
+            "longhorn-system": {
+              "exists": false
+            },
+            "monitoring": {
+              "exists": true,
+              "total_pods": 2,
+              "running_pods": 2,
+              "pod_health": 1.0
+            }
+          },
+          "missing_namespaces": ["longhorn-system"]
+        },
+        "timestamp": 1753808958.9700987
+      },
+      {
+        "component": "network_connectivity",
+        "status": "critical",
+        "message": "Network connectivity issues detected",
+        "details": {
+          "dns_resolution": false,
+          "ping_test": false
+        },
+        "timestamp": 1753808959.0358307
+      }
+    ]
+  },
+  "service_deployment": {
+    "gitlab": {
+      "service_name": "gitlab",
+      "namespace": "gitlab-system",
+      "status": "failed",
+      "message": "No pods found",
+      "pod_count": 0,
+      "ready_pods": 0,
+      "endpoints_healthy": false,
+      "resource_usage": {},
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "keycloak": {
+      "service_name": "keycloak",
+      "namespace": "keycloak",
+      "status": "ready",
+      "message": "All 2 pods ready, endpoints healthy",
+      "pod_count": 2,
+      "ready_pods": 2,
+      "endpoints_healthy": true,
+      "resource_usage": {
+        "total_cpu_requests": "2500m",
+        "total_memory_requests": "5120Mi",
+        "pod_details": [
+          {
+            "name": "postgres-7bd5d69c5-h2x6s",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "postgres": {
+                "requests": {
+                  "cpu": "1",
+                  "memory": "2Gi"
+                },
+                "limits": {
+                  "cpu": "2",
+                  "memory": "4Gi"
+                }
+              }
+            }
+          },
+          {
+            "name": "keycloak-577ff64d59-hw2g9",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "keycloak": {
+                "requests": {
+                  "cpu": "1500m",
+                  "memory": "3Gi"
+                },
+                "limits": {
+                  "cpu": "3",
+                  "memory": "6Gi"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {
+        "http_8080": false,
+        "https_8080": false
+      },
+      "retry_count": 0
+    },
+    "prometheus": {
+      "service_name": "prometheus",
+      "namespace": "monitoring",
+      "status": "ready",
+      "message": "All 2 pods ready, endpoints healthy",
+      "pod_count": 2,
+      "ready_pods": 2,
+      "endpoints_healthy": true,
+      "resource_usage": {
+        "total_cpu_requests": "0m",
+        "total_memory_requests": "0Mi",
+        "pod_details": [
+          {
+            "name": "grafana-7b5976d6b6-v7t7n",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "grafana": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "prometheus-6b9497f7-9ls5j",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "prometheus": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {
+        "http_9090": false,
+        "https_9090": false
+      },
+      "retry_count": 0
+    },
+    "grafana": {
+      "service_name": "grafana",
+      "namespace": "monitoring",
+      "status": "ready",
+      "message": "All 2 pods ready, endpoints healthy",
+      "pod_count": 2,
+      "ready_pods": 2,
+      "endpoints_healthy": true,
+      "resource_usage": {
+        "total_cpu_requests": "0m",
+        "total_memory_requests": "0Mi",
+        "pod_details": [
+          {
+            "name": "grafana-7b5976d6b6-v7t7n",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "grafana": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "prometheus-6b9497f7-9ls5j",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "prometheus": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {
+        "http_80": false,
+        "https_80": false
+      },
+      "retry_count": 0
+    },
+    "nginx-ingress": {
+      "service_name": "nginx-ingress",
+      "namespace": "ingress-nginx",
+      "status": "pending",
+      "message": "1/3 pods ready",
+      "pod_count": 3,
+      "ready_pods": 1,
+      "endpoints_healthy": false,
+      "resource_usage": {
+        "total_cpu_requests": "100m",
+        "total_memory_requests": "90Mi",
+        "pod_details": [
+          {
+            "name": "ingress-nginx-admission-create-sbhxp",
+            "ready": false,
+            "phase": "Succeeded",
+            "restarts": 0,
+            "resource_usage": {
+              "create": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "ingress-nginx-admission-patch-lp589",
+            "ready": false,
+            "phase": "Succeeded",
+            "restarts": 1,
+            "resource_usage": {
+              "patch": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "ingress-nginx-controller-558586d485-tvg49",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "controller": {
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "90Mi"
+                },
+                "limits": {}
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "cert-manager": {
+      "service_name": "cert-manager",
+      "namespace": "cert-manager",
+      "status": "ready",
+      "message": "All 3 pods ready, endpoints healthy",
+      "pod_count": 3,
+      "ready_pods": 3,
+      "endpoints_healthy": true,
+      "resource_usage": {
+        "total_cpu_requests": "0m",
+        "total_memory_requests": "0Mi",
+        "pod_details": [
+          {
+            "name": "cert-manager-98c64c5bd-tqnd8",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "cert-manager-controller": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "cert-manager-cainjector-5f67bf667f-np8v4",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "cert-manager-cainjector": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "cert-manager-webhook-749d497c97-rdl7d",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "cert-manager-webhook": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {},
+      "retry_count": 0
+    },
+    "metallb": {
+      "service_name": "metallb",
+      "namespace": "metallb-system",
+      "status": "ready",
+      "message": "All 2 pods ready, endpoints healthy",
+      "pod_count": 2,
+      "ready_pods": 2,
+      "endpoints_healthy": true,
+      "resource_usage": {
+        "total_cpu_requests": "100m",
+        "total_memory_requests": "100Mi",
+        "pod_details": [
+          {
+            "name": "metallb-speaker-69ptl",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 0,
+            "resource_usage": {
+              "speaker": {
+                "requests": {},
+                "limits": {}
+              },
+              "frr": {
+                "requests": {},
+                "limits": {}
+              },
+              "reloader": {
+                "requests": {},
+                "limits": {}
+              },
+              "frr-metrics": {
+                "requests": {},
+                "limits": {}
+              }
+            }
+          },
+          {
+            "name": "metallb-controller-7cc68c4c77-89d4f",
+            "ready": true,
+            "phase": "Running",
+            "restarts": 1,
+            "resource_usage": {
+              "controller": {
+                "requests": {
+                  "cpu": "100m",
+                  "memory": "100Mi"
+                },
+                "limits": {
+                  "cpu": "100m",
+                  "memory": "100Mi"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "health_checks": {},
+      "retry_count": 0
+    }
+  },
+  "network_security": [
+    {
+      "check_type": "network_connectivity",
+      "component": "cluster_network",
+      "status": "warning",
+      "message": "Connectivity issues: Internal DNS resolution failed",
+      "details": {
+        "external_ping": true,
+        "internal_dns": false
+      },
+      "recommendations": []
+    },
+    {
+      "check_type": "tls_certificates",
+      "component": "certificates",
+      "status": "secure",
+      "message": "Found 11 TLS certificates",
+      "details": {
+        "total_certificates": 11,
+        "expiring_soon": 0,
+        "certificate_names": [
+          "k3s-serving",
+          "sealed-secrets-keybfvsg",
+          "homelab-ca-secret",
+          "grafana-tls-cert",
+          "prometheus-tls-cert"
+        ]
+      },
+      "recommendations": ["Install cryptography library for detailed cert validation"]
+    },
+    {
+      "check_type": "network_policies",
+      "component": "network_security",
+      "status": "warning",
+      "message": "Missing critical policies: default-deny-all, allow-dns, monitoring-ingress",
+      "details": {
+        "total_policies": 0,
+        "critical_found": [],
+        "missing_policies": ["default-deny-all", "allow-dns", "monitoring-ingress"],
+        "all_policies": []
+      },
+      "recommendations": ["Review policy effectiveness"]
+    },
+    {
+      "check_type": "metallb_loadbalancer",
+      "component": "load_balancer",
+      "status": "secure",
+      "message": "MetalLB operational: 1 LoadBalancers active",
+      "details": {
+        "metallb_pods_running": 2,
+        "metallb_pods_total": 2,
+        "loadbalancer_services": 1,
+        "active_loadbalancers": 1,
+        "ip_range": "192.168.25.200-192.168.25.250"
+      },
+      "recommendations": []
+    },
+    {
+      "check_type": "dns_service_discovery",
+      "component": "dns",
+      "status": "vulnerable",
+      "message": "DNS service discovery failed",
+      "details": {
+        "dns_test_results": {
+          "kubernetes.default.svc.cluster.local": false,
+          "kube-dns.kube-system.svc.cluster.local": false
+        },
+        "successful_lookups": 0,
+        "total_tests": 2
+      },
+      "recommendations": []
+    },
+    {
+      "check_type": "rbac_security",
+      "component": "rbac",
+      "status": "warning",
+      "message": "Security issues: 1 privileged containers, 21 missing contexts, 14 PSS violations",
+      "details": {
+        "total_cluster_roles": 87,
+        "total_cluster_bindings": 67,
+        "total_service_accounts": 58,
+        "cluster_admin_bindings": 1,
+        "admin_binding_names": ["cluster-admin"],
+        "privileged_containers_shown": ["ingress-nginx/ingress-nginx-controller:controller"],
+        "missing_contexts_shown": [
+          "monitoring/grafana (pod level)",
+          "monitoring/grafana:grafana",
+          "monitoring/prometheus (pod level)",
+          "monitoring/prometheus:prometheus",
+          "ai-tools/ollama (pod level)"
+        ],
+        "total_privileged_containers": 1,
+        "total_missing_contexts": 21,
+        "pss_issues_shown": [
+          "Namespace default missing Pod Security Standards",
+          "Namespace metallb-system missing Pod Security Standards",
+          "Namespace cert-manager missing Pod Security Standards",
+          "Namespace ingress-nginx missing Pod Security Standards",
+          "Namespace monitoring missing Pod Security Standards"
+        ],
+        "total_pss_issues": 14,
+        "total_security_issues": 36
+      },
+      "recommendations": [
+        "Fix 1 privileged containers",
+        "Set runAsNonRoot: true and remove privileged access",
+        "Add security contexts to 21 containers/pods",
+        "Implement comprehensive security context policy",
+        "Configure Pod Security Standards for 14 namespaces",
+        "Use 'restricted' profile for production workloads"
+      ]
+    }
+  ],
+  "integration_tests": null,
+  "recommendations": [
+    "Fix 7 invalid configuration files",
+    "Address infrastructure health issues before proceeding",
+    "Investigate unready services: gitlab, nginx-ingress",
+    "Review and address security warnings",
+    "Review policy effectiveness",
+    "Fix 1 privileged containers",
+    "Set runAsNonRoot: true and remove privileged access",
+    "Add security contexts to 21 containers/pods",
+    "Implement comprehensive security context policy",
+    "Configure Pod Security Standards for 14 namespaces",
+    "Use 'restricted' profile for production workloads"
+  ],
+  "metrics": {
+    "total_test_duration": 63.1713182926178,
+    "timestamp": "2025-07-29T17:09:18.842143+00:00",
+    "config_validation": {
+      "total_files": 22,
+      "valid_files": 15,
+      "validation_rate": 68.18181818181817
+    },
+    "infrastructure_health": {
+      "health_percentage": 60.0,
+      "total_checks": 5,
+      "healthy_checks": 3
+    },
+    "service_deployment": {
+      "total_services": 7,
+      "ready_services": 5,
+      "readiness_rate": 71.42857142857143
+    },
+    "network_security": {
+      "total_checks": 6,
+      "secure_checks": 2,
+      "security_score": 33.33333333333333
+    }
+  }
+}

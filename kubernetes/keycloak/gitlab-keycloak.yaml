@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-oauth-secret
+  namespace: gitlab
+type: Opaque
+stringData:
+  client-secret: gitlab-client-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      containers:
+      - name: gitlab
+        image: gitlab/gitlab-ce:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 22
+        env:
+        - name: GITLAB_OMNIBUS_CONFIG
+          value: |
+            external_url 'https://gitlab.homelab.local'
+            nginx['listen_port'] = 80
+            nginx['listen_https'] = false
+            gitlab_rails['gitlab_shell_ssh_port'] = 22
+
+            # Memory optimization settings
+            postgresql['shared_buffers'] = "128MB"
+            postgresql['max_connections'] = 200
+
+            # Reduce Puma workers and threads
+            puma['worker_processes'] = 2
+            puma['min_threads'] = 1
+            puma['max_threads'] = 8
+
+            # Reduce Sidekiq concurrency
+            sidekiq['max_concurrency'] = 10
+
+            # Disable some features during initial setup
+            gitlab_rails['monitoring_whitelist'] = ['127.0.0.1/32', '10.0.0.0/8']
+
+            # Optimize GitLab for single-node deployment
+            unicorn['worker_processes'] = 2
+
+            # Reduce memory usage
+            gitlab_rails['env'] = {
+              'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
+            }
+
+            # Keycloak OAuth2 Integration
+            gitlab_rails['omniauth_enabled'] = true
+            gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']
+            gitlab_rails['omniauth_sync_email_from_provider'] = 'openid_connect'
+            gitlab_rails['omniauth_sync_profile_from_provider'] = ['openid_connect']
+            gitlab_rails['omniauth_sync_profile_attributes'] = ['email', 'name']
+            gitlab_rails['omniauth_auto_sign_in_with_provider'] = nil
+            gitlab_rails['omniauth_block_auto_created_users'] = false
+            gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
+            gitlab_rails['omniauth_external_providers'] = ['openid_connect']
+
+            gitlab_rails['omniauth_providers'] = [
+              {
+                'name' => 'openid_connect',
+                'label' => 'Keycloak',
+                'icon' => 'https://www.keycloak.org/resources/images/keycloak_icon_512px.svg',
+                'args' => {
+                  'name' => 'openid_connect',
+                  'scope' => ['openid','profile','email','roles'],
+                  'response_type' => 'code',
+                  'issuer' => 'https://auth.homelab.local/realms/homelab',
+                  'discovery' => true,
+                  'client_auth_method' => 'query',
+                  'uid_field' => 'preferred_username',
+                  'send_scope_to_token_endpoint' => 'false',
+                  'pkce' => true,
+                  'client_options' => {
+                    'identifier' => 'gitlab',
+                    'secret' => 'gitlab-client-secret',
+                    'redirect_uri' => 'https://gitlab.homelab.local/users/auth/openid_connect/callback',
+                    'end_session_endpoint' => 'https://auth.homelab.local/realms/homelab/protocol/openid-connect/logout'
+                  }
+                }
+              }
+            ]
+
+            # Map Keycloak roles to GitLab permissions
+            gitlab_rails['omniauth_providers'][0]['args']['gitlab_role_mapping'] = {
+              'gitlab-admin' => 'admin',
+              'gitlab-developer' => 'developer',
+              'gitlab-user' => 'guest'
+            }
+
+        - name: GITLAB_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-oauth-secret
+              key: client-secret
+        volumeMounts:
+        - name: gitlab-data
+          mountPath: /var/opt/gitlab
+        - name: gitlab-logs
+          mountPath: /var/log/gitlab
+        - name: gitlab-config
+          mountPath: /etc/gitlab
+        resources:
+          requests:
+            memory: "6Gi"
+            cpu: "1000m"
+          limits:
+            memory: "12Gi"
+            cpu: "2000m"
+      volumes:
+      - name: gitlab-data
+        persistentVolumeClaim:
+          claimName: gitlab-data
+      - name: gitlab-logs
+        emptyDir: {}
+      - name: gitlab-config
+        emptyDir: {}

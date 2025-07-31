@@ -15,7 +15,9 @@ tools/
 ## Directory Overview
 
 ### Development Tools (`development/`)
+
 Contains tools and utilities for local development:
+
 - IDE configuration files
 - Code formatting and linting tools
 - Development environment setup scripts
@@ -23,7 +25,9 @@ Contains tools and utilities for local development:
 - Debug and profiling tools
 
 ### CI/CD Tools (`ci-cd/`)
+
 Houses continuous integration and deployment tools:
+
 - GitHub Actions workflows
 - Pipeline scripts and utilities
 - Build and test automation tools
@@ -31,7 +35,9 @@ Houses continuous integration and deployment tools:
 - Release management tools
 
 ### Monitoring Tools (`monitoring/`)
+
 Contains monitoring and observability utilities:
+
 - Custom monitoring scripts
 - Dashboard generators
 - Alerting rule generators
@@ -41,18 +47,23 @@ Contains monitoring and observability utilities:
 ## Integration with Project Structure
 
 ### Scripts Integration
+
 Tools complement the main scripts in `scripts/` directory:
+
 - **Scripts**: Production deployment and operational scripts
 - **Tools**: Development support and specialized utilities
 
 ### Testing Integration
+
 Works alongside the testing framework in `testing/`:
+
 - **Testing**: Comprehensive validation and health checks
 - **Tools**: Specialized development and debugging tools
 
 ## Usage Patterns
 
 ### Development Workflow
+
 ```bash
 # Setup development environment
 ./tools/development/setup-dev-env.sh
@@ -65,6 +76,7 @@ Works alongside the testing framework in `testing/`:
 ```
 
 ### CI/CD Pipeline
+
 ```bash
 # Build validation
 ./tools/ci-cd/validate-build.sh
@@ -77,6 +89,7 @@ Works alongside the testing framework in `testing/`:
 ```
 
 ### Monitoring Operations
+
 ```bash
 # Generate custom dashboards
 ./tools/monitoring/generate-dashboards.sh
@@ -107,16 +120,19 @@ Works alongside the testing framework in `testing/`:
 ## Current Implementation Status
 
 ### ✅ Implemented
+
 - Directory structure created
 - Integration points defined
 - Documentation framework established
 
 ### 🔄 In Progress
+
 - Populating development tools
 - Creating CI/CD automation
 - Building monitoring utilities
 
 ### 📋 Planned
+
 - IDE integration packages
 - Advanced debugging tools
 - Custom monitoring solutions
@@ -143,11 +159,13 @@ Works alongside the testing framework in `testing/`:
 ## Relationship to Main Scripts
 
 ### Scripts Directory (`scripts/`)
+
 - **Purpose**: Production deployment and operations
 - **Audience**: System administrators and operators
 - **Scope**: Infrastructure management and deployment
 
 ### Tools Directory (`tools/`)
+
 - **Purpose**: Development support and specialized utilities
 - **Audience**: Developers and DevOps engineers
 - **Scope**: Development workflow and advanced operations
@@ -155,16 +173,19 @@ Works alongside the testing framework in `testing/`:
 ## Environment Integration
 
 ### Development Environment
+
 - Local development setup and configuration
 - Code quality and testing tools
 - Debugging and profiling utilities
 
 ### CI/CD Environment
+
 - Automated testing and validation
 - Build and deployment automation
 - Quality gates and compliance checks
 
 ### Production Environment
+
 - Monitoring and observability tools
 - Performance analysis and optimization
 - Troubleshooting and diagnostic utilities
@@ -172,12 +193,14 @@ Works alongside the testing framework in `testing/`:
 ## Security Considerations
 
 ### Tool Security
+
 - No hardcoded credentials or secrets
 - Secure handling of sensitive information
 - Audit trail for tool usage
 - Access control for sensitive operations
 
 ### Development Security
+
 - Static analysis tools for security issues
 - Dependency vulnerability scanning
 - Secret detection and prevention
@@ -188,18 +211,21 @@ Works alongside the testing framework in `testing/`:
 ### Planned Tools
 
 #### Development Tools
+
 - Advanced IDE configuration packages
 - Custom debugging and profiling tools
 - Local development environment managers
 - Code generation and templating tools
 
 #### CI/CD Tools
+
 - Advanced pipeline orchestration
 - Multi-environment deployment tools
 - Automated security scanning
 - Performance regression detection
 
 #### Monitoring Tools
+
 - Custom dashboard generators
 - Intelligent alerting systems
 - Automated performance analysis
@@ -226,6 +252,7 @@ To contribute new tools:
 ## Support
 
 For tool-related issues:
+
 - Check individual tool documentation first
 - Review related project documentation
 - Search existing issues in the project repository

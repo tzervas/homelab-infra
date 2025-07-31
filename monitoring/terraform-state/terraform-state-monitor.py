@@ -165,7 +165,7 @@ class TerraformStateMonitor:
 
         logger.info(
             f"State analysis for {environment}/{workspace}: "
-            f"{len(resources)} resources, {len(resource_types)} types"
+            f"{len(resources)} resources, {len(resource_types)} types",
         )
 
     def check_drift(self, environment: str, workspace: str) -> None:

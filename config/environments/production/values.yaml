@@ -1,0 +1,305 @@
+# Production Environment Configuration
+# Overrides for production environment settings
+
+environment: "production"
+
+# Global overrides for production
+global:
+  domain:
+    base: "homelab.local"
+
+  # Production-specific labels
+  labels:
+    homelab.local/environment: "production"
+    homelab.local/tier: "production"
+    homelab.local/criticality: "high"
+
+# Networking overrides for production
+networking:
+  # Production network ranges
+  loadbalancer:
+    pools:
+      default:
+        addresses:
+          - "192.168.25.240-192.168.25.250"
+
+  # Production cluster network
+  cluster:
+    pod_cidr: "10.42.0.0/16"
+    service_cidr: "10.43.0.0/16"
+
+    # Production DNS settings with redundancy
+    dns:
+      upstream_servers:
+        - "8.8.8.8"
+        - "8.8.4.4"
+        - "1.1.1.1"
+        - "1.0.0.1"
+
+# Security overrides for production
+security:
+  # Strict security enforcement in production
+  pod_security_standards:
+    enforce: true
+    audit: true
+    warn: true
+
+  # Production TLS settings
+  tls:
+    # Use production certificates
+    issuer: "letsencrypt-prod"
+    min_version: "1.3" # Stricter TLS version
+
+  # Strict RBAC for production
+  rbac:
+    service_accounts:
+      automount_service_account_token: false
+
+  # Enable additional security measures
+  network_policies:
+    default_deny_all: true
+
+  # Enable image scanning in production
+  images:
+    scanning:
+      enabled: true
+      severity_threshold: "MEDIUM"
+
+# Resource overrides for production
+resources:
+  # Use full resource profiles for production
+  services:
+    gitlab:
+      webservice:
+        requests:
+          cpu: "1000m"
+          memory: "6Gi"
+        limits:
+          cpu: "2000m"
+          memory: "12Gi"
+      sidekiq:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+        limits:
+          cpu: "1000m"
+          memory: "4Gi"
+      postgresql:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+
+    keycloak:
+      main:
+        requests:
+          cpu: "200m"
+          memory: "512Mi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+
+    prometheus:
+      server:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+        limits:
+          cpu: "2000m"
+          memory: "8Gi"
+
+    loki:
+      main:
+        requests:
+          cpu: "200m"
+          memory: "1Gi"
+        limits:
+          cpu: "1000m"
+          memory: "4Gi"
+
+  # Production autoscaling settings
+  autoscaling:
+    defaults:
+      min_replicas: 2
+      max_replicas: 10
+      target_cpu_utilization: 60
+      target_memory_utilization: 70
+
+# Storage overrides for production
+storage:
+  # Production storage sizes
+  sizes:
+    # Core Infrastructure
+    cert_manager_certs: "1Gi"
+
+    # Monitoring Stack
+    prometheus_data: "200Gi"
+    grafana_data: "50Gi"
+    loki_data: "500Gi"
+    alertmanager_data: "20Gi"
+
+    # Application Services
+    gitlab_data: "500Gi"
+    gitlab_config: "10Gi"
+    gitlab_logs: "50Gi"
+    gitlab_registry: "1Ti"
+    keycloak_data: "20Gi"
+
+    # AI/ML Services
+    jupyter_notebooks: "100Gi"
+    jupyter_datasets: "1Ti"
+    ollama_models: "2Ti"
+
+  # Production backup settings
+  backup:
+    retention:
+      daily_backups: 30
+      weekly_backups: 12
+      monthly_backups: 24
+
+    destinations:
+      local:
+        enabled: true
+        size: "2Ti"
+      s3:
+        enabled: true
+        bucket: "homelab-backups-prod"
+        encryption: true
+      nfs:
+        enabled: false
+
+# Service-specific production overrides
+services:
+  cert-manager:
+    # Use production ACME server
+    email: "admin@{{ .Values.global.domain.base }}"
+    server: "https://acme-v02.api.letsencrypt.org/directory"
+
+  gitlab:
+    # Production GitLab settings
+    replicas: 2
+    domain: "gitlab.{{ .Values.global.domain.base }}"
+    registry:
+      enabled: true
+      domain: "registry.{{ .Values.global.domain.base }}"
+    # Enable GitLab Pages
+    pages:
+      enabled: true
+      domain: "pages.{{ .Values.global.domain.base }}"
+
+  keycloak:
+    # Production Keycloak settings with HA
+    replicas: 2
+    domain: "auth.{{ .Values.global.domain.base }}"
+    clustering:
+      enabled: true
+
+  monitoring:
+    prometheus:
+      domain: "prometheus.{{ .Values.global.domain.base }}"
+      retention: "90d"
+      high_availability:
+        enabled: true
+        replicas: 2
+
+    grafana:
+      domain: "grafana.{{ .Values.global.domain.base }}"
+      high_availability:
+        enabled: true
+        replicas: 2
+
+    loki:
+      retention: "2160h" # 90 days
+
+    alertmanager:
+      high_availability:
+        enabled: true
+        replicas: 3
+
+# Production-specific features
+features:
+  # Disable development tools in production
+  debug:
+    enabled: false
+    log_level: "info"
+
+  # Production-specific services
+  services:
+    # Disable development tools
+    jupyter:
+      enabled: false
+
+    # Enable production monitoring
+    uptime_monitoring:
+      enabled: true
+
+    # Enable security scanning
+    vulnerability_scanning:
+      enabled: true
+
+# Production monitoring and alerting
+monitoring:
+  # Enhanced monitoring for production
+  alerts:
+    enabled: true
+    severity_levels:
+      - "critical"
+      - "warning"
+      - "info"
+
+    # Alert routing
+    routing:
+      critical: "pagerduty"
+      warning: "slack"
+      info: "email"
+
+  # SLA monitoring
+  sla:
+    uptime_target: "99.9%"
+    response_time_target: "200ms"
+
+  # Business hour definitions
+  business_hours:
+    timezone: "UTC"
+    weekdays: "Mon-Fri"
+    hours: "09:00-17:00"
+
+# Production health checks
+health_checks:
+  # Strict health check settings
+  initial_delay: "60s"
+  period: "30s"
+  timeout: "10s"
+  failure_threshold: 3
+  success_threshold: 1
+
+  # Readiness probe settings
+  readiness:
+    initial_delay: "30s"
+    period: "10s"
+    timeout: "5s"
+    failure_threshold: 5
+
+# Production compliance and governance
+compliance:
+  # Enable audit logging
+  audit:
+    enabled: true
+    retention: "365d"
+
+  # Data protection settings
+  data_protection:
+    encryption_at_rest: true
+    encryption_in_transit: true
+
+  # Backup and disaster recovery
+  disaster_recovery:
+    rpo: "1h" # Recovery Point Objective
+    rto: "4h" # Recovery Time Objective
+
+  # Change management
+  change_management:
+    approval_required: true
+    rollback_enabled: true

@@ -132,7 +132,7 @@ class TLSSecurityValidator:
         """Parse a DER-encoded certificate."""
         if not CRYPTO_AVAILABLE:
             self.logger.warning(
-                "Cryptography library not available for detailed certificate parsing"
+                "Cryptography library not available for detailed certificate parsing",
             )
             return None
 
@@ -147,7 +147,7 @@ class TLSSecurityValidator:
             san_names = []
             try:
                 san_ext = cert.extensions.get_extension_for_oid(
-                    x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+                    x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME,
                 )
                 san_names = [name.value for name in san_ext.value]
             except x509.ExtensionNotFound:
@@ -177,7 +177,10 @@ class TLSSecurityValidator:
             return None
 
     def _get_ssl_info(
-        self, hostname: str, port: int, timeout: int = 10
+        self,
+        hostname: str,
+        port: int,
+        timeout: int = 10,
     ) -> tuple[ssl.SSLSocket | None, CertificateInfo | None]:
         """Get SSL information for a hostname and port."""
         try:
@@ -261,7 +264,7 @@ class TLSSecurityValidator:
 
             if missing_components:
                 warnings.append(
-                    f"Cipher missing recommended components: {', '.join(missing_components)}"
+                    f"Cipher missing recommended components: {', '.join(missing_components)}",
                 )
 
         # Check TLS version
@@ -334,7 +337,7 @@ class TLSSecurityValidator:
                             component="kubernetes_api",
                             is_secure=False,
                             message="Could not extract Kubernetes API URL",
-                        )
+                        ),
                     )
             else:
                 results.append(
@@ -344,7 +347,7 @@ class TLSSecurityValidator:
                         is_secure=False,
                         message="Cannot access Kubernetes cluster",
                         details={"error": result.stderr},
-                    )
+                    ),
                 )
 
         except Exception as e:
@@ -354,7 +357,7 @@ class TLSSecurityValidator:
                     component="kubernetes_api",
                     is_secure=False,
                     message=f"Failed to validate Kubernetes TLS: {e}",
-                )
+                ),
             )
 
         return results
@@ -381,7 +384,7 @@ class TLSSecurityValidator:
                         is_secure=False,
                         message="Failed to retrieve ingress resources",
                         details={"error": result.stderr},
-                    )
+                    ),
                 )
                 return results
 
@@ -405,7 +408,7 @@ class TLSSecurityValidator:
                             is_secure=False,
                             message="Ingress has no TLS configuration",
                             details={"ingress": name, "namespace": namespace},
-                        )
+                        ),
                     )
                     continue
 
@@ -424,7 +427,7 @@ class TLSSecurityValidator:
                                 "ingress": name,
                                 "namespace": namespace,
                                 "secret_name": secret_name,
-                            }
+                            },
                         )
                         results.append(validation_result)
 
@@ -435,7 +438,7 @@ class TLSSecurityValidator:
                     component="ingress_tls",
                     is_secure=False,
                     message=f"Failed to validate ingress TLS: {e}",
-                )
+                ),
             )
 
         return results
@@ -459,7 +462,7 @@ class TLSSecurityValidator:
                         component=f"tls_{name}",
                         is_secure=False,
                         message=f"Failed to validate {name}: {e}",
-                    )
+                    ),
                 )
 
         # Validate Kubernetes TLS
@@ -477,21 +480,25 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Validate TLS/mTLS security for homelab infrastructure"
+        description="Validate TLS/mTLS security for homelab infrastructure",
     )
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument("--endpoint", help="Specific endpoint to validate")
     parser.add_argument(
-        "--component", choices=["kubernetes", "ingress"], help="Validate specific component only"
+        "--component",
+        choices=["kubernetes", "ingress"],
+        help="Validate specific component only",
     )
 
     args = parser.parse_args()
 
     if not CRYPTO_AVAILABLE:
         print(
-            "Warning: cryptography library not available. Install with: pip install cryptography requests"
+            "Warning: cryptography library not available. Install with: pip install cryptography requests",
         )
         print("Some functionality may be limited.")
 

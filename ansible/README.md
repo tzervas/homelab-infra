@@ -10,6 +10,9 @@ This directory contains Ansible configurations and playbooks for the homelab inf
 - System-level configuration (network, storage, kernel parameters)
 - Bootstrap tasks for Terraform/Helm prerequisites
 - Infrastructure validation and health checks
+- Legacy compatibility
+- Specific system-level configurations not handled by Kubernetes
+- Infrastructure bootstrapping tasks
 
 ## Structure
 
@@ -70,6 +73,13 @@ ansible-playbook -i inventory/hosts.yml site.yml
 
 # Run with specific system components
 ansible-playbook -i inventory/hosts.yml site.yml -e "system_components=['bootstrap','k3s']"
+```
+
+### System Bootstrap
+
+```bash
+# Bootstrap homelab server
+ansible-playbook -i inventory/hosts.yml playbooks/bootstrap-system.yml
 ```
 
 ### Individual System Tasks

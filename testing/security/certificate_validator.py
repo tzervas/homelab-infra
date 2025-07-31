@@ -273,7 +273,7 @@ class CertificateValidator:
 
                         except Exception as e:
                             self.logger.debug(
-                                f"Could not parse TLS secret {secret.metadata.name}: {e}"
+                                f"Could not parse TLS secret {secret.metadata.name}: {e}",
                             )
 
             except Exception as e:
@@ -322,7 +322,10 @@ class CertificateValidator:
                                 get_secret_cmd.extend(["--kubeconfig", self.kubeconfig_path])
 
                             secret_result = subprocess.run(
-                                get_secret_cmd, capture_output=True, text=True, check=False
+                                get_secret_cmd,
+                                capture_output=True,
+                                text=True,
+                                check=False,
                             )
 
                             if secret_result.returncode == 0:
@@ -339,7 +342,7 @@ class CertificateValidator:
 
                         except Exception as e:
                             self.logger.debug(
-                                f"Could not validate cert-manager certificate {cert.get('metadata', {}).get('name', 'unknown')}: {e}"
+                                f"Could not validate cert-manager certificate {cert.get('metadata', {}).get('name', 'unknown')}: {e}",
                             )
 
         except Exception as e:
@@ -480,7 +483,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Certificate and mTLS validation")
     parser.add_argument("--kubeconfig", help="Path to kubeconfig file")
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument("--endpoint", help="Test certificate for specific endpoint")
     parser.add_argument("--port", type=int, default=443, help="Port for endpoint testing")

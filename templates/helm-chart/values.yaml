@@ -1,0 +1,265 @@
+# Default values for CHART_NAME
+# This is a YAML-formatted file.
+# Declare variables to be substituted into your templates.
+
+# Global configuration
+global:
+  # -- Global image registry
+  imageRegistry: ""
+  # -- Global image pull secrets
+  imagePullSecrets: []
+  # -- Global storage class
+  storageClass: ""
+
+# Application configuration
+app:
+  # -- Application name
+  name: "CHART_NAME"
+  # -- Application version
+  version: "1.0.0"
+
+# Image configuration
+image:
+  # -- Image repository
+  repository: "nginx"
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag (overrides the image tag in Chart.yaml)
+  tag: ""
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 65534
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+
+# Service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 80
+  # -- Service target port
+  targetPort: 8080
+  # -- Service annotations
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Ingress class name
+  className: "nginx"
+  # -- Ingress annotations
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  # -- Ingress hosts
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- Ingress TLS configuration
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  # -- Enable autoscaling
+  enabled: false
+  # -- Minimum number of replicas
+  minReplicas: 1
+  # -- Maximum number of replicas
+  maxReplicas: 100
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 80
+  # -- Target memory utilization percentage
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Replica count
+replicaCount: 1
+
+# Pod disruption budget
+podDisruptionBudget:
+  # -- Enable pod disruption budget
+  enabled: false
+  # -- Minimum available pods
+  minAvailable: 1
+  # -- Maximum unavailable pods
+  maxUnavailable: ""
+
+# Network policy
+networkPolicy:
+  # -- Enable network policy
+  enabled: false
+  # -- Ingress rules
+  ingress: []
+  # -- Egress rules
+  egress: []
+
+# Service monitor for Prometheus
+serviceMonitor:
+  # -- Enable service monitor
+  enabled: false
+  # -- Service monitor labels
+  labels: {}
+  # -- Service monitor annotations
+  annotations: {}
+  # -- Scrape interval
+  interval: 30s
+  # -- Scrape timeout
+  scrapeTimeout: 10s
+  # -- Metrics path
+  path: /metrics
+  # -- Metrics port
+  port: metrics
+
+# Persistence configuration
+persistence:
+  # -- Enable persistence
+  enabled: false
+  # -- Storage class
+  storageClass: ""
+  # -- Access mode
+  accessMode: ReadWriteOnce
+  # -- Storage size
+  size: 8Gi
+  # -- Annotations
+  annotations: {}
+
+# Configuration
+config:
+  # -- Application configuration
+  data: {}
+  # -- Configuration from files
+  files: {}
+
+# Secret configuration
+secret:
+  # -- Create secret
+  create: false
+  # -- Secret data
+  data: {}
+
+# Environment variables
+env: {}
+  # EXAMPLE_VAR: "example-value"
+
+# Environment variables from secrets/configmaps
+envFrom: []
+  # - secretRef:
+  #     name: mysecret
+  # - configMapRef:
+  #     name: myconfigmap
+
+# Probes configuration
+probes:
+  liveness:
+    # -- Enable liveness probe
+    enabled: true
+    # -- Initial delay seconds
+    initialDelaySeconds: 30
+    # -- Period seconds
+    periodSeconds: 10
+    # -- Timeout seconds
+    timeoutSeconds: 5
+    # -- Success threshold
+    successThreshold: 1
+    # -- Failure threshold
+    failureThreshold: 3
+    # -- Probe path
+    path: /health
+    # -- Probe port
+    port: http
+
+  readiness:
+    # -- Enable readiness probe
+    enabled: true
+    # -- Initial delay seconds
+    initialDelaySeconds: 5
+    # -- Period seconds
+    periodSeconds: 10
+    # -- Timeout seconds
+    timeoutSeconds: 5
+    # -- Success threshold
+    successThreshold: 1
+    # -- Failure threshold
+    failureThreshold: 3
+    # -- Probe path
+    path: /ready
+    # -- Probe port
+    port: http
+
+# Pod labels
+podLabels: {}
+
+# Additional volumes
+extraVolumes: []
+
+# Additional volume mounts
+extraVolumeMounts: []
+
+# Additional containers
+extraContainers: []
+
+# Init containers
+initContainers: []
+
+# Tests configuration
+tests:
+  # -- Enable tests
+  enabled: true
+  # -- Test image
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent

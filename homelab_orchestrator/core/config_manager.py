@@ -1,22 +1,45 @@
-"""
-Configuration Manager - Unified configuration loading and management.
+"""Configuration Manager - Unified configuration loading and management.
 
 Integrates with the consolidated config system and provides runtime configuration
 management with environment-specific overrides, validation, and caching.
+
+Usage:
+    ```python
+    # Initialize from environment variables
+    config = ConfigManager.from_environment()
+
+    # Get configuration with defaults
+    db_config = config.get_config("database", "mysql.host", default="localhost")
+
+    # Reload configuration if files change
+    config.reload_configuration()
+    ```
 """
 
 import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import yaml
 
 
+T = TypeVar("T", bound="ConfigManager")
+
+
 @dataclass
 class ConfigContext:
-    """Configuration context for environment and deployment settings."""
+    """Configuration context for environment and deployment settings.
+
+    Attributes:
+        environment: Environment name (e.g. development, staging, production)
+        cluster_type: Type of cluster (local, remote, hybrid)
+        gpu_enabled: Whether GPU support is enabled
+        sso_enabled: Whether SSO integration is enabled
+        monitoring_enabled: Whether monitoring is enabled
+        overrides: Runtime configuration overrides
+    """
 
     environment: str = "development"
     cluster_type: str = "local"  # local, remote, hybrid
@@ -29,10 +52,23 @@ class ConfigContext:
 
 
 class ConfigManager:
-    """Unified configuration management integrating with consolidated config system."""
+    """Unified configuration management integrating with consolidated config system.
+
+    Main interface for loading and managing configuration from multiple sources,
+    including environment-specific overrides and validation.
+
+    Args:
+        project_root: Path to the project root directory
+        config_context: Context with environment settings
+
+    Example:
+        >>> config = ConfigManager.from_environment()
+        >>> db_config = config.get_config("database", "mysql.host", default="localhost")
+        >>> config.reload_configuration()
+    """
 
     def __init__(
-        self,
+        self: "ConfigManager",
         project_root: Path | None = None,
         config_context: ConfigContext | None = None,
     ) -> None:
@@ -51,31 +87,10 @@ class ConfigManager:
         self.env_config_dir = self.project_root / "config" / "environments"
 
         # Loaded configurations cache
-        self._config_cache: dict[str, Any] = {}
+        self._config_cache: dict[str, dict[str, Any]] = {}
         self._load_consolidated_configs()
 
-    @classmethod
-    def from_environment(cls, environment: str = "development") -> "ConfigManager":
-        """Create ConfigManager from environment variables and defaults.
-
-        Args:
-            environment: Environment name to use
-
-        Returns:
-            Configured ConfigManager instance
-        """
-        project_root = Path(os.environ.get("HOMELAB_PROJECT_ROOT", Path.cwd()))
-        context = ConfigContext(
-            environment=environment,
-            cluster_type=os.environ.get("HOMELAB_CLUSTER_TYPE", "local"),
-            gpu_enabled=os.environ.get("HOMELAB_GPU_ENABLED", "false").lower() == "true",
-            sso_enabled=os.environ.get("HOMELAB_SSO_ENABLED", "true").lower() == "true",
-            monitoring_enabled=os.environ.get("HOMELAB_MONITORING_ENABLED", "true").lower()
-            == "true",
-        )
-        return cls(project_root=project_root, config_context=context)
-
-    def _load_consolidated_configs(self) -> None:
+    def _load_consolidated_configs(self: "ConfigManager") -> None:
         """Load all consolidated configuration files."""
         config_files = [
             "domains.yaml",
@@ -101,7 +116,12 @@ class ConfigManager:
             else:
                 self.logger.warning(f"Configuration file not found: {config_path}")
 
-    def get_config(self, config_type: str, key_path: str | None = None, default: Any = None) -> Any:
+    def get_config(
+        self: "ConfigManager",
+        config_type: str,
+        key_path: str | None = None,
+        default: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Get configuration value with caching.
 
         Args:
@@ -110,16 +130,16 @@ class ConfigManager:
             default: Default value if key not found
 
         Returns:
-            Configuration value or default
+            Configuration value or default. Always returns a dictionary.
         """
         if config_type not in self._config_cache:
             self.logger.warning(f"Configuration type '{config_type}' not found")
-            return default
+            return {} if default is None else default
 
         config = self._config_cache[config_type]
 
         if not key_path:
-            return config
+            return config if isinstance(config, dict) else {}
 
         # Navigate through nested configuration using key path
         current = config
@@ -127,11 +147,14 @@ class ConfigManager:
             if isinstance(current, dict) and key in current:
                 current = current[key]
             else:
-                return default
+                return {} if default is None else default
 
-        return current
+        return current if isinstance(current, dict) else {}
 
-    def get_environment_config(self, environment: str | None = None) -> dict[str, Any]:
+    def get_environment_config(
+        self: "ConfigManager",
+        environment: str | None = None,
+    ) -> dict[str, Any]:
         """Get environment-specific configuration.
 
         Args:
@@ -143,7 +166,7 @@ class ConfigManager:
         env = environment or self.context.environment
         return self.get_config("environments", f"environments.{env}", {})
 
-    def get_service_config(self, service_name: str) -> dict[str, Any]:
+    def get_service_config(self: "ConfigManager", service_name: str) -> dict[str, Any]:
         """Get service-specific configuration.
 
         Args:
@@ -154,7 +177,7 @@ class ConfigManager:
         """
         return self.get_config("services", f"services.discovery.{service_name}", {})
 
-    def get_domain_config(self) -> dict[str, Any]:
+    def get_domain_config(self: "ConfigManager") -> dict[str, Any]:
         """Get domain configuration with environment-specific overrides."""
         base_domains = self.get_config("domains", "domains", {})
         env_config = self.get_environment_config()
@@ -174,7 +197,7 @@ class ConfigManager:
 
         return base_domains
 
-    def get_networking_config(self) -> dict[str, Any]:
+    def get_networking_config(self: "ConfigManager") -> dict[str, Any]:
         """Get networking configuration with environment overrides."""
         networking = self.get_config("networking", "networking", {})
         env_config = self.get_environment_config()
@@ -193,7 +216,7 @@ class ConfigManager:
 
         return networking
 
-    def get_security_config(self) -> dict[str, Any]:
+    def get_security_config(self: "ConfigManager") -> dict[str, Any]:
         """Get security configuration with environment and context overrides."""
         # Get the full security configuration, not just the nested 'security' key
         full_security_config = self.get_config("security")
@@ -232,7 +255,60 @@ class ConfigManager:
 
         return security
 
-    def get_resource_config(self) -> dict[str, Any]:
+    @classmethod
+    def from_environment(
+        cls: type["ConfigManager"],
+        environment: str = "development",
+    ) -> "ConfigManager":
+        """Create ConfigManager from environment variables and defaults.
+
+        Args:
+            environment: Environment name to use
+
+        Returns:
+            Configured ConfigManager instance
+        """
+        project_root = Path(os.environ.get("HOMELAB_PROJECT_ROOT", Path.cwd()))
+        context = ConfigContext(
+            environment=environment,
+            cluster_type=os.environ.get("HOMELAB_CLUSTER_TYPE", "local"),
+            gpu_enabled=os.environ.get("HOMELAB_GPU_ENABLED", "false").lower() == "true",
+            sso_enabled=os.environ.get("HOMELAB_SSO_ENABLED", "true").lower() == "true",
+            monitoring_enabled=os.environ.get("HOMELAB_MONITORING_ENABLED", "true").lower()
+            == "true",
+        )
+        return cls(project_root=project_root, config_context=context)
+
+    def reload_configuration(self: "ConfigManager") -> None:
+        """Reload all configuration files and clear cache."""
+        self._config_cache.clear()
+        self._load_consolidated_configs()
+        self.logger.info("Configuration reloaded")
+
+    def export_runtime_config(self: "ConfigManager", output_path: Path) -> None:
+        """Export runtime configuration to file for debugging.
+
+        Args:
+            output_path: Path to export configuration file
+        """
+        runtime_config = {
+            "context": {
+                "environment": self.context.environment,
+                "cluster_type": self.context.cluster_type,
+                "gpu_enabled": self.context.gpu_enabled,
+                "sso_enabled": self.context.sso_enabled,
+                "monitoring_enabled": self.context.monitoring_enabled,
+            },
+            "environment_config": self.get_environment_config(),
+            "validation": self.validate_configuration(),
+        }
+
+        with open(output_path, "w") as f:
+            yaml.dump(runtime_config, f, default_flow_style=False, indent=2)
+
+        self.logger.info(f"Runtime configuration exported to: {output_path}")
+
+    def get_resource_config(self: "ConfigManager") -> dict[str, Any]:
         """Get resource configuration with environment scaling."""
         resources = self.get_config("resources", "resources", {})
         env_config = self.get_environment_config()
@@ -259,7 +335,7 @@ class ConfigManager:
 
         return resources
 
-    def get_gpu_config(self) -> dict[str, Any]:
+    def get_gpu_config(self: "ConfigManager") -> dict[str, Any]:
         """Get GPU configuration based on context and environment."""
         # GPU configuration derived from resource and environment settings
         gpu_config = {
@@ -284,7 +360,7 @@ class ConfigManager:
 
         return gpu_config
 
-    def get_deployment_config(self) -> dict[str, Any]:
+    def get_deployment_config(self: "ConfigManager") -> dict[str, Any]:
         """Get deployment configuration combining multiple config sources."""
         return {
             "environment": self.context.environment,
@@ -299,7 +375,7 @@ class ConfigManager:
             "storage": self.get_config("storage", "storage", {}),
         }
 
-    def validate_configuration(self) -> dict[str, Any]:
+    def validate_configuration(self: "ConfigManager") -> dict[str, Any]:
         """Validate loaded configuration for consistency and completeness.
 
         Returns:
@@ -343,51 +419,3 @@ class ConfigManager:
             "environment": self.context.environment,
             "cluster_type": self.context.cluster_type,
         }
-
-    def reload_configuration(self) -> None:
-        """Reload all configuration files and clear cache."""
-        self._config_cache.clear()
-        self._load_consolidated_configs()
-        self.logger.info("Configuration reloaded")
-
-    def export_runtime_config(self, output_path: Path) -> None:
-        """Export runtime configuration to file for debugging.
-
-        Args:
-            output_path: Path to export configuration file
-        """
-        runtime_config = {
-            "context": {
-                "environment": self.context.environment,
-                "cluster_type": self.context.cluster_type,
-                "gpu_enabled": self.context.gpu_enabled,
-                "sso_enabled": self.context.sso_enabled,
-                "monitoring_enabled": self.context.monitoring_enabled,
-            },
-            "deployment_config": self.get_deployment_config(),
-            "validation": self.validate_configuration(),
-        }
-
-        with open(output_path, "w") as f:
-            yaml.dump(runtime_config, f, default_flow_style=False, indent=2)
-
-        self.logger.info(f"Runtime configuration exported to: {output_path}")
-
-    @staticmethod
-    def from_environment() -> "ConfigManager":
-        """Create ConfigManager from environment variables.
-
-        Returns:
-            ConfigManager instance configured from environment
-        """
-        context = ConfigContext(
-            environment=os.getenv("HOMELAB_ENVIRONMENT", "development"),
-            cluster_type=os.getenv("HOMELAB_CLUSTER_TYPE", "local"),
-            gpu_enabled=os.getenv("HOMELAB_GPU_ENABLED", "false").lower() == "true",
-            sso_enabled=os.getenv("HOMELAB_SSO_ENABLED", "true").lower() == "true",
-            monitoring_enabled=os.getenv("HOMELAB_MONITORING_ENABLED", "true").lower() == "true",
-        )
-
-        project_root = Path(os.getenv("HOMELAB_PROJECT_ROOT", Path.cwd()))
-
-        return ConfigManager(project_root=project_root, config_context=context)

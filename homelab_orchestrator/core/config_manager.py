@@ -51,7 +51,7 @@ class ConfigManager:
         self.env_config_dir = self.project_root / "config" / "environments"
 
         # Loaded configurations cache
-        self._config_cache: dict[str, Any] = {}
+        self._config_cache: dict[str, dict[str, Any]] = {}
         self._load_consolidated_configs()
 
     @classmethod
@@ -101,7 +101,7 @@ class ConfigManager:
             else:
                 self.logger.warning(f"Configuration file not found: {config_path}")
 
-    def get_config(self, config_type: str, key_path: str | None = None, default: Any = None) -> Any:
+    def get_config(self, config_type: str, key_path: str | None = None, default: dict[str, Any] | None = None) -> dict[str, Any]:
         """Get configuration value with caching.
 
         Args:
@@ -114,12 +114,12 @@ class ConfigManager:
         """
         if config_type not in self._config_cache:
             self.logger.warning(f"Configuration type '{config_type}' not found")
-            return default
+            return {} if default is None else default
 
         config = self._config_cache[config_type]
 
         if not key_path:
-            return config
+            return config if isinstance(config, dict) else {}
 
         # Navigate through nested configuration using key path
         current = config
@@ -127,9 +127,9 @@ class ConfigManager:
             if isinstance(current, dict) and key in current:
                 current = current[key]
             else:
-                return default
+                return {} if default is None else default
 
-        return current
+        return current if isinstance(current, dict) else {}
 
     def get_environment_config(self, environment: str | None = None) -> dict[str, Any]:
         """Get environment-specific configuration.

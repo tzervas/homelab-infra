@@ -1,0 +1,226 @@
+# Development Environment Configuration
+# Overrides for development environment settings
+
+environment: "development"
+
+# Global overrides for development
+global:
+  domain:
+    base: "dev.homelab.local"
+
+  # Development-specific labels
+  labels:
+    homelab.local/environment: "development"
+    homelab.local/tier: "development"
+
+# Networking overrides for development
+networking:
+  # Development network ranges
+  loadbalancer:
+    pools:
+      default:
+        addresses:
+          - "192.168.25.200-192.168.25.210"
+
+  # Development cluster network
+  cluster:
+    # Use different CIDRs if needed for isolation
+    pod_cidr: "10.42.0.0/16"
+    service_cidr: "10.43.0.0/16"
+
+    # Development DNS settings
+    dns:
+      upstream_servers:
+        - "8.8.8.8"
+        - "1.1.1.1"
+
+# Security overrides for development
+security:
+  # Relaxed security for development ease
+  pod_security_standards:
+    # More permissive in development
+    enforce: false
+    audit: true
+    warn: true
+
+  # Development TLS settings
+  tls:
+    # Use staging certificates for development
+    issuer: "letsencrypt-staging"
+
+  # Simplified RBAC for development
+  rbac:
+    service_accounts:
+      automount_service_account_token: true # Easier debugging
+
+# Resource overrides for development
+resources:
+  # Use smaller resource profiles for development
+  services:
+    gitlab:
+      webservice:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+        limits:
+          cpu: "1000m"
+          memory: "4Gi"
+      sidekiq:
+        requests:
+          cpu: "200m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+      postgresql:
+        requests:
+          cpu: "200m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+
+    keycloak:
+      main:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+
+    prometheus:
+      server:
+        requests:
+          cpu: "200m"
+          memory: "1Gi"
+        limits:
+          cpu: "1000m"
+          memory: "4Gi"
+
+    loki:
+      main:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+
+  # Development autoscaling settings
+  autoscaling:
+    defaults:
+      min_replicas: 1
+      max_replicas: 3
+      target_cpu_utilization: 80
+
+# Storage overrides for development
+storage:
+  # Smaller storage sizes for development
+  sizes:
+    # Core Infrastructure
+    cert_manager_certs: "500Mi"
+
+    # Monitoring Stack
+    prometheus_data: "5Gi"
+    grafana_data: "2Gi"
+    loki_data: "10Gi"
+    alertmanager_data: "1Gi"
+
+    # Application Services
+    gitlab_data: "10Gi"
+    gitlab_config: "1Gi"
+    gitlab_logs: "2Gi"
+    gitlab_registry: "20Gi"
+    keycloak_data: "1Gi"
+
+    # AI/ML Services
+    jupyter_notebooks: "5Gi"
+    jupyter_datasets: "20Gi"
+    ollama_models: "50Gi"
+
+  # Development backup settings
+  backup:
+    retention:
+      daily_backups: 3
+      weekly_backups: 2
+      monthly_backups: 1
+
+    destinations:
+      local:
+        enabled: true
+        size: "100Gi"
+      s3:
+        enabled: false
+      nfs:
+        enabled: false
+
+# Service-specific development overrides
+services:
+  cert-manager:
+    # Use staging ACME server for development
+    email: "admin+dev@{{ .Values.global.domain.base }}"
+    server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+  gitlab:
+    # Development GitLab settings
+    replicas: 1
+    domain: "gitlab.{{ .Values.global.domain.base }}"
+    registry:
+      enabled: true
+      domain: "registry.{{ .Values.global.domain.base }}"
+
+  keycloak:
+    # Development Keycloak settings
+    replicas: 1
+    domain: "auth.{{ .Values.global.domain.base }}"
+    admin:
+      # Development admin settings (use secrets for actual values)
+      username: "admin"
+
+  monitoring:
+    prometheus:
+      domain: "prometheus.{{ .Values.global.domain.base }}"
+      retention: "7d"
+
+    grafana:
+      domain: "grafana.{{ .Values.global.domain.base }}"
+
+    loki:
+      retention: "168h" # 7 days
+
+# Development-specific features
+features:
+  # Enable development tools
+  debug:
+    enabled: true
+    log_level: "debug"
+
+  # Development-specific services
+  services:
+    # Enable additional development tools
+    jupyter:
+      enabled: true
+      domain: "jupyter.{{ .Values.global.domain.base }}"
+
+    # Code quality tools
+    sonarqube:
+      enabled: false
+
+    # Development databases
+    pgadmin:
+      enabled: false
+
+# Development testing overrides
+testing:
+  # Enable additional validation in development
+  validation:
+    enabled: true
+    strict_mode: false
+
+  # Health check settings
+  health_checks:
+    initial_delay: "30s"
+    period: "10s"
+    timeout: "5s"
+    failure_threshold: 5

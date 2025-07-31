@@ -1,0 +1,312 @@
+# Centralized Service Configuration
+# Single source of truth for all service definitions and discovery
+
+services:
+  # Service Discovery and Ports
+  discovery:
+    # Core Infrastructure Services
+    metallb:
+      namespace: "metallb-system"
+      controller:
+        port: 7472
+        metrics_port: 7473
+      speaker:
+        port: 7472
+        metrics_port: 7473
+
+    cert_manager:
+      namespace: "cert-manager"
+      controller:
+        port: 9402
+        metrics_port: 9402
+      webhook:
+        port: 10250
+        metrics_port: 10251
+
+    ingress_nginx:
+      namespace: "ingress-nginx"
+      controller:
+        http_port: 80
+        https_port: 443
+        metrics_port: 10254
+        webhook_port: 8443
+
+    longhorn:
+      namespace: "longhorn-system"
+      manager:
+        port: 9500
+        metrics_port: 9500
+      ui:
+        port: 8000
+
+    # Application Services
+    monitoring:
+      prometheus:
+        namespace: "monitoring"
+        port: 9090
+        metrics_port: 9090
+      grafana:
+        namespace: "monitoring"
+        port: 3000
+      alertmanager:
+        namespace: "monitoring"
+        port: 9093
+        metrics_port: 9093
+      loki:
+        namespace: "monitoring"
+        http_port: 3100
+        grpc_port: 9095
+
+    gitlab:
+      namespace: "gitlab"
+      webservice:
+        port: 8080
+        workhorse_port: 8181
+      registry:
+        port: 5000
+      ssh:
+        port: 22
+
+    keycloak:
+      namespace: "keycloak"
+      http_port: 8080
+      https_port: 8443
+      admin_port: 9990
+
+    jupyter:
+      namespace: "jupyter"
+      port: 8888
+
+    ollama:
+      namespace: "ai-ml"
+      api_port: 11434
+      web_port: 8080
+
+  # Service URLs and Ingress Configuration
+  urls:
+    # External URLs (via ingress)
+    external:
+      homelab: "https://homelab.local"
+      auth: "https://auth.homelab.local"
+      grafana: "https://grafana.homelab.local"
+      prometheus: "https://prometheus.homelab.local"
+      ollama: "https://ollama.homelab.local"
+      jupyter: "https://jupyter.homelab.local"
+      gitlab: "https://gitlab.homelab.local"
+      keycloak: "https://keycloak.homelab.local"
+      longhorn: "https://longhorn.homelab.local"
+
+    # Internal URLs (cluster DNS)
+    internal:
+      prometheus: "http://prometheus.monitoring.svc.cluster.local:9090"
+      grafana: "http://grafana.monitoring.svc.cluster.local:3000"
+      loki: "http://loki.monitoring.svc.cluster.local:3100"
+      alertmanager: "http://alertmanager.monitoring.svc.cluster.local:9093"
+      keycloak: "http://keycloak.keycloak.svc.cluster.local:8080"
+      gitlab: "http://gitlab-webservice.gitlab.svc.cluster.local:8080"
+      ollama: "http://ollama.ai-ml.svc.cluster.local:11434"
+      jupyter: "http://jupyter.jupyter.svc.cluster.local:8888"
+
+  # Service Dependencies
+  dependencies:
+    # Infrastructure dependencies (deploy first)
+    infrastructure:
+      tier_1: # Must be deployed first
+        - "metallb"
+        - "cert-manager"
+      tier_2: # Depends on tier_1
+        - "ingress-nginx"
+        - "longhorn"
+      tier_3: # Depends on tier_2
+        - "monitoring"
+
+    # Application dependencies
+    applications:
+      keycloak:
+        depends_on:
+          - "longhorn" # For persistent storage
+      gitlab:
+        depends_on:
+          - "longhorn" # For persistent storage
+          - "keycloak" # For SSO (optional)
+      jupyter:
+        depends_on:
+          - "keycloak" # For authentication
+      ollama:
+        depends_on:
+          - "longhorn" # For model storage
+
+  # Health Check Configuration
+  health_checks:
+    metallb:
+      http:
+        path: "/metrics"
+        port: 7473
+      tcp:
+        port: 7472
+
+    cert_manager:
+      http:
+        path: "/metrics"
+        port: 9402
+
+    ingress_nginx:
+      http:
+        path: "/healthz"
+        port: 10254
+
+    prometheus:
+      http:
+        path: "/-/healthy"
+        port: 9090
+
+    grafana:
+      http:
+        path: "/api/health"
+        port: 3000
+
+    loki:
+      http:
+        path: "/ready"
+        port: 3100
+
+    keycloak:
+      http:
+        path: "/auth/health"
+        port: 8080
+
+    gitlab:
+      http:
+        path: "/-/health"
+        port: 8080
+
+    jupyter:
+      http:
+        path: "/api"
+        port: 8888
+
+    ollama:
+      http:
+        path: "/api/version"
+        port: 11434
+
+  # Service Monitoring Configuration
+  monitoring:
+    # Prometheus ServiceMonitor configurations
+    service_monitors:
+      metallb:
+        enabled: true
+        interval: "30s"
+        path: "/metrics"
+
+      cert_manager:
+        enabled: true
+        interval: "60s"
+        path: "/metrics"
+
+      ingress_nginx:
+        enabled: true
+        interval: "30s"
+        path: "/metrics"
+
+      longhorn:
+        enabled: true
+        interval: "30s"
+        path: "/metrics"
+
+      prometheus:
+        enabled: false # Self-monitoring
+
+      grafana:
+        enabled: true
+        interval: "60s"
+        path: "/metrics"
+
+      loki:
+        enabled: true
+        interval: "60s"
+        path: "/metrics"
+
+    # Log collection (Promtail) configuration
+    log_collection:
+      metallb:
+        enabled: true
+        log_level: "info"
+
+      cert_manager:
+        enabled: true
+        log_level: "info"
+
+      ingress_nginx:
+        enabled: true
+        log_level: "notice"
+        access_logs: true
+
+      longhorn:
+        enabled: true
+        log_level: "info"
+
+# Service-specific feature flags
+features:
+  # Authentication integration
+  sso:
+    enabled: true
+    provider: "keycloak"
+    oauth2_proxy: true
+
+  # Monitoring integration
+  observability:
+    metrics: true
+    logs: true
+    traces: false # Future: distributed tracing
+
+  # Security features
+  security:
+    tls_everywhere: true
+    mutual_tls: false # Future: service mesh
+    network_policies: true
+
+  # Backup integration
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"
+    retention: "7d"
+
+# Service configuration templates
+templates:
+  # Standard web service template
+  web_service:
+    replicas: 1
+    port: 8080
+    protocol: "HTTP"
+    health_check:
+      path: "/health"
+      initial_delay: 30
+      period: 10
+    resources:
+      tier: "medium"
+    security:
+      run_as_non_root: true
+      read_only_filesystem: true
+
+  # Database service template
+  database:
+    replicas: 1
+    port: 5432
+    protocol: "TCP"
+    persistent_storage: true
+    backup_enabled: true
+    resources:
+      tier: "large"
+    security:
+      run_as_non_root: true
+
+  # Monitoring service template
+  monitoring_service:
+    replicas: 1
+    metrics_enabled: true
+    service_monitor: true
+    resources:
+      tier: "medium"
+    security:
+      run_as_non_root: true

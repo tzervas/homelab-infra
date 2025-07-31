@@ -1,0 +1,148 @@
+# Centralized Storage Configuration
+# Single source of truth for all storage-related settings
+
+storage:
+  # Default Storage Class
+  default_class: "longhorn"
+
+  # Storage Classes Definition
+  classes:
+    longhorn:
+      provisioner: "driver.longhorn.io"
+      reclaim_policy: "Delete"
+      allow_volume_expansion: true
+      volume_binding_mode: "Immediate"
+
+      # Longhorn-specific parameters
+      parameters:
+        numberOfReplicas: "3"
+        staleReplicaTimeout: "2880" # 48 hours
+        fromBackup: ""
+        fsType: "ext4"
+
+      # Environment-specific overrides
+      environments:
+        development:
+          parameters:
+            numberOfReplicas: "1"
+        staging:
+          parameters:
+            numberOfReplicas: "2"
+        production:
+          parameters:
+            numberOfReplicas: "3"
+
+    # Fast SSD storage (if available)
+    longhorn-ssd:
+      provisioner: "driver.longhorn.io"
+      reclaim_policy: "Delete"
+      allow_volume_expansion: true
+      parameters:
+        numberOfReplicas: "2"
+        diskSelector: "ssd"
+        nodeSelector: "storage.homelab.local/ssd=true"
+
+    # Backup storage (slower, more replicas)
+    longhorn-backup:
+      provisioner: "driver.longhorn.io"
+      reclaim_policy: "Retain"
+      allow_volume_expansion: true
+      parameters:
+        numberOfReplicas: "3"
+        diskSelector: "hdd"
+        staleReplicaTimeout: "10080" # 7 days
+
+# Longhorn Configuration
+longhorn:
+  # Default Settings
+  default_settings:
+    backup_target: ""
+    backup_target_credential_secret: ""
+    create_default_disk_labeled_nodes: true
+    default_data_path: "/var/lib/longhorn/"
+    replica_soft_anti_affinity: false
+    replica_auto_balance: "ignored"
+    storage_over_provisioning_percentage: 200
+    storage_minimal_available_percentage: 25
+    upgrade_checker: true
+    default_replica_count: 3
+    default_longhorn_static_storage_class: "longhorn"
+    backupstore_poll_interval: 300
+    taint_toleration: ""
+    system_managed_components_node_selector: ""
+    priority_class: ""
+    auto_salvage: true
+    auto_delete_pod_when_volume_detached_unexpectedly: true
+    disable_scheduling_on_cordoned_node: true
+    replica_zone_soft_anti_affinity: true
+    node_down_pod_deletion_policy: "delete-both-statefulset-and-deployment-pod"
+    allow_node_drain_with_last_healthy_replica: false
+    mkfs_ext4_parameters: ""
+    disable_replica_rebuild: false
+    replica_replenishment_wait_interval: 600
+    concurrent_replica_rebuild_per_node_limit: 5
+    disable_revision_counter: true
+    system_managed_pods_image_pull_policy: "if-not-present"
+    allow_volume_creation_with_degraded_availability: true
+    auto_cleanup_system_generated_snapshot: true
+    concurrent_automatic_engine_upgrade_per_node_limit: 3
+    backing_image_cleanup_wait_interval: 60
+    backing_image_recovery_wait_interval: 300
+    guaranteed_engine_manager_cpu: 12
+    guaranteed_replica_manager_cpu: 12
+
+  # Environment-specific overrides
+  environments:
+    development:
+      default_settings:
+        default_replica_count: 1
+        storage_over_provisioning_percentage: 500
+    staging:
+      default_settings:
+        default_replica_count: 2
+        storage_over_provisioning_percentage: 300
+    production:
+      default_settings:
+        default_replica_count: 3
+        storage_over_provisioning_percentage: 200
+
+# Persistent Volume Defaults
+persistent_volumes:
+  default_size: "10Gi"
+
+  # Service-specific defaults
+  services:
+    database:
+      size: "20Gi"
+      storage_class: "longhorn"
+      access_mode: "ReadWriteOnce"
+
+    monitoring:
+      prometheus: "50Gi"
+      grafana: "10Gi"
+      loki: "30Gi"
+
+    gitlab:
+      data: "50Gi"
+      registry: "100Gi"
+
+    jupyter:
+      notebooks: "20Gi"
+
+    ollama:
+      models: "100Gi"
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *" # Daily at 2 AM
+  retention: "7d"
+
+  # Backup targets
+  targets:
+    - name: "s3-backup"
+      type: "s3"
+      enabled: false
+    - name: "nfs-backup"
+      type: "nfs"
+      enabled: false

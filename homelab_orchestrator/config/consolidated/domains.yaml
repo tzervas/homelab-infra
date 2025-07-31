@@ -1,0 +1,10 @@
+domains:
+  primary: homelab.local
+  dev: dev.homelab.local
+  services:
+    - grafana.homelab.local
+    - prometheus.homelab.local
+    - ollama.homelab.local
+    - jupyter.homelab.local
+    - gitlab.homelab.local
+    - keycloak.homelab.local

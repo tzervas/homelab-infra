@@ -1,0 +1,11 @@
+environments:
+  development:
+    name: development
+    cluster_type: k3s
+    load_balancer: 192.168.16.100
+    domain: homelab.local
+  production:
+    name: production
+    cluster_type: k3s
+    load_balancer: 192.168.16.100
+    domain: homelab.local

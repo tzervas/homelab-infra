@@ -7,8 +7,8 @@ packages = ["scripts"]
 
 [project]
 name = "homelab-testing-framework"
-version = "0.3.1"
-description = "Comprehensive testing framework for homelab infrastructure validation"
+version = "0.4.0"
+description = "Comprehensive testing framework for homelab infrastructure validation with portal and security dashboard"
 readme = "scripts/testing/README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -33,8 +33,29 @@ dependencies = [
     "requests>=2.31.0",
     "pyyaml>=6.0.1",
     "jsonschema>=4.19.0",
-    "ansible-core>=2.16.0",  # Required by ansible-lint
-    "python-dotenv>=1.0.0",  # For environment variable management
+    "ansible-core>=2.16.0", # Required by ansible-lint
+    "python-dotenv>=1.0.0", # For environment variable management
+    # Unified orchestrator dependencies
+    "rich>=13.0.0", # CLI and console output
+    "aiohttp>=3.8.0", # Async HTTP client
+    "asyncio-mqtt>=0.16.0", # MQTT client for webhooks
+    "click>=8.0.0", # CLI framework
+    "dataclasses-json>=0.5.0", # JSON serialization for dataclasses
+    "keyring>=24.0.0", # Secure credential storage
+    "paramiko>=3.0.0", # SSH client for remote cluster management
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    # Portal dependencies
+    "fastapi>=0.115.0", # Web framework for portal
+    "uvicorn[standard]>=0.32.0", # ASGI server
+    "prometheus-client>=0.21.0", # Prometheus metrics
+    "httpx>=0.27.0", # Async HTTP client
+    "pydantic>=2.10.0", # Data validation
+    "pydantic-settings>=2.6.0", # Settings management
+    "python-jose[cryptography]>=3.3.0", # JWT handling
+    "python-multipart>=0.0.18", # Form data
+    "jinja2>=3.1.4", # Template engine
+    "aiofiles>=24.1.0", # Async file operations
 ]
 
 [project.optional-dependencies]
@@ -75,12 +96,23 @@ Repository = "https://github.com/tzervas/homelab-infra.git"
 Issues = "https://github.com/tzervas/homelab-infra/issues"
 
 [project.scripts]
+# Legacy testing framework scripts
 homelab-test = "scripts.testing.test_reporter:main"
 homelab-config-validator = "scripts.testing.config_validator:main"
 homelab-health = "scripts.testing.infrastructure_health:main"
 homelab-service-check = "scripts.testing.service_checker:main"
 homelab-security = "scripts.testing.network_security:main"
 homelab-integration = "scripts.testing.integration_tester:main"
+# Unified orchestrator scripts
+homelab = "homelab_orchestrator.cli:main"
+homelab-orchestrator = "homelab_orchestrator.cli:main"
+homelab-portal = "homelab_orchestrator.portal.main:run_server"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "ruff>=0.12.5",
+]
 
 # Ruff configuration (replaces black, isort, flake8, etc.)
 [tool.ruff]

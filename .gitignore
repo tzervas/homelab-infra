@@ -225,6 +225,22 @@ temp/
 *.tmp
 *~
 
+# Backup directories that may contain sensitive data
+backups/
+**/backups/
+
+# Branch consolidation and management files (local only)
+docs/consolidation-reports/
+**/consolidation-reports/
+update_branches.sh
+*branch-info*
+*branch-manifest*
+*consolidation-manifest*
+
+# Deployment reports (generated locally)
+docs/deployment-reports/
+**/deployment-reports/
+
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt
@@ -242,12 +258,35 @@ code-quality-output.txt
 *-report.txt
 *-summary.md
 *-output.txt
-
-# Cache files
 .cache/
+
+# Security and vulnerability reports
+*security-report*
+*vulnerability-report*
+*scan-report*
+*security_report*
+*vulnerability_report*
+*scan_report*
+**/security-reports/
+**/vulnerability-reports/
+**/scan-results/
+**/security-scans/
+*.sarif
+*.trivy.json
+gitleaks-report.*
+
+# Test reports and logs
+testing/**/reports/
+testing/**/*.log
+test-*.log
 
 # Validation and test reports (not version controlled)
 reports/
 *.report
 **/validation-results/
 **/test-results/
+
+# Claude Code RAG Index Files (locally generated)
+.claude/rag_index.json
+.claude/rag_metadata.json
+homelab-infra/

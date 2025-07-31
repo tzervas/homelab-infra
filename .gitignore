@@ -297,7 +297,7 @@ code-quality-output.txt
 **/security-scans/
 *.sarif
 *.trivy.json
-gitleaks-report*.json
+gitleaks-report.*
 working-dir-scan.json
 
 # Test reports and logs

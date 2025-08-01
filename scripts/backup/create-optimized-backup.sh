@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Script to create optimized backup snapshots while excluding unnecessary files and potential secrets
-# Enforces GitHub's recommended maximum file size of 50MB
 # Usage: ./create-optimized-backup.sh [backup_name] [max_size_mb]
 
 set -euo pipefail
@@ -91,7 +90,6 @@ find . -type f -size +${MAX_SIZE_MB}M 2>/dev/null | while read -r large_file; do
     echo "Excluding large file: $large_file ($(du -h "$large_file" | cut -f1))" >> "${BACKUP_DIR}/large_files_excluded.txt"
     echo "$large_file" >> "${EXCLUDE_FILE}"
 done
-
 # Create optimized snapshot
 tar --exclude-from="${EXCLUDE_FILE}" \
     --exclude="${EXCLUDE_FILE}" \
@@ -120,7 +118,6 @@ if [ "$BACKUP_SIZE" -gt "$MAX_SIZE_BYTES" ]; then
     rm -f "${BACKUP_DIR}/working-directory-snapshot.tar.gz"
     exit 1
 fi
-
 # Calculate and store checksum
 sha256sum "${BACKUP_DIR}/working-directory-snapshot.tar.gz" > "${BACKUP_DIR}/checksum.sha256"
 

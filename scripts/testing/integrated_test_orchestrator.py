@@ -177,7 +177,7 @@ class IntegratedTestOrchestrator:
                 cwd=self.k3s_validation_dir,
                 capture_output=True,
                 text=True,
-                timeout=1800,
+                timeout=1800,  # 30 minute timeout
             )
 
             duration = time.time() - start_time

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to create optimized backup snapshots while excluding unnecessary files and potential secrets
+# Enforces GitHub's recommended maximum file size of 50MB
 # Usage: ./create-optimized-backup.sh [backup_name] [max_size_mb]
 
 set -euo pipefail

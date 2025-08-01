@@ -1,0 +1,69 @@
+---
+# Branch Dependency Mapping
+# Format: branch: [parent_branches]
+
+core_features:
+  feature/core-orchestrator-foundation: [] # Base foundation
+  feature/configuration-management: [] # Base config
+  feature/security-cicd-infrastructure: [] # Base security
+
+infrastructure:
+  feat/infra-base:
+    - feature/core-orchestrator-foundation
+  feat/infra-security:
+    - feature/security-cicd-infrastructure
+  feat/infra-apps:
+    - feat/infra-base
+
+configuration:
+  feat/config-base:
+    - feature/configuration-management
+  feat/config-environments:
+    - feat/config-base
+  feat/config-domains-env:
+    - feat/config-environments
+  feat/config-network:
+    - feat/config-base
+  feat/config-resources:
+    - feat/config-base
+  feat/config-services:
+    - feat/config-base
+
+orchestration:
+  feat/orch-core:
+    - feature/core-orchestrator-foundation
+  feat/orch-core-config:
+    - feat/orch-core
+  feat/orch-core-gpu:
+    - feat/orch-core
+  feat/orch-core-health:
+    - feat/orch-core
+  feat/orch-core-state:
+    - feat/orch-core
+  feat/orch-deployment:
+    - feat/orch-core
+  feat/orch-deploy-base:
+    - feat/orch-deployment
+  feat/orch-deploy-components:
+    - feat/orch-deploy-base
+  feat/orch-deploy-core:
+    - feat/orch-deploy-base
+  feat/orch-deploy-hooks:
+    - feat/orch-deploy-base
+  feat/orch-deploy-lifecycle:
+    - feat/orch-deploy-base
+  feat/orch-deploy-utils:
+    - feat/orch-deploy-base
+
+portal:
+  feat/orch-portal-base:
+    - feat/orch-core
+  feat/orch-portal-manager:
+    - feat/orch-portal-base
+  feat/orch-portal:
+    - feat/orch-portal-base
+# Conflict Resolution Strategy:
+# 1. Always preserve signature chain
+# 2. Resolve conflicts in favor of the parent branch
+# 3. Use explicit merge commits for tracking changes
+# 4. Document conflicts in commit messages

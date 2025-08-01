@@ -226,6 +226,7 @@ temp/
 *~
 
 # Backup directories that may contain sensitive data
+backups/*
 backups/
 **/backups/
 

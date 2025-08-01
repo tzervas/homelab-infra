@@ -1,0 +1,178 @@
+---
+# Branch Mapping and Relationships
+# Generated: 2024-01-31
+
+main_branch: main
+
+backup_branches:
+  - name: backup/pre-consolidation-main-20250731-095024
+    type: backup
+    parent: main
+    tracking: origin/backup/pre-consolidation-main-20250731-095024
+
+  - name: backup/pre-signing-fix-20250731-115504
+    type: backup
+    parent: main
+    tracking: origin/backup/pre-signing-fix-20250731-115504
+
+  - name: backup/pre-signing-rebase-20250731-130405
+    type: backup
+    parent: main
+    tracking: origin/backup/pre-signing-rebase-20250731-130405
+
+configuration_branches:
+  base:
+    name: feat/config-base
+    children:
+      - feat/config-core-loading
+      - feat/config-environments
+      - feat/config-services
+    security_updates_needed: true # Base configuration should be regularly reviewed
+
+  environments:
+    name: feat/config-environments
+    parent: feat/config-base
+    children:
+      - feat/config-domains-env
+      - feat/config-env-handling
+      - feat/config-network
+      - feat/config-resources
+      - feat/config-service-specific
+    security_updates_needed: true # Environment configurations need regular security review
+
+  services:
+    name: feat/config-services
+    parent: feat/config-base
+    children:
+      - feat/config-service-specific
+    security_updates_needed: true
+
+infrastructure_branches:
+  base:
+    name: feat/infra-base
+    children:
+      - feat/infra-apps
+      - feat/infra-security
+      - feat/kubernetes-base
+      - feat/monitoring-base
+    security_updates_needed: true # Infrastructure base needs regular security audits
+
+  security:
+    name: feat/infra-security
+    parent: feat/infra-base
+    children:
+      - feat/security-keycloak
+    security_updates_needed: true # Security components require frequent updates
+
+orchestration_branches:
+  core:
+    name: feat/orch-core
+    children:
+      - feat/orch-core-config
+      - feat/orch-core-gpu
+      - feat/orch-core-health
+      - feat/orch-core-state
+    security_updates_needed: true
+
+  deployment:
+    name: feat/orch-deploy-base
+    children:
+      - feat/orch-deploy-components
+      - feat/orch-deploy-core
+      - feat/orch-deploy-hooks
+      - feat/orch-deploy-lifecycle
+      - feat/orch-deploy-utils
+    security_updates_needed: true # Deployment flows need security review
+
+  portal:
+    name: feat/orch-portal
+    children:
+      - feat/orch-portal-base
+      - feat/orch-portal-manager
+    security_updates_needed: true # Portal components need security review
+
+feature_branches:
+  - name: feature/ai-ml-gpu-infrastructure
+    tracking: origin/feature/ai-ml-gpu-infrastructure
+    parent: main
+    related_branches:
+      - feat/orch-core-gpu
+      - feat/orch-gpu
+
+  - name: feature/authentication-sso
+    tracking: origin/feature/authentication-sso
+    parent: main
+    security_updates_needed: true
+    related_branches:
+      - feat/security-keycloak
+
+  - name: feature/configuration-management
+    tracking: origin/feature/configuration-management
+    parent: main
+    related_branches:
+      - feat/config-base
+      - feat/config-environments
+
+  - name: feature/core-orchestrator-deployment
+    tracking: origin/feature/core-orchestrator-deployment
+    parent: main
+    related_branches:
+      - feat/orch-deploy-base
+      - feat/orchestrator-deployment
+
+  - name: feature/core-orchestrator-foundation
+    tracking: origin/feature/core-orchestrator-foundation
+    parent: main
+    related_branches:
+      - feat/orch-core
+      - feat/orchestrator-core
+
+  - name: feature/documentation-infrastructure
+    tracking: origin/feature/documentation-infrastructure
+    parent: main
+    related_branches:
+      - feat/docs-update
+
+  - name: feature/monitoring-dashboards
+    tracking: origin/feature/monitoring-dashboards
+    parent: main
+    related_branches:
+      - feat/monitoring-base
+
+  - name: feature/portal-web-interface
+    tracking: origin/feature/portal-web-interface
+    parent: main
+    related_branches:
+      - feat/orch-portal
+      - feat/orch-portal-manager
+
+  - name: feature/security-cicd-infrastructure
+    tracking: origin/feature/security-cicd-infrastructure
+    parent: main
+    security_updates_needed: true
+    related_branches:
+      - feat/infra-security
+
+  - name: feature/testing-validation
+    tracking: origin/feature/testing-validation
+    parent: main
+    related_branches:
+      - feat/orch-validation
+
+# Branches requiring immediate security updates
+security_critical_branches:
+  - feat/infra-security
+  - feat/security-keycloak
+  - feature/authentication-sso
+  - feature/security-cicd-infrastructure
+  - feat/config-base
+  - feat/config-environments
+
+# Consolidation branches
+consolidation:
+  - name: remotes/origin/consolidation/unified-homelab
+    type: integration
+    parent: main
+    related_branches:
+      - feat/orch-unified
+      - feature/core-orchestrator-foundation

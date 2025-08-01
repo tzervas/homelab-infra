@@ -1,0 +1,92 @@
+name: Deployment
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment for deployment"
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  pre-deployment-validation:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+    outputs:
+      validation_status: ${{ steps.validation.outputs.status }}
+      config_status: ${{ steps.config.outputs.status }}
+      helm_status: ${{ steps.helm.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set environment name
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ENV_NAME=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          fi
+
+      - name: Run validation
+        id: validation
+        env:
+          ENVIRONMENT: ${{ env.ENV_NAME }}
+        run: python scripts/validation/deployment_validator.py
+
+      - name: Check configuration
+        id: config
+        env:
+          ENVIRONMENT: ${{ env.ENV_NAME }}
+        run: python scripts/validation/config_checker.py
+
+  deployment:
+    name: Deploy to Environment
+    needs: pre-deployment-validation
+    if: needs.pre-deployment-validation.outputs.validation_status == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up environment variables
+        run: |
+          echo "DEPLOY_ENV=${{ github.event.inputs.environment || github.ref_name }}" >> $GITHUB_ENV
+          echo "DEPLOY_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "DEPLOY_REF=${GITHUB_REF}" >> $GITHUB_ENV
+
+      - name: Configure Kubernetes
+        uses: azure/k8s-set-context@v3
+        with:
+          method: service-account
+          k8s-url: ${{ secrets.KUBERNETES_API_URL }}
+          k8s-secret: ${{ secrets.KUBERNETES_SA_SECRET }}
+
+      - name: Deploy to environment
+        env:
+          ENVIRONMENT: ${{ env.DEPLOY_ENV }}
+          COMMIT_SHA: ${{ env.DEPLOY_SHA }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: python scripts/deployment/deploy.py
+
+  post-deployment:
+    name: Post-deployment Validation
+    needs: [deployment, pre-deployment-validation]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate deployment report
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || github.ref_name }}
+          PRE_VALIDATION: ${{ needs.pre-deployment-validation.outputs.validation_status }}
+          DEPLOYMENT_STATUS: ${{ needs.deployment.result }}
+        run: python scripts/reporting/generate_deployment_report.py

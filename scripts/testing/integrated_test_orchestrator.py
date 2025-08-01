@@ -159,7 +159,7 @@ class IntegratedTestOrchestrator:
             [
                 "--report-format",
                 report_format,
-            ]
+            ],
         )
 
         if parallel:
@@ -173,7 +173,6 @@ class IntegratedTestOrchestrator:
 
             result = subprocess.run(
                 cmd,
-                check=False,
                 cwd=self.k3s_validation_dir,
                 capture_output=True,
                 text=True,
@@ -221,7 +220,7 @@ class IntegratedTestOrchestrator:
                 self.logger.info("✅ K3s validation tests completed successfully")
             else:
                 self.logger.warning(
-                    f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})"
+                    f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})",
                 )
                 if result.stderr:
                     self.logger.warning(f"K3s validation stderr: {result.stderr}")
@@ -429,7 +428,7 @@ class IntegratedTestOrchestrator:
                 if results.python_framework_results:
                     f.write("## Python Framework Results\\n\\n")
                     f.write(
-                        f"**Status:** {results.python_framework_results.overall_status.upper()}\\n"
+                        f"**Status:** {results.python_framework_results.overall_status.upper()}\\n",
                     )
                     if results.python_framework_results.summary:
                         f.writelines(

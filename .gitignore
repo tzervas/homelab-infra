@@ -227,8 +227,8 @@ temp/
 
 # Backup directories that may contain sensitive data
 backups/*
-!backups/branch-consolidation-optimized/
-!backups/branch-consolidation-optimized/*
+backups/
+**/backups/
 
 # Exclude all backup files that may contain secrets
 deploy-homelab-with-sso.sh
@@ -244,6 +244,7 @@ update_branches.sh
 # Deployment reports (generated locally)
 docs/deployment-reports/
 **/deployment-reports/
+
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt

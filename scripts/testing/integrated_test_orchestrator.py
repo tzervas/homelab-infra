@@ -173,11 +173,11 @@ class IntegratedTestOrchestrator:
 
             result = subprocess.run(
                 cmd,
-                check=False,  # 30 minute timeout
                 cwd=self.k3s_validation_dir,
                 capture_output=True,
                 text=True,
                 timeout=1800,
+                check=False,  # 30 minute timeout
             )
 
             duration = time.time() - start_time

@@ -226,8 +226,9 @@ temp/
 *~
 
 # Backup directories that may contain sensitive data
-backups/
-**/backups/
+backups/*
+!backups/branch-consolidation-optimized/
+!backups/branch-consolidation-optimized/*
 
 # Exclude all backup files that may contain secrets
 deploy-homelab-with-sso.sh

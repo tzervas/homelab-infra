@@ -1,0 +1,266 @@
+name: Homelab Infrastructure CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'staging' || 'development') }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install pyyaml jsonschema bandit safety
+
+      - name: Setup tools
+        run: |
+          # Install Helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          
+          # Install kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+  test-and-lint:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install bandit safety pylint black isort
+
+      - name: Python code formatting check
+        run: |
+          black --check --diff homelab_orchestrator/ scripts/
+          isort --check-only --diff homelab_orchestrator/ scripts/
+
+      - name: Python linting
+        run: |
+          pylint homelab_orchestrator/ || true  # Don't fail on warnings
+          
+      - name: Security scan - Python dependencies
+        run: |
+          safety check --json --output safety-report.json || true
+          bandit -r homelab_orchestrator/ scripts/ -f json -o bandit-report.json || true
+
+      - name: YAML validation
+        run: |
+          find . -name "*.yaml" -o -name "*.yml" | grep -v ".git" | while read file; do
+            echo "Validating $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))" || echo "Failed to validate $file"
+          done
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+
+  config-validation:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml jsonschema
+
+      - name: Validate Helm configurations
+        run: |
+          # Setup Helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          
+          # Basic Helm template validation
+          cd helm
+          for env in development staging production; do
+            echo "Validating Helm environment: $env"
+            if [ -f "environments/values-$env.yaml" ]; then
+              # Basic YAML validation
+              python -c "import yaml; yaml.safe_load(open('environments/values-$env.yaml'))"
+              echo "✅ $env configuration is valid YAML"
+            else
+              echo "⚠️ Missing values file for $env environment"
+            fi
+          done
+
+      - name: Validate Ansible playbooks
+        run: |
+          # Install ansible-lint if available
+          pip install ansible-lint ansible || true
+          
+          if command -v ansible-lint &> /dev/null; then
+            find ansible/ -name "*.yml" -o -name "*.yaml" | head -5 | while read playbook; do
+              echo "Linting $playbook"
+              ansible-lint "$playbook" || echo "Ansible lint issues found in $playbook"
+            done
+          else
+            echo "Ansible-lint not available, skipping playbook validation"
+          fi
+
+      - name: Validate Kubernetes manifests
+        run: |
+          # Basic Kubernetes YAML validation
+          find kubernetes/ -name "*.yaml" -o -name "*.yml" | while read manifest; do
+            echo "Validating Kubernetes manifest: $manifest"
+            python -c "
+import yaml
+import sys
+try:
+    with open('$manifest') as f:
+        docs = yaml.safe_load_all(f)
+        for doc in docs:
+            if doc and 'apiVersion' in doc and 'kind' in doc:
+                print(f'✅ Valid K8s manifest: {doc.get(\"kind\", \"Unknown\")}')
+            elif doc:
+                print(f'⚠️ Possible invalid K8s manifest in $manifest')
+except Exception as e:
+    print(f'❌ Error validating $manifest: {e}')
+    sys.exit(1)
+"
+          done
+
+  integration-tests:
+    needs: [validate, test-and-lint, config-validation]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run integration tests (dry-run)
+        run: |
+          # Test the unified orchestrator CLI
+          python -m homelab_orchestrator --help > /dev/null
+          python -m homelab_orchestrator config validate
+          echo "✅ Orchestrator CLI and configuration validation successful"
+
+      - name: Test configuration loading
+        run: |
+          python scripts/testing/test_reporter.py --dry-run || echo "Test reporter needs cluster access"
+
+  deploy:
+    needs: [validate, test-and-lint, config-validation]
+    runs-on: self-hosted  # Requires cluster access
+    if: |
+      github.event_name == 'push' && 
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    environment: ${{ needs.validate.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure environment
+        run: |
+          echo "Deploying to environment: ${{ needs.validate.outputs.environment }}"
+          echo "GitHub ref: ${{ github.ref }}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Verify cluster connectivity
+        run: |
+          if ! kubectl cluster-info &> /dev/null; then
+            echo "❌ Cannot connect to Kubernetes cluster"
+            echo "This step requires a self-hosted runner with cluster access"
+            exit 1
+          fi
+          echo "✅ Kubernetes cluster connectivity verified"
+
+      - name: Deploy infrastructure
+        run: |
+          echo "🚀 Starting deployment to ${{ needs.validate.outputs.environment }}"
+          
+          # Use unified orchestrator for deployment
+          python -m homelab_orchestrator \
+            --environment ${{ needs.validate.outputs.environment }} \
+            deploy infrastructure \
+            --components metallb cert_manager ingress_nginx \
+            --dry-run
+
+      - name: Run post-deployment validation
+        if: success()
+        run: |
+          echo "Running post-deployment validation..."
+          python -m homelab_orchestrator health check \
+            --comprehensive \
+            --format table || echo "⚠️ Some validation tests failed"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

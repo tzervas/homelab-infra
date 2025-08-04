@@ -1,6 +1,6 @@
-# Homelab Infrastructure Documentation
+# Homelab Infrastructure Orchestrator Documentation
 
-Welcome to the comprehensive documentation for the refactored Homelab Infrastructure project. This documentation provides everything you need to understand, deploy, customize, and maintain your modern homelab environment with unified testing, enhanced deployment interfaces, and standardized processes.
+Welcome to the comprehensive documentation for the **Homelab Infrastructure Orchestrator v0.9.0-beta**. This documentation provides everything you need to understand, deploy, customize, and maintain your modern homelab environment with unified orchestration, security-first deployment, and comprehensive certificate management.
 
 ## 📚 Documentation Overview
 

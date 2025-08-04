@@ -1,0 +1,241 @@
+# Cert-Manager Issuers Configuration
+# Supports Let's Encrypt (prod/staging) and self-signed certificates
+
+---
+# Let's Encrypt Production Issuer
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${TLS_CERT_EMAIL}
+    privateKeySecretRef:
+      name: letsencrypt-prod-private-key
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+          podTemplate:
+            spec:
+              nodeSelector:
+                "kubernetes.io/os": linux
+
+---
+# Let's Encrypt Staging Issuer (for testing)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: ${TLS_CERT_EMAIL}
+    privateKeySecretRef:
+      name: letsencrypt-staging-private-key
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+          podTemplate:
+            spec:
+              nodeSelector:
+                "kubernetes.io/os": linux
+
+---
+# Self-Signed Issuer (fallback)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+spec:
+  selfSigned: {}
+
+---
+# Self-Signed CA Certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-ca
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: ca-certificate
+spec:
+  secretName: selfsigned-ca-secret
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  subject:
+    organizationalUnits:
+      - "Homelab Infrastructure"
+    organizations:
+      - "Homelab"
+    countries:
+      - "US"
+  commonName: "Homelab Root CA"
+  isCA: true
+  privateKey:
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# CA Issuer (using self-signed CA)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+spec:
+  ca:
+    secretName: selfsigned-ca-secret
+
+---
+# Wildcard Certificate for homelab.local (Let's Encrypt with self-signed fallback)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-wildcard-tls
+  namespace: default
+  labels:
+    app.kubernetes.io/name: homelab
+    app.kubernetes.io/component: wildcard-certificate
+spec:
+  secretName: homelab-wildcard-tls
+  duration: 2160h # 90 days
+  renewBefore: 720h # 30 days
+  subject:
+    organizations:
+      - "Homelab"
+  commonName: "*.homelab.local"
+  dnsNames:
+  - "homelab.local"
+  - "*.homelab.local"
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# ConfigMap with certificate management scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cert-management-scripts
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: scripts
+data:
+  check-certificates.sh: |
+    #!/bin/bash
+    # Certificate health check script
+    set -euo pipefail
+    
+    echo "Checking certificate status..."
+    
+    # Check cert-manager certificates
+    kubectl get certificates -A -o wide
+    
+    # Check certificate requests
+    kubectl get certificaterequests -A -o wide
+    
+    # Check orders and challenges
+    kubectl get orders,challenges -A -o wide
+    
+    # Check issuer status
+    kubectl get clusterissuers -o wide
+    
+    echo "Certificate check completed."
+
+  renew-certificates.sh: |
+    #!/bin/bash
+    # Force certificate renewal script
+    set -euo pipefail
+    
+    if [ $# -eq 0 ]; then
+        echo "Usage: $0 <certificate-name> [namespace]"
+        exit 1
+    fi
+    
+    CERT_NAME=$1
+    NAMESPACE=${2:-default}
+    
+    echo "Forcing renewal of certificate: $CERT_NAME in namespace: $NAMESPACE"
+    
+    # Annotate certificate to force renewal
+    kubectl annotate certificate "$CERT_NAME" -n "$NAMESPACE" \
+        cert-manager.io/issue-temporary-certificate="true" --overwrite
+    
+    # Delete the secret to trigger renewal
+    SECRET_NAME=$(kubectl get certificate "$CERT_NAME" -n "$NAMESPACE" \
+        -o jsonpath='{.spec.secretName}')
+    
+    if [ -n "$SECRET_NAME" ]; then
+        kubectl delete secret "$SECRET_NAME" -n "$NAMESPACE" || true
+    fi
+    
+    echo "Certificate renewal initiated. Check status with:"
+    echo "kubectl describe certificate $CERT_NAME -n $NAMESPACE"
+
+  validate-tls.sh: |
+    #!/bin/bash
+    # TLS endpoint validation script
+    set -euo pipefail
+    
+    ENDPOINTS=(
+        "https://grafana.homelab.local"
+        "https://prometheus.homelab.local"
+        "https://auth.homelab.local"
+        "https://gitlab.homelab.local"
+        "https://ollama.homelab.local"
+        "https://jupyter.homelab.local"
+        "https://longhorn.homelab.local"
+    )
+    
+    echo "Validating TLS endpoints..."
+    
+    for endpoint in "${ENDPOINTS[@]}"; do
+        echo -n "Checking $endpoint... "
+        if curl -s --max-time 10 --head "$endpoint" > /dev/null 2>&1; then
+            echo "✅ OK"
+        else
+            echo "❌ FAILED"
+        fi
+    done
+    
+    echo "TLS validation completed."
+
+---
+# Service Monitor for cert-manager metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cert-manager
+  endpoints:
+  - port: tcp-prometheus-servicemonitor
+    interval: 60s
+    path: /metrics

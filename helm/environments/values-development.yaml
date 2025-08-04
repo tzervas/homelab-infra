@@ -5,6 +5,7 @@ global:
   resourceQuota: false
   storageClass: "standard"
   environment: "development"
+  domain: "dev.homelab.local"  # Development domain
 
 ingress:
   enabled: true

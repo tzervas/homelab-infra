@@ -9,6 +9,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable, Optional
 
 from .config_manager import ConfigManager
 
@@ -19,12 +20,12 @@ class DeploymentStep:
 
     name: str
     description: str
-    command: str | None = None
-    function: callable | None = None
+    command: Optional[str] = None
+    function: Optional[Callable] = None
     dependencies: list[str] = field(default_factory=list)
     timeout: int = 300
     critical: bool = True
-    namespace: str | None = None
+    namespace: Optional[str] = None
 
 
 @dataclass

@@ -21,6 +21,7 @@ from rich.table import Table
 
 from .core.config_manager import ConfigContext, ConfigManager
 from .core.orchestrator import HomelabOrchestrator
+from .__version__ import __version__
 
 
 console = Console()
@@ -59,6 +60,7 @@ def setup_logging(level: str) -> None:
     help="Cluster deployment type",
 )
 @click.option("--project-root", type=click.Path(exists=True), help="Project root directory")
+@click.version_option(version=__version__, prog_name="Homelab Orchestrator")
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -494,6 +496,193 @@ def webhook_start(ctx: click.Context, host: str, port: int) -> None:
 
     # Implementation for webhook server
     console.print("[green]Webhook server started[/green]")
+
+
+@cli.group()
+@click.pass_context
+def certificates(ctx: click.Context) -> None:
+    """Certificate management operations."""
+
+
+@certificates.command("deploy")
+@click.pass_context
+def certificates_deploy(ctx: click.Context) -> None:
+    """Deploy cert-manager and certificate issuers."""
+    
+    async def _deploy_certs() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            
+            # Deploy cert-manager
+            result = await orchestrator.certificate_manager.deploy_cert_manager()
+            
+            if result["status"] == "success":
+                console.print("[green]✅ cert-manager deployed successfully[/green]")
+                if "issuers" in result:
+                    console.print(f"[blue]📋 Deployed issuers: {', '.join(result['issuers'])}[/blue]")
+            else:
+                console.print(f"[red]❌ cert-manager deployment failed: {result.get('error', 'Unknown error')}[/red]")
+                
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_deploy_certs())
+
+
+@certificates.command("validate")
+@click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
+@click.pass_context
+def certificates_validate(ctx: click.Context, output_format: str) -> None:
+    """Validate TLS certificates and endpoints."""
+    
+    async def _validate_certs() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            
+            result = await orchestrator.certificate_manager.validate_certificates()
+            
+            if output_format == "json":
+                console.print(json.dumps(result, indent=2, default=str))
+                return
+            
+            # Display validation results in table format
+            table = Table(title="Certificate Validation Results")
+            table.add_column("Endpoint", style="cyan")
+            table.add_column("Status", style="bold")
+            table.add_column("SSL Verified", style="green")
+            table.add_column("Details")
+            
+            for endpoint, details in result.get("endpoints", {}).items():
+                status = details["status"]
+                status_color = "green" if status == "success" else "red"
+                ssl_status = "✅" if details.get("ssl_verified") else "❌"
+                
+                error_info = details.get("error", "")
+                if details.get("status_code"):
+                    error_info = f"HTTP {details['status_code']}"
+                
+                table.add_row(
+                    endpoint,
+                    f"[{status_color}]{status.upper()}[/{status_color}]",
+                    ssl_status,
+                    error_info
+                )
+            
+            console.print(table)
+            
+            # Summary
+            summary = result.get("summary", {})
+            console.print(f"\n📊 Summary: {summary.get('successful', 0)}/{summary.get('total', 0)} endpoints validated successfully")
+                
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_validate_certs())
+
+
+@certificates.command("check-expiry")
+@click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
+@click.pass_context
+def certificates_check_expiry(ctx: click.Context, output_format: str) -> None:
+    """Check certificate expiry dates."""
+    
+    async def _check_expiry() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            
+            result = await orchestrator.certificate_manager.check_certificate_expiry()
+            
+            if output_format == "json":
+                console.print(json.dumps(result, indent=2, default=str))
+                return
+            
+            if result["status"] != "success":
+                console.print(f"[red]❌ Failed to check certificate expiry: {result.get('error')}[/red]")
+                return
+            
+            # Display certificate expiry information
+            table = Table(title="Certificate Expiry Information")
+            table.add_column("Certificate", style="cyan")
+            table.add_column("Namespace")
+            table.add_column("Days Until Expiry", style="bold")
+            table.add_column("Status")
+            table.add_column("Needs Renewal")
+            
+            for cert in result.get("certificates", []):
+                days_color = "red" if cert["days_until_expiry"] < 7 else "yellow" if cert["days_until_expiry"] < 30 else "green"
+                renewal_status = "⚠️ YES" if cert["needs_renewal"] else "✅ NO"
+                
+                table.add_row(
+                    cert["name"],
+                    cert["namespace"],
+                    f"[{days_color}]{cert['days_until_expiry']}[/{days_color}]",
+                    cert["status"],
+                    renewal_status
+                )
+            
+            console.print(table)
+            
+            # Summary
+            summary = result.get("summary", {})
+            console.print(f"\n📊 Summary: {summary.get('needs_renewal', 0)}/{summary.get('total', 0)} certificates need renewal")
+                
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_check_expiry())
+
+
+@certificates.command("renew")
+@click.argument("cert_name")
+@click.option("--namespace", default="default", help="Certificate namespace")
+@click.pass_context
+def certificates_renew(ctx: click.Context, cert_name: str, namespace: str) -> None:
+    """Force renewal of a specific certificate."""
+    
+    async def _renew_cert() -> None:
+        config_manager = ctx.obj["config_manager"]
+        orchestrator = HomelabOrchestrator(
+            config_manager=config_manager,
+            project_root=ctx.obj["project_root"],
+            log_level=ctx.obj["log_level"],
+        )
+
+        try:
+            await orchestrator.start()
+            
+            result = await orchestrator.certificate_manager.renew_certificate(cert_name, namespace)
+            
+            if result["status"] == "success":
+                console.print(f"[green]✅ {result['message']}[/green]")
+                console.print(f"[blue]Monitor renewal with: kubectl describe certificate {cert_name} -n {namespace}[/blue]")
+            else:
+                console.print(f"[red]❌ Certificate renewal failed: {result.get('error')}[/red]")
+                
+        finally:
+            await orchestrator.stop()
+
+    asyncio.run(_renew_cert())
 
 
 @cli.command("status")

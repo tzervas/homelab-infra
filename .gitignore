@@ -237,6 +237,26 @@ deploy-homelab-with-sso.sh
 docs/consolidation-reports/
 **/consolidation-reports/
 update_branches.sh
+
+# Analysis and consolidation scripts (temporary)
+run_analysis.sh
+scripts/analyze_branches.py
+scripts/backup_branches.sh  
+scripts/consolidate_branches.sh
+scripts/index_docs.py
+scripts/map_features.py
+scripts/update_protection.sh
+scripts/validate_structure.sh
+analyze_branches.sh
+
+# Development and testing artifacts
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 *branch-info*
 *branch-manifest*
 *consolidation-manifest*
@@ -295,3 +315,6 @@ reports/
 .claude/rag_index.json
 .claude/rag_metadata.json
 homelab-infra/
+
+# Analysis workspace - local development tracking
+.analysis/

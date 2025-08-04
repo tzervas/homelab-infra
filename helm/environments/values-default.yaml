@@ -1,6 +1,8 @@
 # Default Values for Helmfile Environment
 
 global:
+  environment: development  # Default environment
+  domain: "homelab.local"  # Default domain
   replicas: 2
   resourceQuota: false
   storageClass: "standard"

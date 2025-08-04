@@ -19,6 +19,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from .core.decorators import with_orchestrator
+
 from .__version__ import __version__
 from .core.config_manager import ConfigContext, ConfigManager
 from .core.orchestrator import HomelabOrchestrator
@@ -100,52 +102,34 @@ def deploy(ctx: click.Context) -> None:
 @click.option("--components", multiple=True, help="Specific components to deploy")
 @click.option("--dry-run", is_flag=True, help="Perform validation without deployment")
 @click.option("--skip-hooks", is_flag=True, help="Skip deployment hooks")
-@click.pass_context
+@with_orchestrator
 def deploy_infrastructure(
     ctx: click.Context,
     components: list[str],
     dry_run: bool,
     skip_hooks: bool,
-) -> None:
+    orchestrator: HomelabOrchestrator,
+    ) -> None:
     """Deploy complete homelab infrastructure."""
 
-    async def _deploy() -> None:
-        config_manager = ctx.obj["config_manager"]
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Deploying infrastructure...", total=None)
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Initializing orchestrator...", total=None)
+        result = asyncio.run(
+            orchestrator.deploy_full_infrastructure(
+                components=list(components) if components else None,
+                dry_run=dry_run,
+            ),
+        )
 
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
-            )
+        progress.update(task, description="Deployment completed", completed=100)
 
-            try:
-                progress.update(task, description="Starting orchestrator...")
-                await orchestrator.start()
-
-                progress.update(task, description="Deploying infrastructure...")
-                result = await orchestrator.deploy_full_infrastructure(
-                    environment=config_manager.context.environment,
-                    components=list(components) if components else None,
-                    dry_run=dry_run,
-                )
-
-                progress.update(task, description="Deployment completed", completed=100)
-
-                # Display results
-                _display_deployment_result(result)
-
-            finally:
-                progress.update(task, description="Cleaning up...")
-                await orchestrator.stop()
-
-    asyncio.run(_deploy())
+        # Display results
+        _display_deployment_result(result)
 
 
 @deploy.command("service")
@@ -506,98 +490,66 @@ def certificates(ctx: click.Context) -> None:
 
 @certificates.command("deploy")
 @click.pass_context
-def certificates_deploy(ctx: click.Context) -> None:
+@with_orchestrator
+def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -> None:
     """Deploy cert-manager and certificate issuers."""
+    # Deploy cert-manager
+    result = asyncio.run(orchestrator.certificate_manager.deploy_cert_manager())
 
-    async def _deploy_certs() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+    if result["status"] == "success":
+        console.print("[green]✅ cert-manager deployed successfully[/green]")
+        if "issuers" in result:
+            console.print(
+                f"[blue]📋 Deployed issuers: {', '.join(result['issuers'])}[/blue]",
+            )
+    else:
+        console.print(
+            f"[red]❌ cert-manager deployment failed: {result.get('error', 'Unknown error')}[/red]",
         )
-
-        try:
-            await orchestrator.start()
-
-            # Deploy cert-manager
-            result = await orchestrator.certificate_manager.deploy_cert_manager()
-
-            if result["status"] == "success":
-                console.print("[green]✅ cert-manager deployed successfully[/green]")
-                if "issuers" in result:
-                    console.print(
-                        f"[blue]📋 Deployed issuers: {', '.join(result['issuers'])}[/blue]"
-                    )
-            else:
-                console.print(
-                    f"[red]❌ cert-manager deployment failed: {result.get('error', 'Unknown error')}[/red]"
-                )
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_deploy_certs())
 
 
 @certificates.command("validate")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-def certificates_validate(ctx: click.Context, output_format: str) -> None:
+@with_orchestrator
+def certificates_validate(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Validate TLS certificates and endpoints."""
+    result = asyncio.run(orchestrator.certificate_manager.validate_certificates())
 
-    async def _validate_certs() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+    if output_format == "json":
+        console.print(json.dumps(result, indent=2, default=str))
+        return
+
+    # Display validation results in table format
+    table = Table(title="Certificate Validation Results")
+    table.add_column("Endpoint", style="cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("SSL Verified", style="green")
+    table.add_column("Details")
+
+    for endpoint, details in result.get("endpoints", {}).items():
+        status = details["status"]
+        status_color = "green" if status == "success" else "red"
+        ssl_status = "✅" if details.get("ssl_verified") else "❌"
+
+        error_info = details.get("error", "")
+        if details.get("status_code"):
+            error_info = f"HTTP {details['status_code']}"
+
+        table.add_row(
+            endpoint,
+            f"[{status_color}]{status.upper()}[/{status_color}]",
+            ssl_status,
+            error_info,
         )
 
-        try:
-            await orchestrator.start()
+    console.print(table)
 
-            result = await orchestrator.certificate_manager.validate_certificates()
-
-            if output_format == "json":
-                console.print(json.dumps(result, indent=2, default=str))
-                return
-
-            # Display validation results in table format
-            table = Table(title="Certificate Validation Results")
-            table.add_column("Endpoint", style="cyan")
-            table.add_column("Status", style="bold")
-            table.add_column("SSL Verified", style="green")
-            table.add_column("Details")
-
-            for endpoint, details in result.get("endpoints", {}).items():
-                status = details["status"]
-                status_color = "green" if status == "success" else "red"
-                ssl_status = "✅" if details.get("ssl_verified") else "❌"
-
-                error_info = details.get("error", "")
-                if details.get("status_code"):
-                    error_info = f"HTTP {details['status_code']}"
-
-                table.add_row(
-                    endpoint,
-                    f"[{status_color}]{status.upper()}[/{status_color}]",
-                    ssl_status,
-                    error_info,
-                )
-
-            console.print(table)
-
-            # Summary
-            summary = result.get("summary", {})
-            console.print(
-                f"\n📊 Summary: {summary.get('successful', 0)}/{summary.get('total', 0)} endpoints validated successfully"
-            )
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_validate_certs())
+    # Summary
+    summary = result.get("summary", {})
+    console.print(
+        f"\n📊 Summary: {summary.get('successful', 0)}/{summary.get('total', 0)} endpoints validated successfully",
+    )
 
 
 @certificates.command("check-expiry")
@@ -625,7 +577,7 @@ def certificates_check_expiry(ctx: click.Context, output_format: str) -> None:
 
             if result["status"] != "success":
                 console.print(
-                    f"[red]❌ Failed to check certificate expiry: {result.get('error')}[/red]"
+                    f"[red]❌ Failed to check certificate expiry: {result.get('error')}[/red]",
                 )
                 return
 
@@ -660,7 +612,7 @@ def certificates_check_expiry(ctx: click.Context, output_format: str) -> None:
             # Summary
             summary = result.get("summary", {})
             console.print(
-                f"\n📊 Summary: {summary.get('needs_renewal', 0)}/{summary.get('total', 0)} certificates need renewal"
+                f"\n📊 Summary: {summary.get('needs_renewal', 0)}/{summary.get('total', 0)} certificates need renewal",
             )
 
         finally:
@@ -692,7 +644,7 @@ def certificates_renew(ctx: click.Context, cert_name: str, namespace: str) -> No
             if result["status"] == "success":
                 console.print(f"[green]✅ {result['message']}[/green]")
                 console.print(
-                    f"[blue]Monitor renewal with: kubectl describe certificate {cert_name} -n {namespace}[/blue]"
+                    f"[blue]Monitor renewal with: kubectl describe certificate {cert_name} -n {namespace}[/blue]",
                 )
             else:
                 console.print(f"[red]❌ Certificate renewal failed: {result.get('error')}[/red]")

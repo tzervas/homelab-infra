@@ -7,11 +7,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import ssl
 from datetime import datetime, timedelta
+from shlex import quote
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
+from dateutil import parser as dateutil_parser
+
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 
 if TYPE_CHECKING:
@@ -110,43 +114,48 @@ class CertificateManager:
 
     async def _wait_for_cert_manager_ready(self, timeout: int = 300) -> bool:
         """Wait for cert-manager to be ready."""
-        self.logger.info("Waiting for cert-manager to be ready")
+        try:
+            config.load_kube_config()
+            v1 = client.CoreV1Api()
+            start_time = asyncio.get_event_loop().time()
 
-        start_time = asyncio.get_event_loop().time()
-        while (asyncio.get_event_loop().time() - start_time) < timeout:
-            try:
-                # Check if cert-manager pods are running
-                result = await asyncio.create_subprocess_shell(
-                    "kubectl get pods -n cert-manager -l app.kubernetes.io/name=cert-manager --no-headers",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                stdout, _ = await result.communicate()
+            while (asyncio.get_event_loop().time() - start_time) < timeout:
+                try:
+                    pods = v1.list_namespaced_pod(
+                        namespace="cert-manager",
+                        label_selector="app.kubernetes.io/name=cert-manager",
+                    )
 
-                if result.returncode == 0:
-                    pods = stdout.decode().strip().split("\n")
-                    if pods and pods[0]:  # Check if we have non-empty output
-                        all_ready = True
-                        for pod_line in pods:
-                            if not pod_line.strip():
-                                continue
-                            parts = pod_line.split()
-                            if len(parts) >= 3 and parts[2] != "Running":
+                    if not pods.items:
+                        await asyncio.sleep(5)
+                        continue
+
+                    all_ready = True
+                    for pod in pods.items:
+                        if not pod.status.container_statuses:
+                            all_ready = False
+                            break
+
+                        for container in pod.status.container_statuses:
+                            if not container.ready:
                                 all_ready = False
                                 break
 
-                        if all_ready:
-                            self.logger.info("cert-manager is ready")
-                            return True
+                    if all_ready:
+                        self.logger.info("cert-manager is ready")
+                        return True
 
-                await asyncio.sleep(10)
+                except ApiException as e:
+                    self.logger.warning(f"Error checking cert-manager status: {e}")
 
-            except Exception as e:
-                self.logger.warning(f"Error checking cert-manager status: {e}")
-                await asyncio.sleep(10)
+                await asyncio.sleep(5)
 
-        self.logger.warning("Timeout waiting for cert-manager to be ready")
-        return False
+            msg = f"cert-manager not ready after {timeout} seconds"
+            raise TimeoutError(msg)
+
+        except Exception as e:
+            self.logger.exception(f"Failed to check cert-manager readiness: {e}")
+            raise
 
     async def _deploy_issuers(self) -> dict[str, Any]:
         """Deploy certificate issuers."""
@@ -209,42 +218,44 @@ class CertificateManager:
             }
 
         endpoints = health_checks.get("endpoints", [])
-        results = {}
+        tasks = [self._validate_endpoint(endpoint) for endpoint in endpoints]
+        results = await asyncio.gather(*tasks)
 
-        for endpoint in endpoints:
-            try:
-                async with self.http_session.get(endpoint) as response:
-                    results[endpoint] = {
-                        "status": "success" if response.status < 400 else "failed",
-                        "status_code": response.status,
-                        "ssl_verified": True,
-                    }
-            except aiohttp.ClientSSLError as e:
-                results[endpoint] = {
-                    "status": "ssl_error",
-                    "error": str(e),
-                    "ssl_verified": False,
-                }
-            except Exception as e:
-                results[endpoint] = {
-                    "status": "error",
-                    "error": str(e),
-                    "ssl_verified": None,
-                }
-
-        # Count successful validations
-        successful = sum(1 for result in results.values() if result["status"] == "success")
-        total = len(results)
+        endpoint_results = dict(zip(endpoints, results, strict=False))
+        successful = sum(1 for result in endpoint_results.values() if result["status"] == "success")
+        total = len(endpoint_results)
 
         return {
             "status": "success" if successful == total else "partial",
-            "endpoints": results,
+            "endpoints": endpoint_results,
             "summary": {
                 "total": total,
                 "successful": successful,
                 "failed": total - successful,
             },
         }
+
+    async def _validate_endpoint(self, endpoint: str) -> dict[str, Any]:
+        """Validate a single endpoint's certificate."""
+        try:
+            async with self.http_session.get(endpoint) as response:
+                return {
+                    "status": "success" if response.status < 400 else "failed",
+                    "status_code": response.status,
+                    "ssl_verified": True,
+                }
+        except aiohttp.ClientSSLError as e:
+            return {
+                "status": "ssl_error",
+                "error": str(e),
+                "ssl_verified": False,
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "ssl_verified": None,
+            }
 
     async def check_certificate_expiry(self) -> dict[str, Any]:
         """Check certificate expiry dates."""
@@ -272,7 +283,8 @@ class CertificateManager:
 
             expiry_info = []
             renewal_threshold = self.cert_config.get("validation", {}).get(
-                "renewal_threshold_days", 30
+                "renewal_threshold_days",
+                30,
             )
             threshold_date = datetime.now() + timedelta(days=renewal_threshold)
 
@@ -286,7 +298,7 @@ class CertificateManager:
 
                 if not_after:
                     try:
-                        expiry_date = datetime.fromisoformat(not_after.replace("Z", "+00:00"))
+                        expiry_date = dateutil_parser.isoparse(not_after)
                         days_until_expiry = (expiry_date - datetime.now()).days
 
                         cert_info = {
@@ -332,8 +344,8 @@ class CertificateManager:
         try:
             # Force certificate renewal by deleting the secret
             commands = [
-                f"kubectl annotate certificate {cert_name} -n {namespace} cert-manager.io/issue-temporary-certificate=true --overwrite",
-                f"kubectl delete secret $(kubectl get certificate {cert_name} -n {namespace} -o jsonpath='{{.spec.secretName}}') -n {namespace} || true",
+                f"kubectl annotate certificate {quote(cert_name)} -n {quote(namespace)} cert-manager.io/issue-temporary-certificate=true --overwrite",
+                f"kubectl delete secret $(kubectl get certificate {quote(cert_name)} -n {quote(namespace)} -o jsonpath='{{.spec.secretName}}') -n {quote(namespace)} || true",
             ]
 
             for command in commands:

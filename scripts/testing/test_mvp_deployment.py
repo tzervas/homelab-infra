@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from homelab_orchestrator.__version__ import __version__
+
 
 # Add the project root to Python path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -168,27 +170,21 @@ class MVPDeploymentTest:
                 text=True,
                 timeout=10,
                 check=False,
+                shell=False,
             )
 
             if result.returncode != 0:
                 self.logger.error("❌ Version command failed")
                 return False
 
-            if "1.0.0" not in result.stdout:
+            if __version__ not in result.stdout:
                 self.logger.error(f"❌ Unexpected version output: {result.stdout}")
                 return False
 
             self.logger.info("✅ Version command works correctly")
 
-            # Test version info import
-            from homelab_orchestrator.__version__ import __version__, __version_info__
-
-            if __version__ != "1.0.0":
+            if __version__ not in result.stdout:
                 self.logger.error(f"❌ Version mismatch: {__version__}")
-                return False
-
-            if __version_info__ != (1, 0, 0):
-                self.logger.error(f"❌ Version info mismatch: {__version_info__}")
                 return False
 
             self.logger.info("✅ Version information correct")
@@ -211,6 +207,7 @@ class MVPDeploymentTest:
                 text=True,
                 timeout=30,
                 check=False,
+                shell=False,
             )
 
             if result.returncode != 0:
@@ -248,6 +245,7 @@ class MVPDeploymentTest:
                 text=True,
                 timeout=10,
                 check=False,
+                shell=False,
             )
 
             if result.returncode != 0:

@@ -146,50 +146,50 @@ data:
     #!/bin/bash
     # Certificate health check script
     set -euo pipefail
-    
+
     echo "Checking certificate status..."
-    
+
     # Check cert-manager certificates
     kubectl get certificates -A -o wide
-    
+
     # Check certificate requests
     kubectl get certificaterequests -A -o wide
-    
+
     # Check orders and challenges
     kubectl get orders,challenges -A -o wide
-    
+
     # Check issuer status
     kubectl get clusterissuers -o wide
-    
+
     echo "Certificate check completed."
 
   renew-certificates.sh: |
     #!/bin/bash
     # Force certificate renewal script
     set -euo pipefail
-    
+
     if [ $# -eq 0 ]; then
         echo "Usage: $0 <certificate-name> [namespace]"
         exit 1
     fi
-    
+
     CERT_NAME=$1
     NAMESPACE=${2:-default}
-    
+
     echo "Forcing renewal of certificate: $CERT_NAME in namespace: $NAMESPACE"
-    
+
     # Annotate certificate to force renewal
     kubectl annotate certificate "$CERT_NAME" -n "$NAMESPACE" \
         cert-manager.io/issue-temporary-certificate="true" --overwrite
-    
+
     # Delete the secret to trigger renewal
     SECRET_NAME=$(kubectl get certificate "$CERT_NAME" -n "$NAMESPACE" \
         -o jsonpath='{.spec.secretName}')
-    
+
     if [ -n "$SECRET_NAME" ]; then
         kubectl delete secret "$SECRET_NAME" -n "$NAMESPACE" || true
     fi
-    
+
     echo "Certificate renewal initiated. Check status with:"
     echo "kubectl describe certificate $CERT_NAME -n $NAMESPACE"
 
@@ -197,7 +197,7 @@ data:
     #!/bin/bash
     # TLS endpoint validation script
     set -euo pipefail
-    
+
     ENDPOINTS=(
         "https://grafana.homelab.local"
         "https://prometheus.homelab.local"
@@ -207,9 +207,9 @@ data:
         "https://jupyter.homelab.local"
         "https://longhorn.homelab.local"
     )
-    
+
     echo "Validating TLS endpoints..."
-    
+
     for endpoint in "${ENDPOINTS[@]}"; do
         echo -n "Checking $endpoint... "
         if curl -s --max-time 10 --head "$endpoint" > /dev/null 2>&1; then
@@ -218,7 +218,7 @@ data:
             echo "❌ FAILED"
         fi
     done
-    
+
     echo "TLS validation completed."
 
 ---

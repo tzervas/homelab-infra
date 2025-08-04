@@ -5,6 +5,7 @@ Comprehensive troubleshooting guide for the Homelab Infrastructure Orchestrator 
 ## 🚨 Emergency Quick Fixes
 
 ### System Not Responding
+
 ```bash
 # Check orchestrator status
 python -m homelab_orchestrator status
@@ -20,6 +21,7 @@ sudo systemctl restart k3s
 ```
 
 ### Cannot Access Services
+
 ```bash
 # Check ingress controller
 kubectl get pods -n ingress-nginx
@@ -38,6 +40,7 @@ nslookup grafana.homelab.local
 **Problem**: `python: command not found` or version < 3.10
 
 **Solution**:
+
 ```bash
 # Ubuntu/Debian
 sudo apt update
@@ -56,6 +59,7 @@ source ~/.bashrc
 **Problem**: Cannot activate virtual environment or packages not found
 
 **Solution**:
+
 ```bash
 # Remove and recreate virtual environment
 rm -rf .venv
@@ -76,6 +80,7 @@ python -m homelab_orchestrator --version
 **Problem**: Permission denied when running scripts or accessing kubectl
 
 **Solution**:
+
 ```bash
 # Fix script permissions
 chmod +x scripts/security/generate-secrets.sh
@@ -96,6 +101,7 @@ chmod 600 .env
 **Problem**: Configuration validation fails, secrets not found
 
 **Solution**:
+
 ```bash
 # Generate secrets
 ./scripts/security/generate-secrets.sh
@@ -112,6 +118,7 @@ head -5 .env
 **Problem**: Base64 encoding errors or invalid secret format
 
 **Solution**:
+
 ```bash
 # Regenerate all secrets
 rm .env
@@ -129,6 +136,7 @@ echo "$OAUTH2_CLIENT_SECRET" | base64 -d
 **Problem**: Gitleaks or security scan finds hardcoded secrets
 
 **Solution**:
+
 ```bash
 # Check for hardcoded secrets
 gitleaks detect --no-git
@@ -148,6 +156,7 @@ gitleaks detect --no-git
 **Problem**: `python -m homelab_orchestrator config validate` fails
 
 **Solution**:
+
 ```bash
 # Check specific validation errors
 python -m homelab_orchestrator config validate --verbose
@@ -168,6 +177,7 @@ ls -la config/consolidated/
 **Problem**: Variables not being substituted in configuration files
 
 **Solution**:
+
 ```bash
 # Check .env file exists and has correct format
 cat .env | grep -E "^[A-Z_]+=.*"
@@ -191,6 +201,7 @@ print(cm.get_deployment_config())
 **Problem**: Required configuration files not found
 
 **Solution**:
+
 ```bash
 # Check for missing consolidated configs
 ls -la config/consolidated/
@@ -210,6 +221,7 @@ ln -sf ../../../config/consolidated/services.yaml homelab_orchestrator/config/co
 **Problem**: `kubectl cluster-info` fails or connection refused
 
 **Solution**:
+
 ```bash
 # Check K3s service status
 sudo systemctl status k3s
@@ -231,6 +243,7 @@ export KUBECONFIG=~/.kube/config
 **Problem**: Pods remain in Pending state
 
 **Solution**:
+
 ```bash
 # Check pod status and events
 kubectl describe pod <pod-name> -n <namespace>
@@ -252,6 +265,7 @@ kubectl describe nodes | grep -i taint
 **Problem**: `kubectl get nodes` shows NotReady
 
 **Solution**:
+
 ```bash
 # Check node status
 kubectl describe node <node-name>
@@ -277,6 +291,7 @@ sudo systemctl restart k3s
 **Problem**: Certificate requests failing due to rate limits
 
 **Solution**:
+
 ```bash
 # Switch to staging issuer temporarily
 kubectl patch certificate homelab-wildcard-tls \
@@ -295,6 +310,7 @@ kubectl describe certificate homelab-wildcard-tls
 **Problem**: Certificates stuck in "Not Ready" state
 
 **Solution**:
+
 ```bash
 # Check certificate status
 kubectl get certificates -A
@@ -315,6 +331,7 @@ python -m homelab_orchestrator certificates renew <cert-name>
 **Problem**: ACME HTTP-01 challenge validation fails
 
 **Solution**:
+
 ```bash
 # Check ingress controller status
 kubectl get pods -n ingress-nginx
@@ -337,6 +354,7 @@ nslookup yourdomain.com
 **Problem**: Browser shows certificate warnings for self-signed certs
 
 **Solution**:
+
 ```bash
 # Check certificate issuer
 kubectl get certificates -o yaml | grep issuerRef
@@ -358,6 +376,7 @@ sudo update-ca-certificates
 **Problem**: Cannot reach services via ingress or load balancer
 
 **Solution**:
+
 ```bash
 # Check ingress controller
 kubectl get svc -n ingress-nginx
@@ -381,6 +400,7 @@ kubectl get networkpolicy -A
 **Problem**: Services cannot resolve internal DNS names
 
 **Solution**:
+
 ```bash
 # Check CoreDNS
 kubectl get pods -n kube-system -l k8s-app=kube-dns
@@ -400,6 +420,7 @@ kubectl rollout restart deployment/coredns -n kube-system
 **Problem**: MetalLB not assigning external IPs
 
 **Solution**:
+
 ```bash
 # Check MetalLB pods
 kubectl get pods -n metallb-system
@@ -421,6 +442,7 @@ kubectl logs -n metallb-system -l app=metallb
 **Problem**: Persistent Volume Claims not being bound
 
 **Solution**:
+
 ```bash
 # Check PVC status
 kubectl get pvc -A
@@ -443,6 +465,7 @@ kubectl logs -n kube-system -l app=local-path-provisioner
 **Problem**: Longhorn storage not working properly
 
 **Solution**:
+
 ```bash
 # Check Longhorn system pods
 kubectl get pods -n longhorn-system
@@ -464,6 +487,7 @@ df -h
 **Problem**: GPU resources not available in cluster
 
 **Solution**:
+
 ```bash
 # Check GPU detection
 python -m homelab_orchestrator gpu discover
@@ -485,6 +509,7 @@ kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.1
 **Problem**: Prometheus shows targets as down
 
 **Solution**:
+
 ```bash
 # Check Prometheus pods
 kubectl get pods -n monitoring
@@ -504,6 +529,7 @@ kubectl port-forward -n monitoring svc/prometheus 9090:9090
 **Problem**: Grafana shows empty dashboards or connection errors
 
 **Solution**:
+
 ```bash
 # Check Grafana pods
 kubectl get pods -n monitoring
@@ -526,6 +552,7 @@ kubectl port-forward -n monitoring svc/grafana 3000:3000
 **Problem**: `python scripts/testing/test_mvp_deployment.py` shows failures
 
 **Solution**:
+
 ```bash
 # Run tests with debug output
 python scripts/testing/test_mvp_deployment.py --verbose
@@ -623,13 +650,14 @@ tar -czf homelab-debug-$(date +%Y%m%d).tar.gz -C /tmp homelab-debug/
 ### Where to Get Help
 
 1. **Check Logs First**:
+
    ```bash
    # Orchestrator logs
    python -m homelab_orchestrator --log-level DEBUG <command>
-   
+
    # Kubernetes logs
    kubectl logs -n <namespace> <pod-name>
-   
+
    # System logs
    sudo journalctl -u k3s -f
    ```

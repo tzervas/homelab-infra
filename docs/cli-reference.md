@@ -53,11 +53,13 @@ python -m homelab_orchestrator deploy infrastructure [OPTIONS]
 ```
 
 **Options:**
+
 - `--components TEXT`: Specific components to deploy (multiple allowed)
 - `--dry-run`: Perform validation without deployment
 - `--skip-hooks`: Skip deployment hooks
 
 **Examples:**
+
 ```bash
 # Deploy all infrastructure
 python -m homelab_orchestrator deploy infrastructure
@@ -73,6 +75,7 @@ python -m homelab_orchestrator --environment production deploy infrastructure --
 ```
 
 **Available Components:**
+
 - `metallb`: MetalLB load balancer
 - `cert_manager`: Certificate management
 - `ingress_nginx`: NGINX ingress controller
@@ -92,10 +95,12 @@ python -m homelab_orchestrator deploy service SERVICE_NAME [OPTIONS]
 ```
 
 **Options:**
+
 - `--namespace TEXT`: Target namespace
 - `--dry-run`: Validate without deployment
 
 **Examples:**
+
 ```bash
 # Deploy Grafana service
 python -m homelab_orchestrator deploy service grafana
@@ -124,6 +129,7 @@ python -m homelab_orchestrator certificates deploy
 ```
 
 **Examples:**
+
 ```bash
 # Deploy cert-manager with all issuers
 python -m homelab_orchestrator certificates deploy
@@ -141,9 +147,11 @@ python -m homelab_orchestrator certificates validate [OPTIONS]
 ```
 
 **Options:**
+
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Validate certificates (table format)
 python -m homelab_orchestrator certificates validate
@@ -161,9 +169,11 @@ python -m homelab_orchestrator certificates check-expiry [OPTIONS]
 ```
 
 **Options:**
+
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Check certificate expiry
 python -m homelab_orchestrator certificates check-expiry
@@ -181,9 +191,11 @@ python -m homelab_orchestrator certificates renew CERT_NAME [OPTIONS]
 ```
 
 **Options:**
+
 - `--namespace TEXT`: Certificate namespace (default: default)
 
 **Examples:**
+
 ```bash
 # Renew wildcard certificate
 python -m homelab_orchestrator certificates renew homelab-wildcard-tls
@@ -209,9 +221,11 @@ python -m homelab_orchestrator config validate [OPTIONS]
 ```
 
 **Options:**
+
 - `--comprehensive`: Run comprehensive validation
 
 **Examples:**
+
 ```bash
 # Basic configuration validation
 python -m homelab_orchestrator config validate
@@ -232,13 +246,16 @@ python -m homelab_orchestrator config show [CONFIG_TYPE] [OPTIONS]
 ```
 
 **Arguments:**
+
 - `CONFIG_TYPE`: Specific configuration section (optional)
 
 **Options:**
+
 - `--key TEXT`: Specific configuration key
 - `--format [yaml|json]`: Output format (default: yaml)
 
 **Examples:**
+
 ```bash
 # Show all configuration
 python -m homelab_orchestrator config show
@@ -267,11 +284,13 @@ python -m homelab_orchestrator health check [OPTIONS]
 ```
 
 **Options:**
+
 - `--comprehensive`: Run comprehensive health check
 - `--component TEXT`: Check specific components (multiple allowed)
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Basic health check
 python -m homelab_orchestrator health check
@@ -295,10 +314,12 @@ python -m homelab_orchestrator health monitor [OPTIONS]
 ```
 
 **Options:**
+
 - `--interval INTEGER`: Monitoring interval in seconds (default: 60)
 - `--duration INTEGER`: Monitoring duration in seconds (0 for continuous, default: 0)
 
 **Examples:**
+
 ```bash
 # Start continuous monitoring
 python -m homelab_orchestrator health monitor
@@ -324,9 +345,11 @@ python -m homelab_orchestrator manage backup [OPTIONS]
 ```
 
 **Options:**
+
 - `--components TEXT`: Specific components to backup (multiple allowed)
 
 **Examples:**
+
 ```bash
 # Backup all components
 python -m homelab_orchestrator manage backup
@@ -344,10 +367,12 @@ python -m homelab_orchestrator manage teardown [OPTIONS]
 ```
 
 **Options:**
+
 - `--force`: Force teardown without confirmation
 - `--no-backup`: Skip backup before teardown
 
 **Examples:**
+
 ```bash
 # Teardown with confirmation and backup
 python -m homelab_orchestrator manage teardown
@@ -365,9 +390,11 @@ python -m homelab_orchestrator manage recover [OPTIONS]
 ```
 
 **Options:**
+
 - `--components TEXT`: Specific components to recover (multiple allowed)
 
 **Examples:**
+
 ```bash
 # Recover all components
 python -m homelab_orchestrator manage recover
@@ -393,9 +420,11 @@ python -m homelab_orchestrator gpu discover [OPTIONS]
 ```
 
 **Options:**
+
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Discover GPUs (table format)
 python -m homelab_orchestrator gpu discover
@@ -413,9 +442,11 @@ python -m homelab_orchestrator gpu status [OPTIONS]
 ```
 
 **Options:**
+
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Show GPU status
 python -m homelab_orchestrator gpu status
@@ -441,10 +472,12 @@ python -m homelab_orchestrator webhook start [OPTIONS]
 ```
 
 **Options:**
+
 - `--host TEXT`: Host to bind to (default: 0.0.0.0)
 - `--port INTEGER`: Port to bind to (default: 8080)
 
 **Examples:**
+
 ```bash
 # Start webhook server on default port
 python -m homelab_orchestrator webhook start
@@ -462,9 +495,11 @@ python -m homelab_orchestrator status [OPTIONS]
 ```
 
 **Options:**
+
 - `--format [table|json]`: Output format (default: table)
 
 **Examples:**
+
 ```bash
 # Show system status
 python -m homelab_orchestrator status
@@ -574,6 +609,7 @@ The CLI uses standard exit codes:
 | 130 | Script terminated by Control-C |
 
 **Examples:**
+
 ```bash
 # Check exit code
 python -m homelab_orchestrator config validate
@@ -654,20 +690,20 @@ set -euo pipefail
 deploy_with_retry() {
     local max_attempts=3
     local attempt=1
-    
+
     while [ $attempt -le $max_attempts ]; do
         echo "Deployment attempt $attempt/$max_attempts"
-        
+
         if python -m homelab_orchestrator deploy infrastructure --components "$1"; then
             echo "Deployment successful"
             return 0
         fi
-        
+
         echo "Deployment failed, retrying in 30 seconds..."
         sleep 30
         ((attempt++))
     done
-    
+
     echo "Deployment failed after $max_attempts attempts"
     return 1
 }
@@ -698,7 +734,7 @@ fi
     python -m homelab_orchestrator config validate
     python -m homelab_orchestrator deploy infrastructure --dry-run
     python -m homelab_orchestrator deploy infrastructure
-    
+
 - name: Validate Deployment
   run: |
     python -m homelab_orchestrator health check --comprehensive --format json > health-report.json

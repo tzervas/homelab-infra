@@ -7,9 +7,9 @@ Replaces all bash deployment scripts with unified Python implementation.
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
 
 from .config_manager import ConfigManager
 
@@ -20,12 +20,12 @@ class DeploymentStep:
 
     name: str
     description: str
-    command: Optional[str] = None
-    function: Optional[Callable] = None
+    command: str | None = None
+    function: Callable | None = None
     dependencies: list[str] = field(default_factory=list)
     timeout: int = 300
     critical: bool = True
-    namespace: Optional[str] = None
+    namespace: str | None = None
 
 
 @dataclass

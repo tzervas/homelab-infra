@@ -97,10 +97,10 @@ security:
   pod_security_standards:
     # Strict security for default namespace
     default: "restricted"
-    
+
     # Baseline for monitoring tools
     monitoring: "baseline"
-    
+
     # Privileged only for system components
     kube-system: "privileged"
     metallb-system: "privileged"
@@ -113,16 +113,16 @@ security:
   policies:
     # Require security contexts
     require_security_context: true
-    
+
     # Disallow privilege escalation
     disallow_privilege_escalation: true
-    
+
     # Require non-root user
     run_as_non_root: true
-    
+
     # Disallow privileged containers
     disallow_privileged: true
-    
+
     # Require read-only root filesystem
     read_only_root_filesystem: true
 ```
@@ -163,7 +163,7 @@ security:
   network_policies:
     enabled: true
     default_deny: true  # Deny all traffic by default
-    
+
     policies:
       # Allow ingress controller to reach services
       - name: "allow-ingress"
@@ -186,10 +186,10 @@ services:
   tls:
     # Require TLS for all services
     enforce_tls: true
-    
+
     # Minimum TLS version
     min_tls_version: "1.2"
-    
+
     # Strong cipher suites only
     cipher_suites:
       - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
@@ -226,7 +226,7 @@ certificates:
       enabled: true
       # Use production only after testing
       server: "https://acme-v02.api.letsencrypt.org/directory"
-      
+
     letsencrypt_staging:
       enabled: true  # For testing
       server: "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -341,16 +341,16 @@ security:
   defaults:
     # Always use security contexts
     security_context_required: true
-    
+
     # Drop all capabilities by default
     default_capabilities: []
-    
+
     # Use non-root user
     run_as_non_root: true
-    
+
     # Read-only root filesystem
     read_only_root_filesystem: true
-    
+
     # No privilege escalation
     allow_privilege_escalation: false
 ```
@@ -369,13 +369,13 @@ keycloak:
       require_lowercase: true
       require_digits: true
       require_special_chars: true
-    
+
     # Session security
     session:
       timeout: 3600  # 1 hour
       remember_me: false
       secure_cookies: true
-    
+
     # TLS configuration
     tls:
       min_version: "TLSv1.2"
@@ -392,11 +392,11 @@ oauth2_proxy:
       secure: true
       http_only: true
       same_site: "strict"
-      
+
     # Session encryption
     session:
       encryption_key: "${OAUTH2_COOKIE_SECRET}"
-      
+
     # Upstream validation
     validate_upstream: true
 ```
@@ -412,7 +412,7 @@ storage:
       enabled: true
       key: "${LONGHORN_BACKUP_SECRET}"
       algorithm: "AES-256-GCM"
-    
+
     # Secure backup targets
     targets:
       s3:
@@ -449,7 +449,7 @@ logging:
       - privilege_escalation_attempts
       - network_policy_violations
       - certificate_validation_failures
-    
+
     destinations:
       - type: "file"
         path: "/var/log/security.log"
@@ -575,13 +575,14 @@ testssl.sh https://grafana.homelab.local
 ### Incident Response
 
 1. **Immediate actions**:
+
    ```bash
    # Isolate compromised pod
    kubectl delete pod <compromised-pod>
-   
+
    # Check for unauthorized access
    kubectl logs -n kube-system kube-apiserver
-   
+
    # Rotate secrets if compromised
    ./scripts/security/generate-secrets.sh
    kubectl rollout restart deployment/<affected-deployment>
@@ -629,7 +630,7 @@ python -m homelab_orchestrator config validate --security-audit
 
 ## 📞 Security Support
 
-- **Security Issues**: Report privately to security@yourdomain.com
+- **Security Issues**: Report privately to <security@yourdomain.com>
 - **Vulnerability Reports**: Follow responsible disclosure
 - **Security Updates**: Monitor [GitHub Security Advisories](https://github.com/tzervas/homelab-infra/security/advisories)
 

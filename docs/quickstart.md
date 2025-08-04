@@ -65,6 +65,7 @@ python scripts/testing/test_mvp_deployment.py
 ```
 
 Expected output:
+
 ```
 🎯 MVP Test Results: 5/5 tests passed
 🎉 All MVP deployment tests passed! Ready for release.
@@ -154,6 +155,7 @@ python -m homelab_orchestrator deploy infrastructure
 ### Access Web UIs
 
 Add to your `/etc/hosts` file:
+
 ```
 192.168.1.100 homelab.local
 192.168.1.100 grafana.homelab.local
@@ -162,9 +164,10 @@ Add to your `/etc/hosts` file:
 ```
 
 Then access:
-- **Grafana**: https://grafana.homelab.local
-- **Prometheus**: https://prometheus.homelab.local
-- **Keycloak**: https://auth.homelab.local
+
+- **Grafana**: <https://grafana.homelab.local>
+- **Prometheus**: <https://prometheus.homelab.local>
+- **Keycloak**: <https://auth.homelab.local>
 
 ## 🔧 Common Commands
 
@@ -194,6 +197,7 @@ python -m homelab_orchestrator status
 ## 🚨 Troubleshooting Quick Fixes
 
 ### Orchestrator Not Found
+
 ```bash
 # Ensure virtual environment is activated
 source .venv/bin/activate
@@ -203,12 +207,14 @@ pip install -e .
 ```
 
 ### Kubectl Permission Denied
+
 ```bash
 # Fix permissions
 sudo chown $USER:$USER ~/.kube/config
 ```
 
 ### Certificate Issues
+
 ```bash
 # Check cert-manager pods
 kubectl get pods -n cert-manager
@@ -221,6 +227,7 @@ kubectl get clusterissuers
 ```
 
 ### Services Not Accessible
+
 ```bash
 # Check ingress controller
 kubectl get pods -n ingress-nginx
@@ -240,7 +247,7 @@ kubectl get svc -n ingress-nginx
 - **[Security Guide](security.md)**: Security best practices
 - **[Troubleshooting](troubleshooting.md)**: Detailed problem solving
 
-## 🎉 Success!
+## 🎉 Success
 
 You now have a fully functional homelab infrastructure orchestrator with:
 

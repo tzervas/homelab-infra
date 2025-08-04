@@ -14,7 +14,7 @@ certificates:
       solver:
         type: "http01"
         ingress_class: "nginx"
-      
+
     # Let's Encrypt Staging Issuer (for testing)
     letsencrypt_staging:
       enabled: true
@@ -117,7 +117,7 @@ certificates:
   validation:
     # Minimum days before expiration to trigger renewal
     renewal_threshold_days: 30
-    
+
     # Health check configuration
     health_checks:
       enabled: true
@@ -130,7 +130,7 @@ certificates:
         - "https://ollama.homelab.local/api/version"
         - "https://jupyter.homelab.local/api"
         - "https://longhorn.homelab.local/v1/nodes"
-    
+
     # Certificate expiration monitoring
     monitoring:
       enabled: true
@@ -138,19 +138,19 @@ certificates:
       alert_days_before_expiry: [7, 3, 1]
       webhook_url: "${CERT_EXPIRY_WEBHOOK_URL}"
 
-  # Cert-manager specific configuration  
+  # Cert-manager specific configuration
   cert_manager:
     # Cert-manager installation
     enabled: true
     version: "v1.13.3"
     namespace: "cert-manager"
-    
+
     # CRDs and webhook configuration
     install_crds: true
     webhook:
       enabled: true
       timeout: "10s"
-    
+
     # Resource limits
     resources:
       controller:

@@ -29,28 +29,28 @@ generate_base64_secret() {
 
 generate_oauth2_secrets() {
     log "Generating OAuth2 authentication secrets..."
-    
+
     # Generate OAuth2 client secrets (base64 encoded random strings)
     local oauth2_client_secret
     oauth2_client_secret=$(generate_base64_secret 24)
-    
+
     local oauth2_cookie_secret
     oauth2_cookie_secret=$(generate_base64_secret 32)
-    
+
     local prometheus_client_secret
     prometheus_client_secret=$(generate_base64_secret 24)
-    
+
     local prometheus_cookie_secret
     prometheus_cookie_secret=$(generate_base64_secret 32)
-    
+
     # Generate Grafana admin password
     local grafana_password
     grafana_password=$(generate_random_string 16)
-    
+
     # Generate Longhorn backup secret
     local longhorn_secret
     longhorn_secret=$(generate_random_string 32)
-    
+
     cat > "$ENV_FILE" <<EOF
 # Homelab Infrastructure Environment Configuration
 # Generated on $(date)
@@ -98,7 +98,7 @@ EOF
 
     # Secure the file
     chmod 600 "$ENV_FILE"
-    
+
     log "✅ Secrets generated successfully!"
     log "📄 Configuration saved to: $ENV_FILE"
     log "🔒 File permissions set to 600 (owner read/write only)"
@@ -112,7 +112,7 @@ EOF
 
 main() {
     log "Starting secure secret generation for homelab infrastructure..."
-    
+
     # Check if .env already exists
     if [[ -f "$ENV_FILE" ]]; then
         log "⚠️  .env file already exists: $ENV_FILE"
@@ -122,14 +122,14 @@ main() {
             exit 0
         fi
     fi
-    
+
     # Check for required tools
     if ! command -v openssl >/dev/null 2>&1; then
         error "openssl is required but not installed"
     fi
-    
+
     generate_oauth2_secrets
-    
+
     log "🎉 Secret generation completed successfully!"
     log "Next steps:"
     log "1. Review the generated .env file"

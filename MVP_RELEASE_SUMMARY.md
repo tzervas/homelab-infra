@@ -11,12 +11,14 @@ This is the **beta release** of the Homelab Infrastructure Orchestrator, providi
 ## 🏆 Key Achievements
 
 ### ✅ Unified Orchestration System
+
 - **755+ lines** of sophisticated CLI functionality in `homelab_orchestrator/`
 - Replaced all bash deployment scripts with unified Python-based automation
 - Single entry point: `python -m homelab_orchestrator`
 - Comprehensive command structure: deploy, manage, health, config, gpu, webhook, status
 
 ### ✅ Security-First Architecture
+
 - **Eliminated all hardcoded secrets** from configuration files
 - Implemented environment variable-based secret management
 - Created secure secret generation script: `scripts/security/generate-secrets.sh`
@@ -24,6 +26,7 @@ This is the **beta release** of the Homelab Infrastructure Orchestrator, providi
 - Comprehensive security validation in orchestrator
 
 ### ✅ Comprehensive Certificate Management
+
 - **Let's Encrypt integration** with automatic ACME certificate provisioning
 - **Self-signed certificate fallback** for development and testing
 - **Custom CA support** for internal PKI infrastructure  
@@ -32,18 +35,21 @@ This is the **beta release** of the Homelab Infrastructure Orchestrator, providi
 - **Multi-environment support** (development/staging/production issuers)
 
 ### ✅ Production-Ready CI/CD
+
 - Updated GitHub Actions to use unified orchestrator
 - Integrated dry-run deployments and health checks
 - Security scanning with gitleaks, bandit, and safety
 - Comprehensive configuration validation pipeline
 
 ### ✅ Configuration Management
+
 - Centralized configuration system with environment overrides
 - Schema validation for all configuration files
 - Template-based deployments with environment substitution
 - Support for development, staging, and production environments
 
 ### ✅ Testing & Validation
+
 - End-to-end MVP deployment test suite
 - Comprehensive health monitoring system
 - Dry-run deployment capabilities
@@ -81,26 +87,31 @@ This is the **beta release** of the Homelab Infrastructure Orchestrator, providi
 ## 🚀 Quick Start
 
 ### 1. Generate Secure Secrets
+
 ```bash
 ./scripts/security/generate-secrets.sh
 ```
 
 ### 2. Validate Configuration
+
 ```bash
 python -m homelab_orchestrator config validate
 ```
 
 ### 3. Deploy Certificate Management
+
 ```bash
 python -m homelab_orchestrator certificates deploy
 ```
 
 ### 4. Deploy Infrastructure (Dry-run)
+
 ```bash
 python -m homelab_orchestrator deploy infrastructure --components metallb cert_manager --dry-run
 ```
 
 ### 5. Deploy to Environment
+
 ```bash
 # Development (uses Let's Encrypt staging)
 python -m homelab_orchestrator --environment development deploy infrastructure
@@ -110,6 +121,7 @@ python -m homelab_orchestrator --environment production deploy infrastructure
 ```
 
 ### 6. Validate Certificates and System
+
 ```bash
 python -m homelab_orchestrator certificates validate
 python -m homelab_orchestrator certificates check-expiry
@@ -120,6 +132,7 @@ python -m homelab_orchestrator health check --comprehensive
 ## 🔒 Security Features
 
 ### Implemented Security Measures
+
 - ✅ No hardcoded secrets in version control
 - ✅ Environment variable-based configuration
 - ✅ Secure secret generation with OpenSSL
@@ -129,6 +142,7 @@ python -m homelab_orchestrator health check --comprehensive
 - ✅ OAuth2 proxy with environment-based secrets
 
 ### Security Best Practices
+
 - Secrets are generated with cryptographically secure random values
 - Base64 encoding for Kubernetes secrets
 - Regular security scanning with multiple tools
@@ -151,6 +165,7 @@ python -m homelab_orchestrator health check --comprehensive
 ## 🏗️ Architecture Highlights
 
 ### Before (Multiple Scripts)
+
 - Scattered bash deployment scripts
 - Hardcoded secrets in YAML files
 - Manual configuration management
@@ -158,6 +173,7 @@ python -m homelab_orchestrator health check --comprehensive
 - No unified interface
 
 ### After (Unified Orchestrator)
+
 - Single Python-based orchestrator
 - Environment-driven secret management
 - Centralized configuration system
@@ -167,9 +183,11 @@ python -m homelab_orchestrator health check --comprehensive
 ## 🔄 Clean Architecture
 
 ### Eliminated Duplicate Scripts
+
 The MVP consolidation removed redundant deployment scripts while preserving the comprehensive K3s testing framework at `testing/k3s-validation/` (755+ lines of sophisticated testing modules).
 
 ### Resolved Configuration Conflicts
+
 - Fixed schema validation errors (7 invalid files → 0 invalid files)
 - Standardized environment variable usage
 - Centralized service configuration
@@ -210,6 +228,7 @@ This MVP provides a solid foundation for homelab infrastructure management. The 
 ## 📞 Support
 
 For issues or questions:
+
 - GitHub Issues: [homelab-infra/issues](https://github.com/tzervas/homelab-infra/issues)
 - Documentation: Available in `docs/` directory
 - Testing: Run MVP test suite with `python scripts/testing/test_mvp_deployment.py`
@@ -219,6 +238,7 @@ For issues or questions:
 **🧪 Beta Release Ready! Your homelab infrastructure orchestrator is ready for testing and validation before production deployment.**
 
 **Next Steps:**
+
 1. Deploy to development environment
 2. Test certificate management with Let's Encrypt staging
 3. Validate all services and endpoints

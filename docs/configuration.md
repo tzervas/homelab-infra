@@ -90,7 +90,7 @@ certificates:
       solver:
         type: "http01"
         ingress_class: "nginx"
-    
+
     selfsigned:
       enabled: true
       type: "selfsigned"
@@ -116,12 +116,12 @@ networking:
     pod_cidr: "10.42.0.0/16"
     service_cidr: "10.43.0.0/16"
     dns_domain: "cluster.local"
-  
+
   ingress:
     class: "nginx"
     default_backend: "default-http-backend"
     ssl_redirect: true
-    
+
   load_balancer:
     type: "metallb"
     ip_pool: "192.168.1.100-192.168.1.110"
@@ -161,11 +161,11 @@ security:
     default: "restricted"
     monitoring: "baseline"
     kube-system: "privileged"
-  
+
   network_policies:
     enabled: true
     default_deny: true
-    
+
   image_security:
     enforce_signed_images: false
     allowed_registries:
@@ -192,7 +192,7 @@ certificates:
 security:
   pod_security_standards:
     default: "baseline"  # More permissive for development
-    
+
 monitoring:
   retention_days: 7
   storage_size: "10Gi"
@@ -216,7 +216,7 @@ security:
     default: "restricted"  # Strict security
   network_policies:
     enabled: true
-    
+
 monitoring:
   retention_days: 90
   storage_size: "100Gi"
@@ -301,7 +301,7 @@ certificates:
   issuers:
     letsencrypt_prod:
       email: "${TLS_CERT_EMAIL}"  # Replaced with .env value
-      
+
 # config/consolidated/domains.yaml
 domains:
   primary: "${HOMELAB_DOMAIN}"  # Replaced with .env value
@@ -321,7 +321,7 @@ resources:
     worker:
       cpu: "4"
       memory: "8Gi"
-      
+
   service_resources:
     monitoring:
       prometheus:
@@ -345,7 +345,7 @@ storage:
     - name: "longhorn"
       provisioner: "driver.longhorn.io"
       reclaim_policy: "Delete"
-      
+
   longhorn:
     replica_count: 3
     backup_target: "s3://my-bucket"
@@ -367,7 +367,7 @@ security:
           policyTypes:
             - Ingress
             - Egress
-            
+
       - name: "allow-monitoring"
         namespace: "monitoring"
         spec:
@@ -485,16 +485,19 @@ python -m homelab_orchestrator config validate
 When updating from older versions:
 
 1. **Backup existing configuration**:
+
    ```bash
    tar -czf config-backup-$(date +%Y%m%d).tar.gz config/
    ```
 
 2. **Update configuration schema**:
+
    ```bash
    python -m homelab_orchestrator config validate --fix-schema
    ```
 
 3. **Test configuration**:
+
    ```bash
    python -m homelab_orchestrator config validate
    python -m homelab_orchestrator deploy infrastructure --dry-run

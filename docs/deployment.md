@@ -128,6 +128,7 @@ kubectl get ipaddresspool -A
 ```
 
 **Configuration**: `config/consolidated/networking.yaml`
+
 ```yaml
 networking:
   load_balancer:
@@ -149,6 +150,7 @@ python -m homelab_orchestrator certificates validate
 ```
 
 **Features**:
+
 - Let's Encrypt production and staging issuers
 - Self-signed certificate fallback
 - Automatic certificate renewal
@@ -166,6 +168,7 @@ kubectl get svc -n ingress-nginx
 ```
 
 **Features**:
+
 - TLS termination
 - HTTP to HTTPS redirect
 - Security headers
@@ -184,7 +187,7 @@ kubectl get pods -n keycloak
 kubectl get ingress -n keycloak
 ```
 
-**Access**: https://auth.homelab.local
+**Access**: <https://auth.homelab.local>
 **Default Admin**: Admin credentials in `.env` file
 
 #### Monitoring Stack
@@ -199,8 +202,9 @@ kubectl port-forward -n monitoring svc/prometheus 9090:9090
 ```
 
 **Services**:
-- **Prometheus**: https://prometheus.homelab.local
-- **Grafana**: https://grafana.homelab.local
+
+- **Prometheus**: <https://prometheus.homelab.local>
+- **Grafana**: <https://grafana.homelab.local>
 - **AlertManager**: Integrated with Prometheus
 
 #### GitLab DevOps Platform  
@@ -214,7 +218,7 @@ kubectl get pods -n gitlab
 kubectl get pvc -n gitlab  # Check persistent storage
 ```
 
-**Access**: https://gitlab.homelab.local
+**Access**: <https://gitlab.homelab.local>
 **Features**: Git repositories, CI/CD, container registry
 
 #### AI/ML Tools
@@ -227,7 +231,7 @@ python -m homelab_orchestrator deploy infrastructure --components ai_tools
 kubectl get pods -n ai-ml
 ```
 
-**Access**: https://ollama.homelab.local
+**Access**: <https://ollama.homelab.local>
 **Features**: Local LLM deployment, web interface
 
 #### JupyterLab
@@ -240,7 +244,7 @@ python -m homelab_orchestrator deploy infrastructure --components jupyter
 kubectl get pods -n jupyter
 ```
 
-**Access**: https://jupyter.homelab.local
+**Access**: <https://jupyter.homelab.local>
 **Features**: Data science environment, notebook server
 
 ## Deployment Validation
@@ -318,6 +322,7 @@ kubectl delete pvc test-pvc
 ### Development Environment
 
 **Configuration**:
+
 - Uses Let's Encrypt staging certificates
 - Relaxed security policies
 - Smaller resource allocations
@@ -334,6 +339,7 @@ cat config/environments/development.yaml
 ### Staging Environment
 
 **Configuration**:
+
 - Production-like setup
 - Let's Encrypt staging certificates  
 - Full monitoring and alerting
@@ -350,6 +356,7 @@ python -m homelab_orchestrator --environment staging health check --comprehensiv
 ### Production Environment
 
 **Configuration**:
+
 - Let's Encrypt production certificates
 - Strict security policies
 - High availability setup

@@ -241,7 +241,7 @@ update_branches.sh
 # Analysis and consolidation scripts (temporary)
 run_analysis.sh
 scripts/analyze_branches.py
-scripts/backup_branches.sh  
+scripts/backup_branches.sh
 scripts/consolidate_branches.sh
 scripts/index_docs.py
 scripts/map_features.py

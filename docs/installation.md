@@ -76,6 +76,7 @@ pip install homelab-testing-framework==0.9.0b0
 ```
 
 This creates a `.env` file with secure random secrets for:
+
 - OAuth2 client secrets
 - Cookie encryption keys
 - Database passwords
@@ -125,6 +126,7 @@ kubectl cluster-info
 ### Option 2: Existing Kubernetes Cluster
 
 Ensure you have:
+
 - `kubectl` configured and working
 - Cluster admin permissions
 - Ingress controller support
@@ -153,6 +155,7 @@ python scripts/testing/test_mvp_deployment.py
 ```
 
 Expected output:
+
 ```
 🎯 MVP Test Results: 5/5 tests passed
 ✅ Security Configuration: PASSED

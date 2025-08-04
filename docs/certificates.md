@@ -45,14 +45,14 @@ python -m homelab_orchestrator certificates check-expiry
 ### Let's Encrypt (Production)
 
 - **Issuer Name**: `letsencrypt-prod`
-- **Server**: https://acme-v02.api.letsencrypt.org/directory
+- **Server**: <https://acme-v02.api.letsencrypt.org/directory>
 - **Rate Limits**: 50 certificates per registered domain per week
 - **Validation**: HTTP-01 challenge via NGINX ingress
 
 ### Let's Encrypt (Staging)
 
 - **Issuer Name**: `letsencrypt-staging`
-- **Server**: https://acme-staging-v02.api.letsencrypt.org/directory
+- **Server**: <https://acme-staging-v02.api.letsencrypt.org/directory>
 - **Rate Limits**: Much higher limits for testing
 - **Use Case**: Development and testing environments
 
@@ -401,7 +401,7 @@ For certificate-related issues:
 1. Check cert-manager logs: `kubectl logs -n cert-manager deployment/cert-manager`
 2. Validate configuration: `python -m homelab_orchestrator config validate`
 3. Test certificate endpoints: `python -m homelab_orchestrator certificates validate`
-4. Review Let's Encrypt documentation: https://letsencrypt.org/docs/
+4. Review Let's Encrypt documentation: <https://letsencrypt.org/docs/>
 
 ---
 

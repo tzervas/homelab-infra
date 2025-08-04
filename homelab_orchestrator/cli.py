@@ -500,19 +500,21 @@ def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -
         console=console,
     ) as progress:
         task = progress.add_task("Deploying cert-manager...", total=None)
-        
+
         # Deploy cert-manager
         result = orchestrator.certificate_manager.deploy_cert_manager()
-        
+
         if result["status"] == "success":
-            progress.update(task, description="[green]✅ cert-manager deployed successfully[/green]")
+            progress.update(
+                task, description="[green]✅ cert-manager deployed successfully[/green]"
+            )
             if "issuers" in result:
-                issuers = ', '.join(result['issuers'])
+                issuers = ", ".join(result["issuers"])
                 progress.update(task, description=f"[blue]📋 Deploying issuers: {issuers}[/blue]")
                 # Give a moment to show the success message
                 time.sleep(1)
         else:
-            error = result.get('error', 'Unknown error')
+            error = result.get("error", "Unknown error")
             progress.update(task, description=f"[red]❌ Deployment failed: {error}[/red]")
 
 
@@ -521,7 +523,9 @@ def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -
 @click.pass_context
 @with_orchestrator
 def certificates_validate(
-    ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    output_format: str,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Validate TLS certificates and endpoints."""
     result = orchestrator.certificate_manager.validate_certificates()
@@ -566,7 +570,9 @@ def certificates_validate(
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
 @with_orchestrator
-def certificates_check_expiry(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
+def certificates_check_expiry(
+    ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator
+) -> None:
     """Check certificate expiry dates."""
     with Progress(
         SpinnerColumn(),
@@ -576,24 +582,28 @@ def certificates_check_expiry(ctx: click.Context, output_format: str, orchestrat
         console=console,
     ) as progress:
         task = progress.add_task("Checking certificate expiry dates...", total=None)
-        
+
         result = orchestrator.certificate_manager.check_certificate_expiry()
-        
+
         if result["status"] != "success":
-            error = result.get('error', 'Unknown error')
-            progress.update(task, description=f"[red]❌ Failed to check certificate expiry: {error}[/red]")
+            error = result.get("error", "Unknown error")
+            progress.update(
+                task, description=f"[red]❌ Failed to check certificate expiry: {error}[/red]"
+            )
             time.sleep(1)  # Give a moment to show the error
             return
-            
+
         total_certs = len(result.get("certificates", []))
-        needs_renewal = sum(1 for cert in result.get("certificates", []) if cert.get("needs_renewal"))
-        
+        needs_renewal = sum(
+            1 for cert in result.get("certificates", []) if cert.get("needs_renewal")
+        )
+
         status_desc = f"[green]✅ Checked {total_certs} certificates[/green]"
         if needs_renewal > 0:
             status_desc += f" ([yellow]⚠️ {needs_renewal} need renewal[/yellow])"
         progress.update(task, description=status_desc)
         time.sleep(1)  # Give a moment to show the success message
-        
+
         if output_format == "json":
             console.print(json.dumps(result, indent=2, default=str))
             return
@@ -638,7 +648,9 @@ def certificates_check_expiry(ctx: click.Context, output_format: str, orchestrat
 @click.option("--namespace", default="default", help="Certificate namespace")
 @click.pass_context
 @with_orchestrator
-def certificates_renew(ctx: click.Context, cert_name: str, namespace: str, orchestrator: HomelabOrchestrator) -> None:
+def certificates_renew(
+    ctx: click.Context, cert_name: str, namespace: str, orchestrator: HomelabOrchestrator
+) -> None:
     """Force renewal of a specific certificate."""
     with Progress(
         SpinnerColumn(),
@@ -648,25 +660,27 @@ def certificates_renew(ctx: click.Context, cert_name: str, namespace: str, orche
         console=console,
     ) as progress:
         task = progress.add_task(f"Initiating renewal of certificate '{cert_name}'...", total=None)
-        
+
         result = orchestrator.certificate_manager.renew_certificate(cert_name, namespace)
-        
+
         if result["status"] == "success":
             progress.update(
                 task,
-                description=f"[green]✅ Certificate '{cert_name}' renewal triggered successfully[/green]"
+                description=f"[green]✅ Certificate '{cert_name}' renewal triggered successfully[/green]",
             )
             time.sleep(1)  # Show success message briefly
-            
+
             # Show monitoring info
-            monitoring_msg = f"[blue]ℹ️ Monitor renewal status:[/blue]\n" \
-                           f"[dim]kubectl describe certificate {cert_name} -n {namespace}[/dim]"
+            monitoring_msg = (
+                f"[blue]ℹ️ Monitor renewal status:[/blue]\n"
+                f"[dim]kubectl describe certificate {cert_name} -n {namespace}[/dim]"
+            )
             console.print(Panel(monitoring_msg, title="Next Steps", expand=False))
         else:
-            error = result.get('error', 'Unknown error')
+            error = result.get("error", "Unknown error")
             progress.update(
                 task,
-                description=f"[red]❌ Certificate renewal failed: {error}[/red]"
+                description=f"[red]❌ Certificate renewal failed: {error}[/red]",
             )
             time.sleep(1)  # Show error message briefly
 

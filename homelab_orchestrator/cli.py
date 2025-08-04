@@ -10,19 +10,19 @@ import asyncio
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 import click
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
-
-from .core.decorators import with_orchestrator
 
 from .__version__ import __version__
 from .core.config_manager import ConfigContext, ConfigManager
+from .core.decorators import with_orchestrator
 from .core.orchestrator import HomelabOrchestrator
 
 
@@ -109,9 +109,8 @@ def deploy_infrastructure(
     dry_run: bool,
     skip_hooks: bool,
     orchestrator: HomelabOrchestrator,
-    ) -> None:
+) -> None:
     """Deploy complete homelab infrastructure."""
-
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -493,28 +492,39 @@ def certificates(ctx: click.Context) -> None:
 @with_orchestrator
 def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -> None:
     """Deploy cert-manager and certificate issuers."""
-    # Deploy cert-manager
-    result = asyncio.run(orchestrator.certificate_manager.deploy_cert_manager())
-
-    if result["status"] == "success":
-        console.print("[green]✅ cert-manager deployed successfully[/green]")
-        if "issuers" in result:
-            console.print(
-                f"[blue]📋 Deployed issuers: {', '.join(result['issuers'])}[/blue]",
-            )
-    else:
-        console.print(
-            f"[red]❌ cert-manager deployment failed: {result.get('error', 'Unknown error')}[/red]",
-        )
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Deploying cert-manager...", total=None)
+        
+        # Deploy cert-manager
+        result = orchestrator.certificate_manager.deploy_cert_manager()
+        
+        if result["status"] == "success":
+            progress.update(task, description="[green]✅ cert-manager deployed successfully[/green]")
+            if "issuers" in result:
+                issuers = ', '.join(result['issuers'])
+                progress.update(task, description=f"[blue]📋 Deploying issuers: {issuers}[/blue]")
+                # Give a moment to show the success message
+                time.sleep(1)
+        else:
+            error = result.get('error', 'Unknown error')
+            progress.update(task, description=f"[red]❌ Deployment failed: {error}[/red]")
 
 
 @certificates.command("validate")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
 @with_orchestrator
-def certificates_validate(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
+def certificates_validate(
+    ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator
+) -> None:
     """Validate TLS certificates and endpoints."""
-    result = asyncio.run(orchestrator.certificate_manager.validate_certificates())
+    result = orchestrator.certificate_manager.validate_certificates()
 
     if output_format == "json":
         console.print(json.dumps(result, indent=2, default=str))
@@ -555,104 +565,110 @@ def certificates_validate(ctx: click.Context, output_format: str, orchestrator: 
 @certificates.command("check-expiry")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-def certificates_check_expiry(ctx: click.Context, output_format: str) -> None:
+@with_orchestrator
+def certificates_check_expiry(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Check certificate expiry dates."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Checking certificate expiry dates...", total=None)
+        
+        result = orchestrator.certificate_manager.check_certificate_expiry()
+        
+        if result["status"] != "success":
+            error = result.get('error', 'Unknown error')
+            progress.update(task, description=f"[red]❌ Failed to check certificate expiry: {error}[/red]")
+            time.sleep(1)  # Give a moment to show the error
+            return
+            
+        total_certs = len(result.get("certificates", []))
+        needs_renewal = sum(1 for cert in result.get("certificates", []) if cert.get("needs_renewal"))
+        
+        status_desc = f"[green]✅ Checked {total_certs} certificates[/green]"
+        if needs_renewal > 0:
+            status_desc += f" ([yellow]⚠️ {needs_renewal} need renewal[/yellow])"
+        progress.update(task, description=status_desc)
+        time.sleep(1)  # Give a moment to show the success message
+        
+        if output_format == "json":
+            console.print(json.dumps(result, indent=2, default=str))
+            return
 
-    async def _check_expiry() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+    # Display certificate expiry information
+    table = Table(title="Certificate Expiry Information")
+    table.add_column("Certificate", style="cyan")
+    table.add_column("Namespace")
+    table.add_column("Days Until Expiry", style="bold")
+    table.add_column("Status")
+    table.add_column("Needs Renewal")
+
+    for cert in result.get("certificates", []):
+        days_color = (
+            "red"
+            if cert["days_until_expiry"] < 7
+            else "yellow"
+            if cert["days_until_expiry"] < 30
+            else "green"
+        )
+        renewal_status = "⚠️ YES" if cert["needs_renewal"] else "✅ NO"
+
+        table.add_row(
+            cert["name"],
+            cert["namespace"],
+            f"[{days_color}]{cert['days_until_expiry']}[/{days_color}]",
+            cert["status"],
+            renewal_status,
         )
 
-        try:
-            await orchestrator.start()
+    console.print(table)
 
-            result = await orchestrator.certificate_manager.check_certificate_expiry()
-
-            if output_format == "json":
-                console.print(json.dumps(result, indent=2, default=str))
-                return
-
-            if result["status"] != "success":
-                console.print(
-                    f"[red]❌ Failed to check certificate expiry: {result.get('error')}[/red]",
-                )
-                return
-
-            # Display certificate expiry information
-            table = Table(title="Certificate Expiry Information")
-            table.add_column("Certificate", style="cyan")
-            table.add_column("Namespace")
-            table.add_column("Days Until Expiry", style="bold")
-            table.add_column("Status")
-            table.add_column("Needs Renewal")
-
-            for cert in result.get("certificates", []):
-                days_color = (
-                    "red"
-                    if cert["days_until_expiry"] < 7
-                    else "yellow"
-                    if cert["days_until_expiry"] < 30
-                    else "green"
-                )
-                renewal_status = "⚠️ YES" if cert["needs_renewal"] else "✅ NO"
-
-                table.add_row(
-                    cert["name"],
-                    cert["namespace"],
-                    f"[{days_color}]{cert['days_until_expiry']}[/{days_color}]",
-                    cert["status"],
-                    renewal_status,
-                )
-
-            console.print(table)
-
-            # Summary
-            summary = result.get("summary", {})
-            console.print(
-                f"\n📊 Summary: {summary.get('needs_renewal', 0)}/{summary.get('total', 0)} certificates need renewal",
-            )
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_check_expiry())
+    # Summary
+    summary = result.get("summary", {})
+    console.print(
+        f"\n📊 Summary: {summary.get('needs_renewal', 0)}/{summary.get('total', 0)} certificates need renewal",
+    )
 
 
 @certificates.command("renew")
 @click.argument("cert_name")
 @click.option("--namespace", default="default", help="Certificate namespace")
 @click.pass_context
-def certificates_renew(ctx: click.Context, cert_name: str, namespace: str) -> None:
+@with_orchestrator
+def certificates_renew(ctx: click.Context, cert_name: str, namespace: str, orchestrator: HomelabOrchestrator) -> None:
     """Force renewal of a specific certificate."""
-
-    async def _renew_cert() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-
-            result = await orchestrator.certificate_manager.renew_certificate(cert_name, namespace)
-
-            if result["status"] == "success":
-                console.print(f"[green]✅ {result['message']}[/green]")
-                console.print(
-                    f"[blue]Monitor renewal with: kubectl describe certificate {cert_name} -n {namespace}[/blue]",
-                )
-            else:
-                console.print(f"[red]❌ Certificate renewal failed: {result.get('error')}[/red]")
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_renew_cert())
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task(f"Initiating renewal of certificate '{cert_name}'...", total=None)
+        
+        result = orchestrator.certificate_manager.renew_certificate(cert_name, namespace)
+        
+        if result["status"] == "success":
+            progress.update(
+                task,
+                description=f"[green]✅ Certificate '{cert_name}' renewal triggered successfully[/green]"
+            )
+            time.sleep(1)  # Show success message briefly
+            
+            # Show monitoring info
+            monitoring_msg = f"[blue]ℹ️ Monitor renewal status:[/blue]\n" \
+                           f"[dim]kubectl describe certificate {cert_name} -n {namespace}[/dim]"
+            console.print(Panel(monitoring_msg, title="Next Steps", expand=False))
+        else:
+            error = result.get('error', 'Unknown error')
+            progress.update(
+                task,
+                description=f"[red]❌ Certificate renewal failed: {error}[/red]"
+            )
+            time.sleep(1)  # Show error message briefly
 
 
 @cli.command("status")

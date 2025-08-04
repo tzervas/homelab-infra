@@ -1,0 +1,43 @@
+metadata:
+  project: homelab-infra
+  maintainer: yourname@example.com
+
+mvp:
+  description: "Minimal infrastructure setup for homelab using K3s"
+  features:
+    - K3s single node setup
+    - MetalLB basic configuration
+    - Basic ingress and egress traffic handling
+    - Essential monitoring and alerting with Prometheus and Grafana
+    - Configuration management via Ansible
+  success_criteria:
+    - Successful deployment of all specified features
+    - Network communication between all nodes
+    - Monitoring dashboard available
+
+poc:
+  description: "Proof of concept involving multi-node and advanced configuration"
+  features:
+    - K3s multi-node cluster
+    - Advanced MetalLB configurations
+    - Nginx ingress controller
+    - Integrated GitOps workflow with Flux
+    - Enhanced monitoring setup
+    - Basic CI/CD pipeline
+  success_criteria:
+    - CI/CD pipeline triggering deployments
+    - GitOps sync working correctly
+    - Multi-node cluster operational
+
+production:
+  description: "Full-scale production setup with redundancy and automation"
+  features:
+    - Full HA K3s setup
+    - Advanced network policies
+    - Comprehensive monitoring and alerting
+    - Full automation with ArgoCD and Helm
+    - Secure secret management with HashiCorp Vault
+  success_criteria:
+    - Seamless failover support
+    - Zero downtime deployment
+    - Compliance with security best practices

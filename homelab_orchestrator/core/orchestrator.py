@@ -36,6 +36,11 @@ class HomelabOrchestrator:
             config_manager=self.config_manager,
         )
 
+        # Certificate management
+        self.certificate_manager = CertificateManager(
+            config_manager=self.config_manager,
+        )
+
         # GPU management (if enabled)
         if deployment_config.get("gpu", {}).get("enabled", False):
             self.gpu_manager = GPUResourceManager(

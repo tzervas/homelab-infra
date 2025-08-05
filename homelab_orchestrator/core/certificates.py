@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timedelta
 from functools import wraps
 from shlex import quote, split
-from typing import TYPE_CHECKING, Any, TypeVar, Callable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import aiohttp
 from dateutil import parser as dateutil_parser
@@ -19,28 +19,34 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 
-T = TypeVar('T')
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+
+T = TypeVar("T")
 
 
 def handle_cert_errors(f: Callable[..., T]) -> Callable[..., T]:
     """Decorator for handling certificate operation errors."""
+
     @wraps(f)
     async def wrapper(*args: Any, **kwargs: Any) -> T:
         try:
             return await f(*args, **kwargs)
         except ApiException as e:
-            logging.error(f"Kubernetes API error: {e}")
+            logging.exception(f"Kubernetes API error: {e}")
             return {"status": "failed", "error": f"API error: {e.reason}"}
         except Exception as e:
             logging.exception(f"Certificate operation failed: {e}")
             return {"status": "failed", "error": str(e)}
+
     return wrapper
 
 
 # Default configuration for certificate issuers
 ISSUER_DEFAULTS = {
     "readiness_timeout": 300,
-    "polling_interval": 10
+    "polling_interval": 10,
 }
 
 
@@ -97,10 +103,15 @@ class CertificateManager:
     async def deploy_cert_manager(self) -> dict[str, Any]:
         """Deploy cert-manager with issuers."""
         self.logger.info("Deploying cert-manager")
-        
+
         from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), TimeElapsedColumn(), transient=True) as progress:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True,
+        ) as progress:
             task = progress.add_task("Deploying cert-manager...", total=None)
 
             try:
@@ -109,25 +120,35 @@ class CertificateManager:
                     "https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.crds.yaml",
                     "https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml",
                 ]
-                
+
                 # Create namespace first
                 progress.update(task, description="Creating cert-manager namespace...")
+                # Use fixed command array instead of split
                 result = await asyncio.create_subprocess_exec(
-                    *split("kubectl create namespace cert-manager --dry-run=client -o yaml"),
+                    "kubectl",
+                    "create",
+                    "namespace",
+                    "cert-manager",
+                    "--dry-run=client",
+                    "-o",
+                    "yaml",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
                 stdout, stderr = await result.communicate()
-                
+
                 if result.returncode == 0:
                     result = await asyncio.create_subprocess_exec(
-                        "kubectl", "apply", "-f", "-",
+                        "kubectl",
+                        "apply",
+                        "-f",
+                        "-",
                         stdin=asyncio.subprocess.PIPE,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
                     )
                     stdout, stderr = await result.communicate(input=stdout)
-                
+
                 if result.returncode != 0:
                     progress.update(task, description="[red]Failed to create namespace[/red]")
                     return {
@@ -135,12 +156,15 @@ class CertificateManager:
                         "error": "Failed to create namespace",
                         "stderr": stderr.decode(),
                     }
-                
+
                 # Apply cert-manager manifests
                 for url in cert_manager_urls:
                     progress.update(task, description=f"Applying manifest from {url}...")
                     result = await asyncio.create_subprocess_exec(
-                        "kubectl", "apply", "-f", url,
+                        "kubectl",
+                        "apply",
+                        "-f",
+                        url,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
                     )
@@ -173,7 +197,7 @@ class CertificateManager:
                 }
 
             except Exception as e:
-                progress.update(task, description=f"[red]Error: {str(e)}")
+                progress.update(task, description=f"[red]Error: {e!s}")
                 self.logger.exception(f"cert-manager deployment failed: {e}")
                 return {
                     "status": "failed",
@@ -232,7 +256,10 @@ class CertificateManager:
         try:
             # Apply issuer configuration
             result = await asyncio.create_subprocess_exec(
-                "kubectl", "apply", "-f", "kubernetes/base/cert-manager-issuers.yaml",
+                "kubectl",
+                "apply",
+                "-f",
+                "kubernetes/base/cert-manager-issuers.yaml",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -251,7 +278,7 @@ class CertificateManager:
                 if not await self._wait_for_issuer_ready(issuer):
                     return {
                         "status": "failed",
-                        "error": f"Issuer {issuer} failed to become ready"
+                        "error": f"Issuer {issuer} failed to become ready",
                     }
 
             return {
@@ -296,7 +323,12 @@ class CertificateManager:
 
         endpoints = health_checks.get("endpoints", [])
 
-        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), TimeElapsedColumn(), transient=True) as progress:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TimeElapsedColumn(),
+            transient=True,
+        ) as progress:
             task = progress.add_task("Validating endpoints...", total=len(endpoints))
 
             results = []
@@ -306,7 +338,9 @@ class CertificateManager:
                 results.append(result)
 
             endpoint_results = dict(zip(endpoints, results, strict=False))
-            successful = sum(1 for result in endpoint_results.values() if result["status"] == "success")
+            successful = sum(
+                1 for result in endpoint_results.values() if result["status"] == "success"
+            )
             total = len(endpoint_results)
 
             return {
@@ -348,7 +382,12 @@ class CertificateManager:
         try:
             # Get all certificates
             result = await asyncio.create_subprocess_exec(
-                "kubectl", "get", "certificates", "-A", "-o", "json",
+                "kubectl",
+                "get",
+                "certificates",
+                "-A",
+                "-o",
+                "json",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -391,7 +430,7 @@ class CertificateManager:
                             "expiry_date": not_after,
                             "days_until_expiry": days_until_expiry,
                             "needs_renewal": expiry_date < threshold_date,
-                            "status": self._get_certificate_status(cert)
+                            "status": self._get_certificate_status(cert),
                         }
                         expiry_info.append(cert_info)
 
@@ -426,22 +465,30 @@ class CertificateManager:
         try:
             # Force certificate renewal by deleting the secret
             annotate_cmd = [
-                "kubectl", "annotate", "certificate",
-                cert_name, "-n", namespace,
-                "cert-manager.io/issue-temporary-certificate=true", "--overwrite"
+                "kubectl",
+                "annotate",
+                "certificate",
+                cert_name,
+                "-n",
+                namespace,
+                "cert-manager.io/issue-temporary-certificate=true",
+                "--overwrite",
             ]
-            
+
             delete_secret_cmd = [
-                "kubectl", "delete", "secret",
+                "kubectl",
+                "delete",
+                "secret",
                 f"$(kubectl get certificate {quote(cert_name)} -n {quote(namespace)} -o jsonpath='{{.spec.secretName}}')",
-                "-n", namespace
+                "-n",
+                namespace,
             ]
-            
+
             for cmd in [annotate_cmd, split(delete_secret_cmd)]:
                 result = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
                 )
                 stdout, stderr = await result.communicate()
 
@@ -466,15 +513,12 @@ class CertificateManager:
     def _get_certificate_status(self, cert: dict[str, Any]) -> str:
         conditions = cert.get("status", {}).get("conditions", [])
         # Check all conditions for Ready status
-        ready_conditions = [
-            cond for cond in conditions 
-            if cond.get("type") == "Ready"
-        ]
+        ready_conditions = [cond for cond in conditions if cond.get("type") == "Ready"]
         # Get most recent Ready condition
         if ready_conditions:
             latest_ready = max(
                 ready_conditions,
-                key=lambda x: dateutil_parser.isoparse(x.get("lastTransitionTime", ""))
+                key=lambda x: dateutil_parser.isoparse(x.get("lastTransitionTime", "")),
             )
             return "ready" if latest_ready.get("status") == "True" else "not_ready"
         return "unknown"
@@ -500,9 +544,13 @@ class CertificateManager:
         """
         config.load_kube_config()
         custom_api = client.CustomObjectsApi()
-        timeout = self.cert_config.get("issuer_readiness_timeout", ISSUER_DEFAULTS["readiness_timeout"])
-        interval = self.cert_config.get("issuer_polling_interval", ISSUER_DEFAULTS["polling_interval"])
-        
+        timeout = self.cert_config.get(
+            "issuer_readiness_timeout", ISSUER_DEFAULTS["readiness_timeout"]
+        )
+        interval = self.cert_config.get(
+            "issuer_polling_interval", ISSUER_DEFAULTS["polling_interval"]
+        )
+
         start_time = asyncio.get_event_loop().time()
         while (asyncio.get_event_loop().time() - start_time) < timeout:
             try:
@@ -511,10 +559,12 @@ class CertificateManager:
                     version="v1",
                     namespace=namespace,
                     plural="issuers",
-                    name=issuer_name
+                    name=issuer_name,
                 )
-                if any(cond.get("type") == "Ready" and cond.get("status") == "True" 
-                       for cond in issuer.get("status", {}).get("conditions", [])):
+                if any(
+                    cond.get("type") == "Ready" and cond.get("status") == "True"
+                    for cond in issuer.get("status", {}).get("conditions", [])
+                ):
                     return True
             except ApiException as e:
                 self.logger.warning(f"Error checking issuer status: {e}")

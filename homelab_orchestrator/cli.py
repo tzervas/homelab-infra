@@ -10,9 +10,8 @@ import asyncio
 import json
 import logging
 import sys
-import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 from rich.console import Console
@@ -23,8 +22,11 @@ from rich.table import Table
 from .__version__ import __version__
 from .core.config_manager import ConfigContext, ConfigManager
 from .core.decorators import with_orchestrator
-from .core.orchestrator import HomelabOrchestrator
 from .core.ui import console, progress_bar
+
+
+if TYPE_CHECKING:
+    from .core.orchestrator import HomelabOrchestrator
 
 
 console = Console()
@@ -156,21 +158,23 @@ def deploy_service(
         task = progress.add_task(f"Deploying service: {service_name}...", total=None)
 
         if dry_run:
-            progress.update(task, description="[blue]Dry run mode - validating only[/blue]")
-            time.sleep(1)
+            progress.update(task, description="[blue]🔍 Dry run mode - validating only[/blue]")
 
-        result = asyncio.run(orchestrator.service_manager.deploy_service(
-            service_name,
-            namespace=namespace,
-            dry_run=dry_run,
-        ))
+        result = asyncio.run(
+            orchestrator.service_manager.deploy_service(
+                service_name,
+                namespace=namespace,
+                dry_run=dry_run,
+            )
+        )
 
         if result["status"] == "success":
-            progress.update(task, description=f"[green]✅ Service {service_name} deployed successfully[/green]")
+            progress.update(
+                task, description=f"[green]✅ Service {service_name} deployed successfully[/green]"
+            )
         else:
             error = result.get("error", "Unknown error")
             progress.update(task, description=f"[red]❌ Service deployment failed: {error}[/red]")
-        time.sleep(1)
 
 
 @cli.group()
@@ -183,7 +187,9 @@ def manage(ctx: click.Context) -> None:
 @click.option("--components", multiple=True, help="Specific components to backup")
 @click.pass_context
 @with_orchestrator
-def manage_backup(ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator) -> None:
+def manage_backup(
+    ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator
+) -> None:
     """Backup infrastructure components."""
     with Progress(
         SpinnerColumn(),
@@ -195,7 +201,7 @@ def manage_backup(ctx: click.Context, components: list[str], orchestrator: Homel
         task = progress.add_task("Backing up infrastructure components...", total=None)
 
         result = asyncio.run(
-            orchestrator.deployment_manager.backup_infrastructure(components)
+            orchestrator.deployment_manager.backup_infrastructure(components),
         )
 
         progress.update(task, description="Backup completed", completed=100)
@@ -207,7 +213,9 @@ def manage_backup(ctx: click.Context, components: list[str], orchestrator: Homel
 @click.option("--no-backup", is_flag=True, help="Skip backup before teardown")
 @click.pass_context
 @with_orchestrator
-def manage_teardown(ctx: click.Context, force: bool, no_backup: bool, orchestrator: HomelabOrchestrator) -> None:
+def manage_teardown(
+    ctx: click.Context, force: bool, no_backup: bool, orchestrator: HomelabOrchestrator
+) -> None:
     """Teardown complete infrastructure."""
     with Progress(
         SpinnerColumn(),
@@ -223,7 +231,7 @@ def manage_teardown(ctx: click.Context, force: bool, no_backup: bool, orchestrat
                 environment=orchestrator.config_manager.context.environment,
                 force=force,
                 backup=not no_backup,
-            )
+            ),
         )
 
         progress.update(task, description="Teardown completed", completed=100)
@@ -234,7 +242,9 @@ def manage_teardown(ctx: click.Context, force: bool, no_backup: bool, orchestrat
 @click.option("--components", multiple=True, help="Specific components to recover")
 @click.pass_context
 @with_orchestrator
-def manage_recover(ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator) -> None:
+def manage_recover(
+    ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator
+) -> None:
     """Recover infrastructure components from backup."""
     with Progress(
         SpinnerColumn(),
@@ -246,7 +256,7 @@ def manage_recover(ctx: click.Context, components: list[str], orchestrator: Home
         task = progress.add_task("Recovering infrastructure components...", total=None)
 
         result = asyncio.run(
-            orchestrator.deployment_manager.recover_infrastructure(components)
+            orchestrator.deployment_manager.recover_infrastructure(components),
         )
 
         progress.update(task, description="Recovery completed", completed=100)
@@ -283,7 +293,7 @@ def health_check(
         task = progress.add_task("Running health checks...", total=None)
 
         result = asyncio.run(
-            orchestrator.validate_system_health()
+            orchestrator.validate_system_health(),
         )
 
         progress.update(task, description="Health check completed", completed=100)
@@ -410,7 +420,7 @@ def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOr
         task = progress.add_task("Discovering GPU resources...", total=None)
 
         result = asyncio.run(
-            orchestrator.manage_gpu_resources("discover")
+            orchestrator.manage_gpu_resources("discover"),
         )
 
         progress.update(task, description="GPU discovery completed", completed=100)
@@ -433,7 +443,7 @@ def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrch
         task = progress.add_task("Fetching GPU status...", total=None)
 
         result = asyncio.run(
-            orchestrator.manage_gpu_resources("monitor")
+            orchestrator.manage_gpu_resources("monitor"),
         )
 
         progress.update(task, description="GPU status check completed", completed=100)
@@ -477,7 +487,8 @@ def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -
 
         if result["status"] == "success":
             progress.update(
-                task, description="[green]✅ cert-manager deployed successfully[/green]"
+                task,
+                description="[green]✅ cert-manager deployed successfully[/green]",
             )
             if "issuers" in result:
                 issuers = ", ".join(result["issuers"])
@@ -541,7 +552,9 @@ def certificates_validate(
 @click.pass_context
 @with_orchestrator
 def certificates_check_expiry(
-    ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    output_format: str,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check certificate expiry dates."""
     with Progress(
@@ -558,7 +571,8 @@ def certificates_check_expiry(
         if result["status"] != "success":
             error = result.get("error", "Unknown error")
             progress.update(
-                task, description=f"[red]❌ Failed to check certificate expiry: {error}[/red]"
+                task,
+                description=f"[red]❌ Failed to check certificate expiry: {error}[/red]",
             )
             return
 
@@ -617,7 +631,10 @@ def certificates_check_expiry(
 @click.pass_context
 @with_orchestrator
 def certificates_renew(
-    ctx: click.Context, cert_name: str, namespace: str, orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    cert_name: str,
+    namespace: str,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Force renewal of a specific certificate."""
     with Progress(

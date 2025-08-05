@@ -1,36 +1,38 @@
-# Homelab Infrastructure
+# Homelab Infrastructure Orchestrator
 
-🎉 **Production-Ready Homelab Infrastructure** - Successfully deployed and validated!
+🧪 **Beta Release v0.9.0-beta** - Unified orchestration platform ready for testing!
 
-Modern Infrastructure as Code (IaC) for managing homelab k3s environment with comprehensive automation, security, and monitoring.
+Modern homelab infrastructure orchestrator with security-first deployment, comprehensive certificate management, and unified CLI interface.
 
-## 🏆 Current Status: In active development
+## 🧪 Current Status: BETA TESTING
 
-✅ **Clean Deployment Validated**: Complete teardown and rebuild successful  
-✅ **Network Connectivity**: Perfect routing between workstation and cluster  
-✅ **HTTPS Infrastructure**: Automated certificate management with self-signed CA  
-✅ **LoadBalancer**: MetalLB working correctly (192.168.16.100)  
-✅ **Service Mesh Ready**: Foundation prepared for additional services  
+✅ **Unified Orchestrator**: Single Python-based CLI replacing all bash scripts  
+✅ **Certificate Management**: Let's Encrypt + self-signed fallback automation  
+✅ **Security-First**: No hardcoded secrets, environment-based configuration  
+✅ **Multi-Environment**: Development, staging, and production support  
+✅ **Testing Ready**: Comprehensive test suite validates all functionality  
 
 ## Overview
 
-This repository contains a **proven, production-ready** infrastructure configuration for a homelab environment, featuring:
+This repository contains a **comprehensive homelab orchestration platform** that unifies infrastructure management with a single, powerful CLI interface:
 
-### ✅ Deployed Core Technologies
+### 🚀 Core Features
 
-- **K3s Kubernetes** - Single-node cluster (v1.28.5+k3s1) running on 192.168.16.26
-- **MetalLB LoadBalancer** - External IP pool 192.168.16.100-192.168.16.110
-- **nginx-ingress** - HTTP/HTTPS ingress controller with SSL termination
-- **cert-manager** - Automated certificate management with homelab CA
-- **Sealed Secrets** - Encrypted secret management
+- **Unified CLI**: Single `python -m homelab_orchestrator` command for all operations
+- **Certificate Management**: Automated Let's Encrypt + self-signed certificate provisioning
+- **Security-First**: Environment-based secrets, no hardcoded credentials  
+- **Multi-Environment**: Development (staging certs), production (Let's Encrypt)
+- **Health Monitoring**: Comprehensive system and certificate health validation
+- **Configuration Management**: Centralized YAML-based configuration with overrides
 
-### 🔐 Security Infrastructure
+### 🔧 Infrastructure Components
 
-- **Self-signed CA** - Homelab Certificate Authority with automatic renewal
-- **HTTPS Everywhere** - All services secured with TLS certificates
-- **Network Policies** - Microsegmentation and traffic control
-- **RBAC** - Role-based access control
-- **Pod Security Standards** - Enforced security contexts
+- **K3s Kubernetes**: Container orchestration platform
+- **cert-manager**: Automated TLS certificate lifecycle management
+- **MetalLB**: Load balancer for bare metal deployments
+- **NGINX Ingress**: HTTP/HTTPS routing with TLS termination
+- **Monitoring Stack**: Prometheus, Grafana, AlertManager
+- **Authentication**: Keycloak with OAuth2 proxy integration
 
 ## Quick Start
 

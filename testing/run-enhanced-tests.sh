@@ -661,10 +661,12 @@ EOF
             success_rate=$(python3 -c "import json; data=json.load(open('$OUTPUT_DIR/performance/benchmark_results.json')); print(f\"{data.get('summary_stats', {}).get('success_rate', 0):.1f}\")" 2>/dev/null || echo "0.0")
             avg_response_time=$(python3 -c "import json; data=json.load(open('$OUTPUT_DIR/performance/benchmark_results.json')); print(f\"{data.get('summary_stats', {}).get('avg_response_time_ms', 0):.2f}\")" 2>/dev/null || echo "0.00")
 
-            echo "- **Status:** ✅ PASS" >> "$report_file"
-            echo "- **Total Tests:** $total_tests" >> "$report_file"
-            echo "- **Success Rate:** $success_rate%" >> "$report_file"
-            echo "- **Avg Response Time:** ${avg_response_time}ms" >> "$report_file"
+            {
+                echo "- **Status:** ✅ PASS"
+                echo "- **Total Tests:** $total_tests"
+                echo "- **Success Rate:** $success_rate%"
+                echo "- **Avg Response Time:** ${avg_response_time}ms"
+            } >> "$report_file"
             passed_categories=$((passed_categories + 1))
         else
             echo "- **Status:** ⚠️ SKIPPED" >> "$report_file"

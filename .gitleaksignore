@@ -19,7 +19,7 @@ ATTRIBUTIONS.md
 **/*_test.*
 **/*_test_*
 
-# Ignore backup and historical files 
+# Ignore backup and historical files
 untracked_backup/**
 **/backups/**
 

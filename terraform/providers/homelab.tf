@@ -14,8 +14,8 @@ terraform {
 resource "local_file" "homelab_inventory" {
   filename = "${path.root}/../config/homelab-inventory.yaml"
   content = templatefile("${path.module}/templates/homelab-inventory.yaml.tpl", {
-    timestamp = timestamp()
-    terraform_workspace = terraform.workspace
+    timestamp                 = timestamp()
+    terraform_workspace       = terraform.workspace
     infrastructure_components = var.infrastructure_components
   })
 
@@ -31,7 +31,7 @@ data "external" "network_discovery" {
 resource "local_file" "service_registry" {
   filename = "${path.root}/../config/service-registry.yaml"
   content = templatefile("${path.module}/templates/service-registry.yaml.tpl", {
-    services = var.homelab_services
+    services     = var.homelab_services
     network_info = data.external.network_discovery.result
   })
 
@@ -42,11 +42,11 @@ resource "local_file" "service_registry" {
 variable "infrastructure_components" {
   description = "Infrastructure components deployed in the homelab"
   type = map(object({
-    name        = string
-    version     = string
-    namespace   = string
-    enabled     = bool
-    endpoints   = list(string)
+    name         = string
+    version      = string
+    namespace    = string
+    enabled      = bool
+    endpoints    = list(string)
     dependencies = list(string)
   }))
   default = {}
@@ -55,12 +55,12 @@ variable "infrastructure_components" {
 variable "homelab_services" {
   description = "Services running in the homelab"
   type = map(object({
-    name        = string
-    type        = string
-    port        = number
-    protocol    = string
+    name         = string
+    type         = string
+    port         = number
+    protocol     = string
     health_check = string
-    tags        = list(string)
+    tags         = list(string)
   }))
   default = {}
 }

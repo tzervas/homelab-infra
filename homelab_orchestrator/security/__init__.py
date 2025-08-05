@@ -3,4 +3,4 @@
 from .privilege_manager import PrivilegeContext, PrivilegeManager
 
 
-__all__ = ["PrivilegeManager", "PrivilegeContext"]
+__all__ = ["PrivilegeContext", "PrivilegeManager"]

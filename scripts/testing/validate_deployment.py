@@ -281,7 +281,7 @@ class DeploymentValidator:
     def print_console_summary(self, results: dict[str, Any]) -> None:
         """Print validation summary to console."""
         print("\n🏠 HOMELAB DEPLOYMENT VALIDATION REPORT")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Timestamp: {results['timestamp']}")
         print(f"Duration: {results['duration']:.2f}s")
         print(f"Overall Status: {results['overall_status'].upper()}")
@@ -297,7 +297,7 @@ class DeploymentValidator:
             print(f"  Mode: {compatibility['deployment_mode']}")
             print(f"  Bastion: {compatibility.get('bastion_host', 'N/A')}")
 
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Component status
         compatibility = results["compatibility_check"]
@@ -355,7 +355,7 @@ class DeploymentValidator:
             for step in summary["next_steps"]:
                 print(f"  {step}")
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
 
     def export_results(self, results: dict[str, Any], output_file: str | None = None) -> str:
         """Export validation results to file."""

@@ -11,8 +11,10 @@ metadata:
   namespace: oauth2-proxy
 type: Opaque
 stringData:
-  client-secret: prometheus-client-secret
-  cookie-secret: SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM=
+  # OAuth2 client secret for Prometheus - MUST be set via environment variable
+  client-secret: ${PROMETHEUS_OAUTH2_CLIENT_SECRET}
+  # Cookie encryption secret - MUST be set via environment variable (32-byte random)
+  cookie-secret: ${PROMETHEUS_OAUTH2_COOKIE_SECRET}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -464,11 +464,11 @@ class IntegratedTestOrchestrator:
     def print_integrated_summary(self, results: IntegratedTestResults) -> None:
         """Print a comprehensive console summary of integrated results."""
         print("\\n🏠 INTEGRATED HOMELAB INFRASTRUCTURE TEST REPORT")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Timestamp: {results.timestamp}")
         print(f"Duration: {results.duration:.2f}s")
         print(f"Overall Status: {results.overall_status.upper()}")
-        print(f"{'='*60}\\n")
+        print(f"{'=' * 60}\\n")
 
         # Integration summary
         print("🔗 INTEGRATION SUMMARY:")
@@ -498,7 +498,7 @@ class IntegratedTestOrchestrator:
             for i, rec in enumerate(results.recommendations, 1):
                 print(f"  {i}. {rec}")
 
-        print(f"\\n{'='*60}")
+        print(f"\\n{'=' * 60}")
 
 
 def main() -> int:

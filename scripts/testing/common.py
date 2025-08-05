@@ -139,7 +139,7 @@ def format_duration(seconds: float) -> str:
 
     """
     if seconds < 1:
-        return f"{seconds*1000:.0f}ms"
+        return f"{seconds * 1000:.0f}ms"
     if seconds < 60:
         return f"{seconds:.1f}s"
     if seconds < 3600:

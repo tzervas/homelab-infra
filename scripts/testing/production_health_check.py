@@ -175,7 +175,7 @@ class ProductionHealthChecker:
                 "status": "PASS" if not issues else "FAIL",
                 "message": "All critical namespaces are active"
                 if not issues
-                else f'Issues with namespaces: {", ".join(issues)}',
+                else f"Issues with namespaces: {', '.join(issues)}",
                 "details": {
                     "expected": critical_namespaces,
                     "found": list(existing_namespaces.keys()),
@@ -247,7 +247,7 @@ class ProductionHealthChecker:
             return {
                 "name": "deployment_health",
                 "status": "PASS" if all_healthy else "FAIL",
-                "message": f'{deployment_summary["healthy"]}/{deployment_summary["total"]} deployments are healthy',
+                "message": f"{deployment_summary['healthy']}/{deployment_summary['total']} deployments are healthy",
                 "details": {
                     "summary": deployment_summary,
                     "unhealthy_deployments": unhealthy_deployments,
@@ -309,7 +309,7 @@ class ProductionHealthChecker:
             "status": "PASS" if not endpoint_issues else "FAIL",
             "message": "All critical services have endpoints"
             if not endpoint_issues
-            else f'Endpoint issues: {", ".join(endpoint_issues)}',
+            else f"Endpoint issues: {', '.join(endpoint_issues)}",
             "details": {
                 "checked_services": critical_services,
                 "issues": endpoint_issues,
@@ -442,7 +442,7 @@ class ProductionHealthChecker:
             return {
                 "name": "certificate_health",
                 "status": "PASS" if all_ready else "WARN",
-                "message": f'{certificate_status["ready"]}/{certificate_status["total"]} certificates are ready',
+                "message": f"{certificate_status['ready']}/{certificate_status['total']} certificates are ready",
                 "details": certificate_status,
             }
 
@@ -630,7 +630,7 @@ class ProductionHealthChecker:
             else:
                 print(f'<testcase name="{check_name}" classname="ProductionHealthCheck">')
                 print(f'<failure message="{check_result["message"]}">')
-                print(f'Details: {json.dumps(check_result.get("details", {}), indent=2)}')
+                print(f"Details: {json.dumps(check_result.get('details', {}), indent=2)}")
                 print("</failure>")
                 print("</testcase>")
 

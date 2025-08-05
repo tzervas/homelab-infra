@@ -105,9 +105,9 @@ variable "metallb_version" {
 variable "metallb_ip_pools" {
   description = "MetalLB IP address pools"
   type = map(object({
-    addresses        = list(string)
-    auto_assign      = optional(bool, true)
-    avoid_buggy_ips  = optional(bool, false)
+    addresses       = list(string)
+    auto_assign     = optional(bool, true)
+    avoid_buggy_ips = optional(bool, false)
   }))
   default = {
     development = {
@@ -187,7 +187,7 @@ variable "upstream_dns_servers" {
 variable "enable_cert_manager" {
   description = "Enable cert-manager"
   type        = bool
-  default     = false  # Disabled in development
+  default     = false # Disabled in development
 }
 
 variable "cert_manager_version" {
@@ -229,7 +229,7 @@ variable "enable_rbac" {
 variable "enable_pod_security" {
   description = "Enable Pod Security Standards"
   type        = bool
-  default     = false  # Relaxed in development
+  default     = false # Relaxed in development
 }
 
 variable "pod_security_policies" {
@@ -245,7 +245,7 @@ variable "pod_security_policies" {
 variable "enable_network_policies" {
   description = "Enable network policies"
   type        = bool
-  default     = false  # Disabled in development for easier debugging
+  default     = false # Disabled in development for easier debugging
 }
 
 variable "secured_namespaces" {
@@ -257,7 +257,7 @@ variable "secured_namespaces" {
 variable "enable_falco" {
   description = "Enable Falco runtime security"
   type        = bool
-  default     = false  # Disabled in development
+  default     = false # Disabled in development
 }
 
 variable "falco_syscall_source" {
@@ -337,5 +337,5 @@ variable "default_pvcs" {
 variable "enable_monitoring" {
   description = "Enable Prometheus monitoring"
   type        = bool
-  default     = false  # Can be enabled as needed in development
+  default     = false # Can be enabled as needed in development
 }

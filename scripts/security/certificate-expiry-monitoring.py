@@ -412,7 +412,7 @@ class CertificateMonitor:
         </head>
         <body>
             <h2>Certificate Expiry Alert - Homelab Infrastructure</h2>
-            <p>Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Generated at: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
         """
 
         if critical_certs:
@@ -464,7 +464,7 @@ class CertificateMonitor:
                     <td>{cert.namespace}</td>
                     <td>{cert.subject[:50]}...</td>
                     <td>{cert.issuer[:50]}...</td>
-                    <td>{cert.not_after.strftime('%Y-%m-%d %H:%M:%S')}</td>
+                    <td>{cert.not_after.strftime("%Y-%m-%d %H:%M:%S")}</td>
                     <td>{cert.days_until_expiry}</td>
                     <td>{status}</td>
                 </tr>

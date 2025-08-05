@@ -60,22 +60,22 @@ provider "helm" {
 locals {
   environment_configs = {
     development = {
-      cluster_name     = "homelab-dev"
+      cluster_name      = "homelab-dev"
       enable_monitoring = false
-      enable_security  = false
-      resource_limits  = "minimal"
+      enable_security   = false
+      resource_limits   = "minimal"
     }
     staging = {
-      cluster_name     = "homelab-staging"
+      cluster_name      = "homelab-staging"
       enable_monitoring = true
-      enable_security  = true
-      resource_limits  = "moderate"
+      enable_security   = true
+      resource_limits   = "moderate"
     }
     production = {
-      cluster_name     = "homelab-prod"
+      cluster_name      = "homelab-prod"
       enable_monitoring = true
-      enable_security  = true
-      resource_limits  = "full"
+      enable_security   = true
+      resource_limits   = "full"
     }
   }
 
@@ -98,7 +98,7 @@ output "environment" {
   description = "Current environment configuration"
   value = {
     environment = var.environment
-    config     = local.current_config
+    config      = local.current_config
   }
 }
 

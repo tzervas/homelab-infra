@@ -1,7 +1,7 @@
 """UI utilities for consistent CLI interface."""
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn

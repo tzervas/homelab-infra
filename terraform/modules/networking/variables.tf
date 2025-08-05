@@ -22,9 +22,9 @@ variable "metallb_namespace" {
 variable "ip_pools" {
   description = "MetalLB IP address pools configuration"
   type = map(object({
-    addresses        = list(string)
-    auto_assign      = optional(bool, true)
-    avoid_buggy_ips  = optional(bool, false)
+    addresses       = list(string)
+    auto_assign     = optional(bool, true)
+    avoid_buggy_ips = optional(bool, false)
   }))
   default = {
     default = {
@@ -154,8 +154,8 @@ variable "vlan_interfaces" {
   description = "VLAN interface configurations"
   type = map(object({
     parent_interface = string
-    vlan_id         = number
-    ip_range        = string
+    vlan_id          = number
+    ip_range         = string
   }))
   default = {}
 }

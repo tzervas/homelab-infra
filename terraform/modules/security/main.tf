@@ -45,7 +45,7 @@ resource "helm_release" "cert_manager" {
   values = [
     templatefile("${path.module}/templates/cert-manager-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
-      log_level            = var.log_level
+      log_level             = var.log_level
     })
   ]
 }
@@ -130,7 +130,7 @@ resource "helm_release" "external_secrets" {
   values = [
     templatefile("${path.module}/templates/external-secrets-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
-      log_level            = var.log_level
+      log_level             = var.log_level
     })
   ]
 }
@@ -306,7 +306,7 @@ resource "helm_release" "falco" {
   values = [
     templatefile("${path.module}/templates/falco-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
-      log_level            = var.log_level
+      log_level             = var.log_level
       enable_syscall_source = var.falco_syscall_source
     })
   ]

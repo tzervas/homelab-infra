@@ -114,11 +114,7 @@ def deploy_infrastructure(
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy complete homelab infrastructure."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Deploying infrastructure...", total=None)
 
         result = asyncio.run(
@@ -148,13 +144,7 @@ def deploy_service(
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy specific service."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task(f"Deploying service: {service_name}...", total=None)
 
         if dry_run:
@@ -165,12 +155,13 @@ def deploy_service(
                 service_name,
                 namespace=namespace,
                 dry_run=dry_run,
-            )
+            ),
         )
 
         if result["status"] == "success":
             progress.update(
-                task, description=f"[green]✅ Service {service_name} deployed successfully[/green]"
+                task,
+                description=f"[green]✅ Service {service_name} deployed successfully[/green]",
             )
         else:
             error = result.get("error", "Unknown error")
@@ -188,16 +179,12 @@ def manage(ctx: click.Context) -> None:
 @click.pass_context
 @with_orchestrator
 def manage_backup(
-    ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    components: list[str],
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Backup infrastructure components."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Backing up infrastructure components...", total=None)
 
         result = asyncio.run(
@@ -214,16 +201,13 @@ def manage_backup(
 @click.pass_context
 @with_orchestrator
 def manage_teardown(
-    ctx: click.Context, force: bool, no_backup: bool, orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    force: bool,
+    no_backup: bool,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Teardown complete infrastructure."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Tearing down infrastructure...", total=None)
 
         result = asyncio.run(
@@ -243,16 +227,12 @@ def manage_teardown(
 @click.pass_context
 @with_orchestrator
 def manage_recover(
-    ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator
+    ctx: click.Context,
+    components: list[str],
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Recover infrastructure components from backup."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Recovering infrastructure components...", total=None)
 
         result = asyncio.run(
@@ -283,13 +263,7 @@ def health_check(
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check system health status."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Running health checks...", total=None)
 
         result = asyncio.run(
@@ -410,13 +384,7 @@ def gpu(ctx: click.Context) -> None:
 @with_orchestrator
 def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Discover available GPU resources."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Discovering GPU resources...", total=None)
 
         result = asyncio.run(
@@ -433,13 +401,7 @@ def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOr
 @with_orchestrator
 def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Show GPU resource status."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Fetching GPU status...", total=None)
 
         result = asyncio.run(
@@ -557,13 +519,7 @@ def certificates_check_expiry(
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check certificate expiry dates."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Checking certificate expiry dates...", total=None)
 
         result = orchestrator.certificate_manager.check_certificate_expiry()
@@ -637,13 +593,7 @@ def certificates_renew(
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Force renewal of a specific certificate."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task(f"Initiating renewal of certificate '{cert_name}'...", total=None)
 
         result = orchestrator.certificate_manager.renew_certificate(cert_name, namespace)

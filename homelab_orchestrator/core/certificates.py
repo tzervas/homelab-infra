@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+import ssl
+from datetime import datetime, timedelta, timezone
 from functools import wraps
-from shlex import quote, split
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import aiohttp
@@ -57,10 +57,6 @@ if TYPE_CHECKING:
 class CertificateManager:
     """Comprehensive certificate management and validation."""
 
-    def _sanitize_command(self, command: str, **kwargs: str) -> str:
-        """Safely format command with quoted arguments."""
-        return command.format(**{k: quote(v) for k, v in kwargs.items()})
-
     def __init__(self, config_manager: ConfigManager) -> None:
         """Initialize certificate manager.
 
@@ -104,14 +100,9 @@ class CertificateManager:
         """Deploy cert-manager with issuers."""
         self.logger.info("Deploying cert-manager")
 
-        from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+        from ..core.ui import progress_bar
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            TimeElapsedColumn(),
-            transient=True,
-        ) as progress:
+        with progress_bar() as progress:
             task = progress.add_task("Deploying cert-manager...", total=None)
 
             try:
@@ -175,7 +166,7 @@ class CertificateManager:
                         progress.update(task, description="[red]Deployment failed")
                         return {
                             "status": "failed",
-                            "error": f"Command failed: {command}",
+                            "error": f"Failed to apply manifest from {url}",
                             "stderr": stderr.decode(),
                         }
 
@@ -207,7 +198,11 @@ class CertificateManager:
     async def _wait_for_cert_manager_ready(self, timeout: int = 300) -> bool:
         """Wait for cert-manager to be ready."""
         try:
-            config.load_kube_config()
+            # Try in-cluster config first, fallback to local kubeconfig
+            try:
+                config.load_incluster_config()
+            except config.ConfigException:
+                config.load_kube_config()
             v1 = client.CoreV1Api()
             start_time = asyncio.get_event_loop().time()
 
@@ -304,7 +299,7 @@ class CertificateManager:
         """Validate all certificates and their endpoints."""
         self.logger.info("Validating certificates")
 
-        from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+        from ..core.ui import progress_bar
 
         if not self.http_session:
             return {
@@ -323,12 +318,7 @@ class CertificateManager:
 
         endpoints = health_checks.get("endpoints", [])
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            TimeElapsedColumn(),
-            transient=True,
-        ) as progress:
+        with progress_bar() as progress:
             task = progress.add_task("Validating endpoints...", total=len(endpoints))
 
             results = []
@@ -409,7 +399,8 @@ class CertificateManager:
                 "renewal_threshold_days",
                 30,
             )
-            threshold_date = datetime.now() + timedelta(days=renewal_threshold)
+            now_utc = datetime.now(timezone.utc)
+            threshold_date = now_utc + timedelta(days=renewal_threshold)
 
             for cert in certificates_data.get("items", []):
                 cert_name = cert["metadata"]["name"]
@@ -422,7 +413,10 @@ class CertificateManager:
                 if not_after:
                     try:
                         expiry_date = dateutil_parser.isoparse(not_after)
-                        days_until_expiry = (expiry_date - datetime.now()).days
+                        # Ensure timezone-aware calculation
+                        if expiry_date.tzinfo is None:
+                            expiry_date = expiry_date.replace(tzinfo=timezone.utc)
+                        days_until_expiry = (expiry_date - now_utc).days
 
                         cert_info = {
                             "name": cert_name,
@@ -475,16 +469,49 @@ class CertificateManager:
                 "--overwrite",
             ]
 
+            # First get the secret name safely
+            get_secret_cmd = [
+                "kubectl",
+                "get",
+                "certificate",
+                cert_name,
+                "-n",
+                namespace,
+                "-o",
+                "jsonpath={.spec.secretName}",
+            ]
+
+            # Execute get secret command first
+            result = await asyncio.create_subprocess_exec(
+                *get_secret_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await result.communicate()
+
+            if result.returncode != 0:
+                return {
+                    "status": "failed",
+                    "error": f"Failed to get certificate secret name: {stderr.decode()}",
+                }
+
+            secret_name = stdout.decode().strip()
+            if not secret_name:
+                return {
+                    "status": "failed",
+                    "error": "Certificate secret name is empty",
+                }
+
             delete_secret_cmd = [
                 "kubectl",
                 "delete",
                 "secret",
-                f"$(kubectl get certificate {quote(cert_name)} -n {quote(namespace)} -o jsonpath='{{.spec.secretName}}')",
+                secret_name,
                 "-n",
                 namespace,
             ]
 
-            for cmd in [annotate_cmd, split(delete_secret_cmd)]:
+            for cmd in [annotate_cmd, delete_secret_cmd]:
                 result = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
@@ -542,13 +569,19 @@ class CertificateManager:
         Returns:
             bool: True if issuer becomes ready within timeout, False otherwise
         """
-        config.load_kube_config()
+        # Try in-cluster config first, fallback to local kubeconfig
+        try:
+            config.load_incluster_config()
+        except config.ConfigException:
+            config.load_kube_config()
         custom_api = client.CustomObjectsApi()
         timeout = self.cert_config.get(
-            "issuer_readiness_timeout", ISSUER_DEFAULTS["readiness_timeout"]
+            "issuer_readiness_timeout",
+            ISSUER_DEFAULTS["readiness_timeout"],
         )
         interval = self.cert_config.get(
-            "issuer_polling_interval", ISSUER_DEFAULTS["polling_interval"]
+            "issuer_polling_interval",
+            ISSUER_DEFAULTS["polling_interval"],
         )
 
         start_time = asyncio.get_event_loop().time()

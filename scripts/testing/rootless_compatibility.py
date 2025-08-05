@@ -864,7 +864,7 @@ class RootlessCompatibilityChecker:
 
 ## Summary
 - **Compatible Components**: {compatible_count}/{total_count}
-- **Overall Status**: {'✅ Ready for rootless deployment' if compatible_count == total_count else '❌ Issues need to be resolved'}
+- **Overall Status**: {"✅ Ready for rootless deployment" if compatible_count == total_count else "❌ Issues need to be resolved"}
 
 ## Component Details
 

@@ -31,7 +31,7 @@ resource "helm_release" "metallb" {
   values = [
     templatefile("${path.module}/templates/metallb-values.yaml.tpl", {
       prometheus_monitoring = var.prometheus_monitoring
-      log_level            = var.log_level
+      log_level             = var.log_level
     })
   ]
 
@@ -45,8 +45,8 @@ resource "kubernetes_namespace" "metallb_namespace" {
   metadata {
     name = var.metallb_namespace
     labels = {
-      "app.kubernetes.io/name"       = "metallb-system"
-      "app.kubernetes.io/managed-by" = "terraform"
+      "app.kubernetes.io/name"             = "metallb-system"
+      "app.kubernetes.io/managed-by"       = "terraform"
       "pod-security.kubernetes.io/enforce" = "privileged"
       "pod-security.kubernetes.io/audit"   = "privileged"
       "pod-security.kubernetes.io/warn"    = "privileged"
@@ -66,8 +66,8 @@ resource "kubernetes_manifest" "metallb_ipaddresspool" {
       namespace = var.metallb_namespace
     }
     spec = {
-      addresses = each.value.addresses
-      autoAssign = lookup(each.value, "auto_assign", true)
+      addresses     = each.value.addresses
+      autoAssign    = lookup(each.value, "auto_assign", true)
       avoidBuggyIPs = lookup(each.value, "avoid_buggy_ips", false)
     }
   }
@@ -179,10 +179,10 @@ resource "helm_release" "nginx_ingress" {
 
   values = [
     templatefile("${path.module}/templates/nginx-ingress-values.yaml.tpl", {
-      service_type              = var.nginx_service_type
-      load_balancer_ip         = var.nginx_load_balancer_ip
-      enable_ssl_passthrough   = var.nginx_ssl_passthrough
-      default_ssl_certificate  = var.nginx_default_ssl_cert
+      service_type            = var.nginx_service_type
+      load_balancer_ip        = var.nginx_load_balancer_ip
+      enable_ssl_passthrough  = var.nginx_ssl_passthrough
+      default_ssl_certificate = var.nginx_default_ssl_cert
       enable_metrics          = var.prometheus_monitoring
     })
   ]
@@ -204,9 +204,9 @@ resource "kubernetes_manifest" "multus_cni" {
       group = "k8s.cni.cncf.io"
       scope = "Namespaced"
       names = {
-        plural   = "network-attachment-definitions"
-        singular = "network-attachment-definition"
-        kind     = "NetworkAttachmentDefinition"
+        plural     = "network-attachment-definitions"
+        singular   = "network-attachment-definition"
+        kind       = "NetworkAttachmentDefinition"
         shortNames = ["net-attach-def"]
       }
       versions = [{

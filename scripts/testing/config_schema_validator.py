@@ -148,11 +148,11 @@ class ConfigValidator:
 
         except jsonschema.ValidationError as e:
             return None, self._handle_validation_error(
-                f"❌ {config_path}: {context} schema validation failed - {e.message}"
+                f"❌ {config_path}: {context} schema validation failed - {e.message}",
             )
         except Exception as e:
             return None, self._handle_validation_error(
-                f"❌ {config_path}: Failed to validate - {e}"
+                f"❌ {config_path}: Failed to validate - {e}",
             )
 
     def validate_helm_environment_config(self, config_path: Path) -> bool:
@@ -308,7 +308,9 @@ def main() -> None:
     )
     parser.add_argument("--environment", choices=["development", "staging", "production"])
     parser.add_argument(
-        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     parser.add_argument("--fail-fast", action="store_true", help="Stop on first validation error")
 

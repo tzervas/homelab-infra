@@ -9,6 +9,7 @@ import logging
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
 
 # Set up logging
@@ -55,7 +56,7 @@ def warm_cache() -> None:
             if cache_dir.exists():
                 for item in cache_dir.glob("**/*"):
                     if item.is_file() and (
-                        item.stat().st_mtime < (os.time() - 7 * 24 * 60 * 60)
+                        item.stat().st_mtime < (time.time() - 7 * 24 * 60 * 60)
                     ):
                         item.unlink()
         logger.info("Cleaned stale cache entries")

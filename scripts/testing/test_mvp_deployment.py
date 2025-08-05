@@ -164,8 +164,10 @@ class MVPDeploymentTest:
 
         try:
             # Test CLI version command
+            command = [sys.executable, "-m", "homelab_orchestrator", "--version"]
+            self.logger.info(f"Running command: {' '.join(command)}")
             result = subprocess.run(
-                [sys.executable, "-m", "homelab_orchestrator", "--version"],
+                command,
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -201,8 +203,10 @@ class MVPDeploymentTest:
 
         try:
             # Test config validation CLI
+            command = [sys.executable, "-m", "homelab_orchestrator", "config", "validate"]
+            self.logger.info(f"Running command: {' '.join(command)}")
             result = subprocess.run(
-                [sys.executable, "-m", "homelab_orchestrator", "config", "validate"],
+                command,
                 capture_output=True,
                 text=True,
                 timeout=30,

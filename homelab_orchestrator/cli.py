@@ -24,6 +24,7 @@ from .__version__ import __version__
 from .core.config_manager import ConfigContext, ConfigManager
 from .core.decorators import with_orchestrator
 from .core.orchestrator import HomelabOrchestrator
+from .core.ui import console, progress_bar
 
 
 console = Console()
@@ -468,13 +469,7 @@ def certificates(ctx: click.Context) -> None:
 @with_orchestrator
 def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -> None:
     """Deploy cert-manager and certificate issuers."""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-        transient=True,
-        console=console,
-    ) as progress:
+    with progress_bar() as progress:
         task = progress.add_task("Deploying cert-manager...", total=None)
 
         # Deploy cert-manager
@@ -488,7 +483,6 @@ def certificates_deploy(ctx: click.Context, orchestrator: HomelabOrchestrator) -
                 issuers = ", ".join(result["issuers"])
                 progress.update(task, description=f"[blue]📋 Deploying issuers: {issuers}[/blue]")
                 # Give a moment to show the success message
-                time.sleep(1)
         else:
             error = result.get("error", "Unknown error")
             progress.update(task, description=f"[red]❌ Deployment failed: {error}[/red]")
@@ -566,7 +560,6 @@ def certificates_check_expiry(
             progress.update(
                 task, description=f"[red]❌ Failed to check certificate expiry: {error}[/red]"
             )
-            time.sleep(1)  # Give a moment to show the error
             return
 
         total_certs = len(result.get("certificates", []))
@@ -578,7 +571,6 @@ def certificates_check_expiry(
         if needs_renewal > 0:
             status_desc += f" ([yellow]⚠️ {needs_renewal} need renewal[/yellow])"
         progress.update(task, description=status_desc)
-        time.sleep(1)  # Give a moment to show the success message
 
         if output_format == "json":
             console.print(json.dumps(result, indent=2, default=str))
@@ -644,7 +636,6 @@ def certificates_renew(
                 task,
                 description=f"[green]✅ Certificate '{cert_name}' renewal triggered successfully[/green]",
             )
-            time.sleep(1)  # Show success message briefly
 
             # Show monitoring info
             monitoring_msg = (
@@ -658,7 +649,6 @@ def certificates_renew(
                 task,
                 description=f"[red]❌ Certificate renewal failed: {error}[/red]",
             )
-            time.sleep(1)  # Show error message briefly
 
 
 @cli.command("status")

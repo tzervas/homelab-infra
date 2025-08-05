@@ -425,22 +425,21 @@ class CertificateManager:
 
         try:
             # Force certificate renewal by deleting the secret
-            commands = [
-                self._sanitize_command(
-                    "kubectl annotate certificate {cert} -n {ns} cert-manager.io/issue-temporary-certificate=true --overwrite",
-                    cert=cert_name,
-                    ns=namespace
-                ),
-                self._sanitize_command(
-                    "kubectl delete secret $(kubectl get certificate {cert} -n {ns} -o jsonpath='{{.spec.secretName}}') -n {ns}",
-                    cert=cert_name,
-                    ns=namespace
-                )
+            annotate_cmd = [
+                "kubectl", "annotate", "certificate",
+                cert_name, "-n", namespace,
+                "cert-manager.io/issue-temporary-certificate=true", "--overwrite"
             ]
-
-            for cmd in commands:
+            
+            delete_secret_cmd = [
+                "kubectl", "delete", "secret",
+                f"$(kubectl get certificate {quote(cert_name)} -n {quote(namespace)} -o jsonpath='{{.spec.secretName}}')",
+                "-n", namespace
+            ]
+            
+            for cmd in [annotate_cmd, split(delete_secret_cmd)]:
                 result = await asyncio.create_subprocess_exec(
-                    *split(cmd),
+                    *cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )

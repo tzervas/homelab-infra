@@ -81,15 +81,15 @@ variable "extra_args" {
 resource "local_file" "k3s_install_script" {
   filename = "${path.module}/k3s-install.sh"
   content = templatefile("${path.module}/templates/k3s-install.sh.tpl", {
-    cluster_name      = var.cluster_name
-    k3s_version      = var.k3s_version
-    cluster_cidr     = var.cluster_cidr
-    service_cidr     = var.service_cidr
-    cluster_dns      = var.cluster_dns
+    cluster_name       = var.cluster_name
+    k3s_version        = var.k3s_version
+    cluster_cidr       = var.cluster_cidr
+    service_cidr       = var.service_cidr
+    cluster_dns        = var.cluster_dns
     disable_components = join(",", var.disable_components)
-    node_taints      = join(",", var.node_taints)
-    node_labels      = join(",", [for k, v in var.node_labels : "${k}=${v}"])
-    extra_args       = join(" ", var.extra_args)
+    node_taints        = join(",", var.node_taints)
+    node_labels        = join(",", [for k, v in var.node_labels : "${k}=${v}"])
+    extra_args         = join(" ", var.extra_args)
   })
 
   provisioner "local-exec" {
@@ -101,13 +101,13 @@ resource "local_file" "k3s_install_script" {
 resource "local_file" "k3s_config" {
   filename = "${path.module}/k3s-config.yaml"
   content = templatefile("${path.module}/templates/k3s-config.yaml.tpl", {
-    cluster_cidr     = var.cluster_cidr
-    service_cidr     = var.service_cidr
-    cluster_dns      = var.cluster_dns
+    cluster_cidr       = var.cluster_cidr
+    service_cidr       = var.service_cidr
+    cluster_dns        = var.cluster_dns
     disable_components = var.disable_components
-    node_taints      = var.node_taints
-    node_labels      = var.node_labels
-    extra_args       = var.extra_args
+    node_taints        = var.node_taints
+    node_labels        = var.node_labels
+    extra_args         = var.extra_args
   })
 }
 

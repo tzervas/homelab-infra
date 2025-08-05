@@ -26,9 +26,9 @@ __email__ = "tz-dev@vectorweight.com"
 
 __all__ = [
     "CertificateValidator",
+    "ComplianceScanner",
     "MTLSValidator",
     "NetworkPolicyTester",
     "RBACVerifier",
     "SecurityContextEnforcer",
-    "ComplianceScanner",
 ]

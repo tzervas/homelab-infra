@@ -1,0 +1,27 @@
+# Branch Protection Rules Configuration
+
+# Main branch protection settings
+main:
+  # Require pull request reviews before merging
+  required_reviews: 2
+  # Require status checks to pass before merging
+  status_checks: true
+  # Prevent force pushing to this branch
+  force_push: false
+  # Additional settings
+  enforce_admins: true
+  required_linear_history: true
+  allow_deletions: false
+
+# Development branch protection settings
+develop:
+  # Require pull request reviews before merging
+  required_reviews: 1
+  # Require status checks to pass before merging
+  status_checks: true
+  # Allow force pushing for admins only
+  force_push: admin_only
+  # Additional settings
+  enforce_admins: false
+  required_linear_history: true
+  allow_deletions: false

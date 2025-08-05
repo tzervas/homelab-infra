@@ -1,0 +1,227 @@
+# Comprehensive Certificate Management Configuration
+# Supports Let's Encrypt (via cert-manager), custom CA, and self-signed certificates
+
+certificates:
+  # Certificate issuer configuration
+  issuers:
+    # Let's Encrypt Production Issuer (via cert-manager)
+    letsencrypt_prod:
+      enabled: true
+      type: "letsencrypt"
+      server: "https://acme-v02.api.letsencrypt.org/directory"
+      email: "${TLS_CERT_EMAIL}"
+      private_key_secret: "letsencrypt-prod-private-key"
+      solver:
+        type: "http01"
+        ingress_class: "nginx"
+
+    # Let's Encrypt Staging Issuer (for testing)
+    letsencrypt_staging:
+      enabled: true
+      type: "letsencrypt"
+      server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      email: "${TLS_CERT_EMAIL}"
+      private_key_secret: "letsencrypt-staging-private-key"
+      solver:
+        type: "http01"
+        ingress_class: "nginx"
+
+    # Custom CA Issuer (for internal certificates)
+    custom_ca:
+      enabled: false
+      type: "ca"
+      ca_secret: "custom-ca-key-pair"
+      ca_cert: "${CUSTOM_CA_CERT}"
+      ca_key: "${CUSTOM_CA_KEY}"
+
+    # Self-signed Issuer (fallback)
+    selfsigned:
+      enabled: true
+      type: "selfsigned"
+      common_name: "homelab.local"
+      duration: "8760h" # 1 year
+
+  # Certificate requests for services
+  requests:
+    # Wildcard certificate for homelab domain
+    wildcard_homelab:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "homelab-tls"
+      dns_names:
+        - "homelab.local"
+        - "*.homelab.local"
+      duration: "2160h" # 90 days
+      renew_before: "720h" # 30 days
+
+    # Individual service certificates
+    grafana:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "grafana-tls"
+      dns_names:
+        - "grafana.homelab.local"
+
+    prometheus:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "prometheus-tls"
+      dns_names:
+        - "prometheus.homelab.local"
+
+    keycloak:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "keycloak-tls"
+      dns_names:
+        - "auth.homelab.local"
+        - "keycloak.homelab.local"
+
+    gitlab:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "gitlab-tls"
+      dns_names:
+        - "gitlab.homelab.local"
+
+    ollama:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "ollama-tls"
+      dns_names:
+        - "ollama.homelab.local"
+
+    jupyter:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "jupyter-tls"
+      dns_names:
+        - "jupyter.homelab.local"
+
+    longhorn:
+      enabled: true
+      issuer: "letsencrypt_prod"
+      fallback_issuer: "selfsigned"
+      secret_name: "longhorn-tls"
+      dns_names:
+        - "longhorn.homelab.local"
+
+  # Certificate validation and monitoring
+  validation:
+    # Minimum days before expiration to trigger renewal
+    renewal_threshold_days: 30
+
+    # Health check configuration
+    health_checks:
+      enabled: true
+      check_interval: "24h"
+      endpoints:
+        - "https://grafana.homelab.local/api/health"
+        - "https://prometheus.homelab.local/-/healthy"
+        - "https://auth.homelab.local/auth/health"
+        - "https://gitlab.homelab.local/-/health"
+        - "https://ollama.homelab.local/api/version"
+        - "https://jupyter.homelab.local/api"
+        - "https://longhorn.homelab.local/v1/nodes"
+
+    # Certificate expiration monitoring
+    monitoring:
+      enabled: true
+      prometheus_metrics: true
+      alert_days_before_expiry: [7, 3, 1]
+      webhook_url: "${CERT_EXPIRY_WEBHOOK_URL}"
+
+  # Cert-manager specific configuration
+  cert_manager:
+    # Cert-manager installation
+    enabled: true
+    version: "v1.13.3"
+    namespace: "cert-manager"
+
+    # CRDs and webhook configuration
+    install_crds: true
+    webhook:
+      enabled: true
+      timeout: "10s"
+
+    # Resource limits
+    resources:
+      controller:
+        cpu: "100m"
+        memory: "128Mi"
+      webhook:
+        cpu: "50m"
+        memory: "64Mi"
+      cainjector:
+        cpu: "100m"
+        memory: "128Mi"
+
+    # DNS01 solver configuration (for wildcard certificates)
+    dns01_solvers:
+      cloudflare:
+        enabled: false
+        api_token_secret: "cloudflare-api-token"
+      route53:
+        enabled: false
+        access_key_secret: "route53-credentials"
+      cloudDNS:
+        enabled: false
+        service_account_secret: "clouddns-service-account"
+
+# Environment-specific overrides
+environments:
+  development:
+    certificates:
+      issuers:
+        letsencrypt_prod:
+          enabled: false
+        letsencrypt_staging:
+          enabled: true
+      requests:
+        wildcard_homelab:
+          issuer: "letsencrypt_staging"
+        grafana:
+          issuer: "letsencrypt_staging"
+        prometheus:
+          issuer: "letsencrypt_staging"
+        keycloak:
+          issuer: "letsencrypt_staging"
+        gitlab:
+          issuer: "letsencrypt_staging"
+        ollama:
+          issuer: "letsencrypt_staging"
+        jupyter:
+          issuer: "letsencrypt_staging"
+        longhorn:
+          issuer: "letsencrypt_staging"
+
+  staging:
+    certificates:
+      issuers:
+        letsencrypt_prod:
+          enabled: false
+        letsencrypt_staging:
+          enabled: true
+      requests:
+        wildcard_homelab:
+          issuer: "letsencrypt_staging"
+
+  production:
+    certificates:
+      issuers:
+        letsencrypt_prod:
+          enabled: true
+        letsencrypt_staging:
+          enabled: false
+      validation:
+        health_checks:
+          check_interval: "12h"
+        monitoring:
+          alert_days_before_expiry: [14, 7, 3, 1]

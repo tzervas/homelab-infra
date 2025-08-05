@@ -722,8 +722,10 @@ class InfrastructureBenchmarker:
 
             # Environment Info
             f.write("## Environment\n\n")
-            for key, value in report.environment_info.items():
-                f.write(f"- **{key.replace('_', ' ').title()}:** {value}\n")
+            f.writelines(
+                f"- **{key.replace('_', ' ').title()}:** {value}\n"
+                for key, value in report.environment_info.items()
+            )
             f.write("\n")
 
             # Results by Component

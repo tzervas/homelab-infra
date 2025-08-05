@@ -23,6 +23,7 @@ from typing import Any
 from ..portal import PortalManager
 from ..remote.cluster_manager import ClusterManager
 from ..webhooks.manager import WebhookManager
+from .certificates import CertificateManager
 from .config_manager import ConfigManager
 from .deployment import DeploymentManager
 from .gpu_manager import GPUResourceManager
@@ -114,6 +115,11 @@ class HomelabOrchestrator:
             config_manager=self.config_manager,
         )
 
+        # Certificate management
+        self.certificate_manager = CertificateManager(
+            config_manager=self.config_manager,
+        )
+
         # GPU management (if enabled)
         if deployment_config.get("gpu", {}).get("enabled", False):
             self.gpu_manager = GPUResourceManager(
@@ -160,6 +166,9 @@ class HomelabOrchestrator:
         if self.gpu_manager:
             await self.gpu_manager.start_monitoring()
 
+        # Start certificate manager
+        await self.certificate_manager.start()
+
         # Start webhook server
         await self.webhook_manager.start()
 
@@ -184,6 +193,7 @@ class HomelabOrchestrator:
             await self.gpu_manager.stop_monitoring()
 
         await self.health_monitor.stop_monitoring()
+        await self.certificate_manager.stop()
         await self.webhook_manager.stop()
 
         # Shutdown thread pool

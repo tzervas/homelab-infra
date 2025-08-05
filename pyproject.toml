@@ -7,8 +7,8 @@ packages = ["scripts"]
 
 [project]
 name = "homelab-testing-framework"
-version = "0.4.0"
-description = "Comprehensive testing framework for homelab infrastructure validation with portal and security dashboard"
+version = "0.9.0-beta"
+description = "Unified homelab infrastructure orchestration platform - pre-release beta for testing and validation"
 readme = "scripts/testing/README.md"
 license = "MIT"
 requires-python = ">=3.10"

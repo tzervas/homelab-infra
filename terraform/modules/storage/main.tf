@@ -61,7 +61,7 @@ resource "kubernetes_manifest" "local_path_provisioner" {
               ]
               env = [
                 {
-                  name  = "POD_NAMESPACE"
+                  name = "POD_NAMESPACE"
                   valueFrom = {
                     fieldRef = {
                       fieldPath = "metadata.namespace"

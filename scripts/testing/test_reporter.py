@@ -916,11 +916,11 @@ class HomelabTestReporter:
     def print_console_summary(self, result: TestSuiteResult) -> None:
         """Print a comprehensive console summary."""
         print("\n🏠 HOMELAB INFRASTRUCTURE TEST REPORT")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Timestamp: {result.timestamp}")
         print(f"Duration: {result.duration:.2f}s")
         print(f"Overall Status: {result.overall_status.upper()}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         # Issue Summary with counts
         issue_summary = self.issue_tracker.generate_summary()
@@ -999,7 +999,7 @@ class HomelabTestReporter:
             for i, rec in enumerate(all_recommendations, 1):
                 print(f"  {i}. {rec}")
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
 
 
 def main() -> int:

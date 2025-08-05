@@ -17,7 +17,7 @@ output "metallb_status" {
     installed = true
     version   = var.metallb_version
     namespace = var.metallb_namespace
-  } : {
+    } : {
     installed = false
     version   = null
     namespace = null
@@ -43,12 +43,12 @@ output "nginx_ingress_load_balancer_ip" {
 output "nginx_ingress_status" {
   description = "Nginx ingress controller deployment status"
   value = var.enable_nginx_ingress ? {
-    installed         = true
-    version          = var.nginx_ingress_version
-    namespace        = var.nginx_ingress_namespace
-    service_type     = var.nginx_service_type
-    ssl_passthrough  = var.nginx_ssl_passthrough
-  } : {
+    installed       = true
+    version         = var.nginx_ingress_version
+    namespace       = var.nginx_ingress_namespace
+    service_type    = var.nginx_service_type
+    ssl_passthrough = var.nginx_ssl_passthrough
+    } : {
     installed = false
     version   = null
     namespace = null
@@ -139,7 +139,7 @@ output "networking_summary" {
       service_type = var.nginx_service_type
     }
     dns = {
-      custom_enabled = var.enable_custom_dns
+      custom_enabled   = var.enable_custom_dns
       upstream_servers = var.upstream_dns_servers
     }
     cni = {

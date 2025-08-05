@@ -468,7 +468,7 @@ class HomelabValidator:
         )
         print(f"  Grafana: {'✅' if grafana_accessible else '❌'}")
 
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
 
         # Return appropriate exit code
         return 0 if self.results["overall_status"] in ["PASS", "WARNING"] else 1

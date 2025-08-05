@@ -136,20 +136,40 @@ def deploy_infrastructure(
 @click.option("--namespace", help="Target namespace")
 @click.option("--dry-run", is_flag=True, help="Validate without deployment")
 @click.pass_context
+@with_orchestrator
 def deploy_service(
     ctx: click.Context,
     service_name: str,
     namespace: str | None,
     dry_run: bool,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Deploy specific service."""
-    console.print(f"[yellow]Deploying service: {service_name}[/yellow]")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task(f"Deploying service: {service_name}...", total=None)
 
-    if dry_run:
-        console.print("[blue]Dry run mode - no actual deployment[/blue]")
+        if dry_run:
+            progress.update(task, description="[blue]Dry run mode - validating only[/blue]")
+            time.sleep(1)
 
-    # Implementation for service deployment
-    console.print(f"[green]Service {service_name} deployment completed[/green]")
+        result = asyncio.run(orchestrator.service_manager.deploy_service(
+            service_name,
+            namespace=namespace,
+            dry_run=dry_run,
+        ))
+
+        if result["status"] == "success":
+            progress.update(task, description=f"[green]✅ Service {service_name} deployed successfully[/green]")
+        else:
+            error = result.get("error", "Unknown error")
+            progress.update(task, description=f"[red]❌ Service deployment failed: {error}[/red]")
+        time.sleep(1)
 
 
 @cli.group()
@@ -161,95 +181,75 @@ def manage(ctx: click.Context) -> None:
 @manage.command("backup")
 @click.option("--components", multiple=True, help="Specific components to backup")
 @click.pass_context
-def manage_backup(ctx: click.Context, components: list[str]) -> None:
+@with_orchestrator
+def manage_backup(ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator) -> None:
     """Backup infrastructure components."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Backing up infrastructure components...", total=None)
 
-    async def _backup() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+        result = asyncio.run(
+            orchestrator.deployment_manager.backup_infrastructure(components)
         )
 
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.backup_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_backup())
+        progress.update(task, description="Backup completed", completed=100)
+        _display_deployment_result(result)
 
 
 @manage.command("teardown")
 @click.option("--force", is_flag=True, help="Force teardown without confirmation")
 @click.option("--no-backup", is_flag=True, help="Skip backup before teardown")
 @click.pass_context
-def manage_teardown(ctx: click.Context, force: bool, no_backup: bool) -> None:
+@with_orchestrator
+def manage_teardown(ctx: click.Context, force: bool, no_backup: bool, orchestrator: HomelabOrchestrator) -> None:
     """Teardown complete infrastructure."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Tearing down infrastructure...", total=None)
 
-    async def _teardown() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Initializing orchestrator...", total=None)
-
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
+        result = asyncio.run(
+            orchestrator.teardown_infrastructure(
+                environment=orchestrator.config_manager.context.environment,
+                force=force,
+                backup=not no_backup,
             )
+        )
 
-            try:
-                progress.update(task, description="Starting orchestrator...")
-                await orchestrator.start()
-
-                progress.update(task, description="Tearing down infrastructure...")
-                result = await orchestrator.teardown_infrastructure(
-                    environment=config_manager.context.environment,
-                    force=force,
-                    backup=not no_backup,
-                )
-
-                progress.update(task, description="Teardown completed", completed=100)
-
-                # Display results
-                _display_teardown_result(result)
-
-            finally:
-                progress.update(task, description="Cleaning up...")
-                await orchestrator.stop()
-
-    asyncio.run(_teardown())
+        progress.update(task, description="Teardown completed", completed=100)
+        _display_teardown_result(result)
 
 
 @manage.command("recover")
 @click.option("--components", multiple=True, help="Specific components to recover")
 @click.pass_context
-def manage_recover(ctx: click.Context, components: list[str]) -> None:
+@with_orchestrator
+def manage_recover(ctx: click.Context, components: list[str], orchestrator: HomelabOrchestrator) -> None:
     """Recover infrastructure components from backup."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Recovering infrastructure components...", total=None)
 
-    async def _recover() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+        result = asyncio.run(
+            orchestrator.deployment_manager.recover_infrastructure(components)
         )
 
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.recover_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_recover())
+        progress.update(task, description="Recovery completed", completed=100)
+        _display_deployment_result(result)
 
 
 @cli.group()
@@ -263,44 +263,30 @@ def health(ctx: click.Context) -> None:
 @click.option("--component", multiple=True, help="Check specific components")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
+@with_orchestrator
 def health_check(
     ctx: click.Context,
     comprehensive: bool,
     component: list[str],
     output_format: str,
+    orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check system health status."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Running health checks...", total=None)
 
-    async def _check_health() -> None:
-        config_manager = ctx.obj["config_manager"]
+        result = asyncio.run(
+            orchestrator.validate_system_health()
+        )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Running health checks...", total=None)
-
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
-            )
-
-            try:
-                await orchestrator.start()
-
-                result = await orchestrator.validate_system_health()
-
-                progress.update(task, description="Health check completed", completed=100)
-
-                # Display results
-                _display_health_result(result, output_format)
-
-            finally:
-                await orchestrator.stop()
-
-    asyncio.run(_check_health())
+        progress.update(task, description="Health check completed", completed=100)
+        _display_health_result(result, output_format)
 
 
 @health.command("monitor")
@@ -410,57 +396,47 @@ def gpu(ctx: click.Context) -> None:
 @gpu.command("discover")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-def gpu_discover(ctx: click.Context, output_format: str) -> None:
+@with_orchestrator
+def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Discover available GPU resources."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Discovering GPU resources...", total=None)
 
-    async def _discover() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+        result = asyncio.run(
+            orchestrator.manage_gpu_resources("discover")
         )
 
-        try:
-            await orchestrator.start()
-
-            result = await orchestrator.manage_gpu_resources("discover")
-
-            _display_gpu_result(result, output_format)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_discover())
+        progress.update(task, description="GPU discovery completed", completed=100)
+        _display_gpu_result(result, output_format)
 
 
 @gpu.command("status")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-def gpu_status(ctx: click.Context, output_format: str) -> None:
+@with_orchestrator
+def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Show GPU resource status."""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        transient=True,
+        console=console,
+    ) as progress:
+        task = progress.add_task("Fetching GPU status...", total=None)
 
-    async def _status() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
+        result = asyncio.run(
+            orchestrator.manage_gpu_resources("monitor")
         )
 
-        try:
-            await orchestrator.start()
-
-            result = await orchestrator.manage_gpu_resources("monitor")
-
-            _display_gpu_result(result, output_format)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_status())
+        progress.update(task, description="GPU status check completed", completed=100)
+        _display_gpu_result(result, output_format)
 
 
 @cli.group()
@@ -688,33 +664,16 @@ def certificates_renew(
 @cli.command("status")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-def status(ctx: click.Context, output_format: str) -> None:
+@with_orchestrator
+def status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Show overall system status."""
+    # Get system status
+    system_status = orchestrator.get_system_status()
 
-    async def _status() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-
-            # Get system status
-            system_status = orchestrator.get_system_status()
-
-            if output_format == "json":
-                console.print(json.dumps(system_status, indent=2, default=str))
-            else:
-                _display_system_status(system_status)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_status())
+    if output_format == "json":
+        console.print(json.dumps(system_status, indent=2, default=str))
+    else:
+        _display_system_status(system_status)
 
 
 # Display helper functions

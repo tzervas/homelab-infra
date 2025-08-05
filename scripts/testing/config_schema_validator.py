@@ -101,80 +101,100 @@ class ConfigValidator:
         logger.addHandler(handler)
         return logger
 
-    def validate_helm_environment_config(self, config_path: Path) -> bool:
-        """Validate Helm environment configuration file."""
+    def _handle_validation_error(self, error_msg: str) -> bool:
+        """Handle validation error consistently.
+
+        Args:
+            error_msg: Error message to log and store
+
+        Returns:
+            bool: Always returns False to indicate validation failure
+        """
+        self.logger.exception(error_msg)
+        self.errors.append(error_msg)
+        return False
+
+    def _load_and_validate_yaml(
+        self,
+        config_path: Path,
+        schema: dict | None = None,
+        allow_empty: bool = True,
+        context: str = "",
+    ) -> tuple[dict | None, bool]:
+        """Load and validate YAML configuration.
+
+        Args:
+            config_path: Path to the YAML file
+            schema: Optional JSON schema to validate against
+            allow_empty: Whether empty configs are acceptable
+            context: Context string for error messages
+
+        Returns:
+            tuple: (config dict or None, success bool)
+        """
         try:
             with open(config_path) as f:
                 config = yaml.safe_load(f)
 
             if not config:
-                self.logger.warning(f"⚠️ {config_path}: Empty configuration file")
-                return True  # Empty files are acceptable
+                msg = f"⚠️ {config_path}: Empty configuration file"
+                self.logger.warning(msg)
+                return None, allow_empty
 
-            jsonschema.validate(config, HELM_ENVIRONMENT_SCHEMA)
-            self.logger.info(f"✅ {config_path}: Valid Helm environment configuration")
-            return True
+            if schema:
+                jsonschema.validate(config, schema)
+
+            return config, True
 
         except jsonschema.ValidationError as e:
-            error_msg = f"❌ {config_path}: Helm schema validation failed - {e.message}"
-            self.logger.exception(error_msg)
-            self.errors.append(error_msg)
-            return False
-
+            return None, self._handle_validation_error(
+                f"❌ {config_path}: {context} schema validation failed - {e.message}"
+            )
         except Exception as e:
-            error_msg = f"❌ {config_path}: Failed to validate - {e}"
-            self.logger.exception(error_msg)
-            self.errors.append(error_msg)
-            return False
+            return None, self._handle_validation_error(
+                f"❌ {config_path}: Failed to validate - {e}"
+            )
+
+    def validate_helm_environment_config(self, config_path: Path) -> bool:
+        """Validate Helm environment configuration file."""
+        config, success = self._load_and_validate_yaml(
+            config_path,
+            HELM_ENVIRONMENT_SCHEMA,
+            context="Helm",
+        )
+        if success and config:
+            self.logger.info(f"✅ {config_path}: Valid Helm environment configuration")
+        return success
 
     def validate_environment_config(self, config_path: Path) -> bool:
         """Validate environment-specific configuration file."""
-        try:
-            with open(config_path) as f:
-                config = yaml.safe_load(f)
-
-            if not config:
-                self.logger.warning(f"⚠️ {config_path}: Empty configuration file")
-                return True
-
-            jsonschema.validate(config, ENVIRONMENT_CONFIG_SCHEMA)
+        config, success = self._load_and_validate_yaml(
+            config_path,
+            ENVIRONMENT_CONFIG_SCHEMA,
+            context="Environment",
+        )
+        if success and config:
             self.logger.info(f"✅ {config_path}: Valid environment configuration")
-            return True
-
-        except jsonschema.ValidationError as e:
-            error_msg = f"❌ {config_path}: Environment schema validation failed - {e.message}"
-            self.logger.exception(error_msg)
-            self.errors.append(error_msg)
-            return False
-
-        except Exception as e:
-            error_msg = f"❌ {config_path}: Failed to validate - {e}"
-            self.logger.exception(error_msg)
-            self.errors.append(error_msg)
-            return False
+        return success
 
     def validate_ansible_inventory(self, config_path: Path) -> bool:
         """Validate Ansible inventory file."""
-        try:
-            with open(config_path) as f:
-                config = yaml.safe_load(f)
+        config, success = self._load_and_validate_yaml(
+            config_path,
+            ANSIBLE_INVENTORY_SCHEMA,
+            allow_empty=False,
+            context="Ansible inventory",
+        )
 
-            if not config:
-                self.logger.warning(f"⚠️ {config_path}: Empty inventory file")
-                return False
-
-            # Basic validation for Ansible inventory structure
-            if "all" not in config:
-                self.logger.warning(f"⚠️ {config_path}: No 'all' group in inventory")
-
-            self.logger.info(f"✅ {config_path}: Valid Ansible inventory")
-            return True
-
-        except Exception as e:
-            error_msg = f"❌ {config_path}: Failed to validate Ansible inventory - {e}"
-            self.logger.exception(error_msg)
-            self.errors.append(error_msg)
+        if not success or not config:
             return False
+
+        # Additional inventory-specific validation
+        if "all" not in config:
+            self.logger.warning(f"⚠️ {config_path}: No 'all' group in inventory")
+
+        self.logger.info(f"✅ {config_path}: Valid Ansible inventory")
+        return True
 
     def detect_file_type(self, config_path: Path) -> str:
         """Detect configuration file type based on path and content."""

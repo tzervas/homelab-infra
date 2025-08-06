@@ -40,7 +40,7 @@ spec:
         - longhornio/support-bundle-kit:v0.0.27
         ports:
         - containerPort: 9500
-          name: manager
+          name: 
         volumeMounts:
         - name: dev
           mountPath: /host/dev/
@@ -93,7 +93,7 @@ spec:
   selector:
     app: longhorn-manager
   ports:
-  - name: manager
+  - name: 
     port: 9500
     targetPort: manager
 ---

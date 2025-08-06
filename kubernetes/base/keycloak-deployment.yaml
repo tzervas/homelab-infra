@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: keycloak
+  name: - keycloak
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: keycloak-db-secret
+  name: - keycloak-db-secret
   namespace: keycloak
 type: Opaque
 data:
@@ -19,7 +19,7 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: keycloak-admin-secret
+  name: - keycloak-admin-secret
   namespace: keycloak
 type: Opaque
 data:
@@ -43,7 +43,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: keycloak-data
+  name: - keycloak-data
   namespace: keycloak
 spec:
   accessModes:
@@ -78,12 +78,12 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: keycloak-db-secret
+              name: - keycloak-db-secret
               key: username
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: keycloak-db-secret
+              name: - keycloak-db-secret
               key: password
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
@@ -118,20 +118,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: keycloak
+  name: - keycloak
   namespace: keycloak
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: keycloak
+      app: - keycloak
   template:
     metadata:
       labels:
-        app: keycloak
+        app: - keycloak
     spec:
       containers:
-      - name: keycloak
+      - name: - keycloak
         image: quay.io/keycloak/keycloak:23.0
         args:
         - start
@@ -150,29 +150,29 @@ spec:
         - name: KC_DB_USERNAME
           valueFrom:
             secretKeyRef:
-              name: keycloak-db-secret
+              name: - keycloak-db-secret
               key: username
         - name: KC_DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: keycloak-db-secret
+              name: - keycloak-db-secret
               key: password
         - name: KEYCLOAK_ADMIN
           valueFrom:
             secretKeyRef:
-              name: keycloak-admin-secret
+              name: - keycloak-admin-secret
               key: username
         - name: KEYCLOAK_ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: keycloak-admin-secret
+              name: - keycloak-admin-secret
               key: password
         - name: KC_HOSTNAME_URL
           value: https://auth.homelab.local
         - name: KC_HOSTNAME_ADMIN_URL
           value: https://auth.homelab.local
         volumeMounts:
-        - name: keycloak-data
+        - name: - keycloak-data
           mountPath: /opt/keycloak/data
         - name: realm-config
           mountPath: /opt/keycloak/data/import
@@ -196,17 +196,17 @@ spec:
           initialDelaySeconds: 120
           periodSeconds: 30
       volumes:
-      - name: keycloak-data
+      - name: - keycloak-data
         persistentVolumeClaim:
           claimName: keycloak-data
       - name: realm-config
         configMap:
-          name: keycloak-realm-config
+          name: - keycloak-realm-config
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: keycloak-realm-config
+  name: - keycloak-realm-config
   namespace: keycloak
 data:
   homelab-realm.json: |
@@ -324,11 +324,11 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: keycloak
+  name: - keycloak
   namespace: keycloak
 spec:
   selector:
-    app: keycloak
+    app: - keycloak
   ports:
     - protocol: TCP
       port: 8080
@@ -337,7 +337,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: keycloak-https-ingress
+  name: - keycloak-https-ingress
   namespace: keycloak
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -359,14 +359,14 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: keycloak
+            name: - keycloak
             port:
               number: 8080
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: keycloak-tls-cert
+  name: - keycloak-tls-cert
   namespace: keycloak
 spec:
   secretName: keycloak-tls-cert

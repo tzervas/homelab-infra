@@ -174,13 +174,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: keycloak
+  name: - keycloak
   namespace: keycloak
 spec:
   template:
     spec:
       containers:
-      - name: keycloak
+      - name: - keycloak
         resources:
           requests:
             memory: "512Mi"
@@ -302,13 +302,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gitlab
+  name: - gitlab
   namespace: gitlab
 spec:
   template:
     spec:
       containers:
-      - name: gitlab
+      - name: - gitlab
         resources:
           requests:
             memory: "2Gi"
@@ -322,13 +322,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gitlab-runner
+  name: - gitlab-runner
   namespace: gitlab
 spec:
   template:
     spec:
       containers:
-      - name: gitlab-runner
+      - name: - gitlab-runner
         resources:
           requests:
             memory: "256Mi"
@@ -362,13 +362,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ollama
+  name: - ollama
   namespace: ai-tools
 spec:
   template:
     spec:
       containers:
-      - name: ollama
+      - name: - ollama
         resources:
           requests:
             memory: "2Gi"
@@ -550,7 +550,7 @@ spec:
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: gitlab-quota
+  name: - gitlab-quota
   namespace: gitlab
 spec:
   hard:

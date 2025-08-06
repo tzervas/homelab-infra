@@ -39,7 +39,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: monitoring
+  name: - monitoring
   labels:
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/audit: baseline
@@ -50,7 +50,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: gitlab
+  name: - gitlab
   labels:
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/audit: restricted
@@ -61,7 +61,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: keycloak
+  name: - keycloak
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted

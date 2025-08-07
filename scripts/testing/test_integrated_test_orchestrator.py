@@ -137,6 +137,7 @@ class TestSecurityValidationFunctions:
             with pytest.raises(ValueError, match=f"Path traversal not detected: {attack_path}"):
                 validate_path(attack_path)
 
+<<<<<<< HEAD
     @pytest.mark.skipif(
         not hasattr(os, "symlink"),
         reason="Symlinks not supported on this platform"
@@ -411,7 +412,11 @@ class TestIntegratedTestOrchestratorSecurity:
         # Simulate successful subprocess run
         mock_subprocess.return_value.returncode = 0
         result = orchestrator.run_k3s_validation_tests(categories=["core"])
+<<<<<<< HEAD
         assert result is None
+=======
+        self.assertIsNone(result)
+>>>>>>> 8f1b300 (fix: address code review feedback and security issues)
 
     def test_generate_integration_recommendations_empty(self):
         """Test that generate_integration_recommendations returns empty when no recommendations or failures."""

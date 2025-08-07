@@ -5,7 +5,7 @@ metadata:
   namespace: oauth2-proxy
 type: Opaque
 data:
-  # OAuth2 client secret - MUST be set via environment variable
+  # Client secret - MUST be set via environment variable or external secret management
   client-secret: ${OAUTH2_CLIENT_SECRET}
   # Cookie encryption secret - MUST be set via environment variable (32-byte random)
   cookie-secret: ${OAUTH2_COOKIE_SECRET}

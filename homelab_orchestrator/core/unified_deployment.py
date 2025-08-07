@@ -243,9 +243,10 @@ class UnifiedDeploymentManager:
                 status = "success"
                 error = ""
             elif step.command:
-                # Execute shell command directly
+                # Execute shell command with proper escaping
+                escaped_command = shlex.quote(step.command)
                 result = await asyncio.create_subprocess_shell(
-                    step.command,
+                    escaped_command,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     cwd=self.project_root,
@@ -329,7 +330,7 @@ class UnifiedDeploymentManager:
 
         # Execute K3s setup script
         result = await asyncio.create_subprocess_shell(
-            str(script_path),
+            shlex.quote(str(script_path)),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -354,7 +355,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in components:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,
@@ -376,7 +377,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -396,7 +397,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,

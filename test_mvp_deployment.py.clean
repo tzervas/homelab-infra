@@ -125,11 +125,11 @@ class MVPDeploymentTest:
             from os import environ
             test_client_secret = environ.get('OAUTH2_TEST_CLIENT_SECRET')
             test_cookie_secret = environ.get('OAUTH2_TEST_COOKIE_SECRET')
-            
+
             if not test_client_secret or not test_cookie_secret:
                 self.logger.error(" Test environment variables not set")
                 return False
-                
+
             if test_client_secret in content or test_cookie_secret in content:
                 self.logger.error(" Found hardcoded secrets in OAuth2 configuration")
                 return False

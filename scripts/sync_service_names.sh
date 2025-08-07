@@ -42,10 +42,10 @@ service_names=$(parse_service_names)
 # Update each manifest file
 for manifest in $manifest_files; do
     echo "Processing $manifest..."
-    
+
     # Extract current service names from manifest
     current_names=$(grep -E '^ *name:' "$manifest" | sed 's/[[:space:]]*name:[[:space:]]*//')
-    
+
     # Compare and update names
     for name in $current_names; do
         if [[ $service_names =~ $name ]]; then

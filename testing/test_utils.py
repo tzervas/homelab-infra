@@ -63,6 +63,19 @@ def test_teardown_deletes_namespace(test_env, mock_k8s_api):
         body=mock_k8s_api.delete_namespace.call_args[1]['body']
     )
 
+def test_teardown_handles_namespace_deletion_failure(test_env, mock_k8s_api):
+    """Test teardown handles exception during namespace deletion gracefully."""
+    mock_k8s_api.delete_namespace.side_effect = Exception("deletion failed")
+    try:
+        test_env.teardown()
+    except Exception:
+        pytest.fail("Exception should be handled during teardown")
+    # Ensure delete_namespace was still called
+    mock_k8s_api.delete_namespace.assert_called_once_with(
+        name=test_env.namespace,
+        body=mock_k8s_api.delete_namespace.call_args[1]['body']
+    )
+
 def test_validate_dependencies_with_missing_deps(test_env):
     """Test dependency validation with missing dependencies."""
     test_config = {'dependencies': ['dep1', 'dep2']}
@@ -131,6 +144,16 @@ def test_error_handling_during_setup(test_env, mock_k8s_api):
     
     with pytest.raises(Exception, match="Test error"):
         test_env.setup()
+
+def test_error_handling_during_teardown(caplog, test_env, mock_k8s_api):
+    """Test error handling during teardown."""
+    mock_k8s_api.delete_namespace.side_effect = Exception("Teardown error")
+    with caplog.at_level(logging.ERROR):
+        try:
+            test_env.teardown()
+        except Exception:
+            pass  # If teardown is not swallowing the exception, allow it for the test
+    assert "Teardown error" in caplog.text
 
 # Test RetryConfig and with_retry decorator
 def test_retry_with_success():

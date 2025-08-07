@@ -118,8 +118,6 @@ class TimeoutConfig:
     cleanup_grace: int = 30  # 30 sec
 
 
-# K3sValidationResult moved to k3s_validation.manager
-
 
 @dataclass
 class IntegratedTestResults:
@@ -502,7 +500,7 @@ class IntegratedTestOrchestrator:
         msg = f"Unsupported format type: {format_type}"
         raise ValueError(msg)
 
-    def print_integrated_summary(self, results: IntegratedTestResults) -> NoReturn:
+    def print_integrated_summary(self, results: IntegratedTestResults) -> None:
         """Print a comprehensive console summary of integrated results."""
         print("\\n🏠 INTEGRATED HOMELAB INFRASTRUCTURE TEST REPORT")
         print(f"{'=' * 60}")
@@ -542,7 +540,7 @@ class IntegratedTestOrchestrator:
         print(f"\\n{'=' * 60}")
 
 
-def main() -> int | NoReturn:
+def main() -> int:
     """Main function for integrated testing."""
     import argparse
 

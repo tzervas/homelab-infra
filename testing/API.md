@@ -382,6 +382,11 @@ tracker.cleanup_resources()
    - Use type hints consistently
    - Run Mypy in strict mode
    - Document parameter and return types
+   - Use proper return types:
+     - Return `None` for void functions and print-only functions
+     - Return `int` for command-line tools (0 for success, non-zero for failure)
+     - Return `bool` for validation functions
+     - Use `Optional[T]` for functions that may return None
 
 4. **Testing**
    - Write unit tests for custom components

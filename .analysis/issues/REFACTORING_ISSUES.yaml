@@ -1,0 +1,87 @@
+---
+issues:
+  - id: SECURITY-001
+    title: "Fix OAuth2 Proxy API Key Exposure"
+    type: security
+    priority: high
+    branch: security/oauth2-proxy-secrets
+    description: |
+      Move exposed API keys in OAuth2 proxy configurations to Kubernetes secrets.
+      Affected files:
+      - kubernetes/keycloak/oauth2-proxy-multi-client.yaml
+      - kubernetes/base/oauth2-proxy.yaml
+    tasks:
+      - Create Kubernetes secrets schema
+      - Update manifest templates
+      - Add secret rotation documentation
+      - Update deployment guide
+    dependencies: []
+
+  - id: SECURITY-002
+    title: "Implement Secure Command Execution Framework"
+    type: security
+    priority: high
+    branch: security/command-execution
+    description: |
+      Standardize command execution with secure validation and async support.
+      Fix subprocess.run security issues.
+    tasks:
+      - Enhance command validation utility
+      - Add comprehensive security tests
+      - Migrate subprocess calls
+      - Add security documentation
+    dependencies: []
+
+  - id: SECURITY-003
+    title: "Fix Unified Deployment Command Injection Risks"
+    type: security
+    priority: high
+    branch: security/unified-deployment
+    description: |
+      Address command injection risks in unified deployment module.
+      Consolidate shell commands under secure async utility.
+    tasks:
+      - Update async command framework
+      - Fix unified_deployment.py issues
+      - Add security tests
+      - Update documentation
+    dependencies:
+      - SECURITY-002
+
+  - id: REFACTOR-001
+    title: "Split HomelabOrchestrator into Service Modules"
+    type: refactor
+    priority: medium
+    branch: refactor/orchestrator-services
+    description: |
+      Break down HomelabOrchestrator into focused service modules
+      for better maintainability and testing.
+    tasks:
+      - Create service interfaces
+      - Implement core services
+      - Update orchestrator
+      - Add tests
+      - Update documentation
+    dependencies:
+      - SECURITY-002
+      - SECURITY-003
+
+validation:
+  required:
+    - Comprehensive test coverage
+    - Security validation
+    - Documentation updates
+    - Migration guide
+
+ci_checks:
+  - name: secret-detection
+    type: security
+    tool: gitleaks
+    
+  - name: command-injection
+    type: security
+    tool: opengrep
+    
+  - name: subprocess-audit
+    type: security
+    tool: opengrep

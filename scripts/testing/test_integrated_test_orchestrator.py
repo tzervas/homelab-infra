@@ -95,7 +95,7 @@ class TestSecurityValidationFunctions:
         # Test case sensitivity (should fail for wrong case)
         with pytest.raises(ValueError):
             sanitize_categories(["CORE"])
-        
+
         # Test allowed category with special characters stripped
         result = sanitize_categories(["core!!"])
         assert result == ["core"]
@@ -139,17 +139,17 @@ class TestSecurityValidationFunctions:
 
     @pytest.mark.skipif(
         not hasattr(os, "symlink"),
-        reason="Symlinks not supported on this platform"
+        reason="Symlinks not supported on this platform",
     )
     def test_validate_path_symlink_attacks(self):
         """Test validate_path against symlink attacks."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            
+
             # Create a symlink pointing outside the allowed directory
             outside_file = Path("/etc/passwd")  # Common system file
             symlink_path = temp_path / "malicious_link"
-            
+
             # Only create symlink if we have permission and target exists
             if outside_file.exists():
                 try:
@@ -342,7 +342,10 @@ class TestIntegratedTestOrchestratorSecurity:
     @patch("json.load")
     @patch("subprocess.run")
     def test_run_k3s_validation_tests_report_parsing_security(
-        self, mock_subprocess, mock_json_load, mock_open
+        self,
+        mock_subprocess,
+        mock_json_load,
+        mock_open,
     ):
         """Test that report parsing is secure against malicious JSON."""
         orchestrator = IntegratedTestOrchestrator(base_dir=str(self.temp_path))
@@ -392,8 +395,8 @@ class TestIntegratedTestOrchestratorSecurity:
         assert availability["k3s_validation"]
         assert availability["orchestrator_script"]
 
-    @patch('os.path.exists', return_value=False)
-    @patch('subprocess.run')
+    @patch("os.path.exists", return_value=False)
+    @patch("subprocess.run")
     def test_run_k3s_validation_tests_missing_report_file(self, mock_subprocess, mock_exists):
         """Test that run_k3s_validation_tests handles missing report file gracefully."""
         orchestrator = IntegratedTestOrchestrator(base_dir=str(self.temp_path))
@@ -402,10 +405,12 @@ class TestIntegratedTestOrchestratorSecurity:
         result = orchestrator.run_k3s_validation_tests(categories=["core"])
         assert result is None
 
-    @patch('builtins.open', side_effect=IOError("File not readable"))
-    @patch('os.path.exists', return_value=True)
-    @patch('subprocess.run')
-    def test_run_k3s_validation_tests_unreadable_report_file(self, mock_subprocess, mock_exists, mock_open):
+    @patch("builtins.open", side_effect=OSError("File not readable"))
+    @patch("os.path.exists", return_value=True)
+    @patch("subprocess.run")
+    def test_run_k3s_validation_tests_unreadable_report_file(
+        self, mock_subprocess, mock_exists, mock_open
+    ):
         """Test that run_k3s_validation_tests handles unreadable report file gracefully."""
         orchestrator = IntegratedTestOrchestrator(base_dir=str(self.temp_path))
         # Simulate successful subprocess run
@@ -418,11 +423,11 @@ class TestIntegratedTestOrchestratorSecurity:
         orchestrator = IntegratedTestOrchestrator(base_dir=str(self.temp_path))
         python_results = {
             "recommendations": [],
-            "failures": []
+            "failures": [],
         }
         k3s_results = {
             "recommendations": [],
-            "failures": []
+            "failures": [],
         }
         output = orchestrator.generate_integration_recommendations(python_results, k3s_results)
         # Adjust the assertion below if the expected output is not an empty list
@@ -441,7 +446,8 @@ class TestSecurityIntegration:
         (self.temp_path / "scripts" / "testing").mkdir(parents=True, exist_ok=True)
         (self.temp_path / "testing" / "k3s-validation").mkdir(parents=True, exist_ok=True)
         (self.temp_path / "testing" / "k3s-validation" / "reports").mkdir(
-            parents=True, exist_ok=True
+            parents=True,
+            exist_ok=True,
         )
 
         # Create mock orchestrator script
@@ -519,8 +525,8 @@ class TestSecurityIntegration:
         assert "Address 2 failed K3s validation tests" in recommendations
         assert "Review 1 K3s validation warnings" in recommendations
 
-    @patch('scripts.testing.integrated_test_orchestrator.HomelabTestReporter')
-    @patch('subprocess.run')
+    @patch("scripts.testing.integrated_test_orchestrator.HomelabTestReporter")
+    @patch("subprocess.run")
     def test_end_to_end_security_validation_failure(self, mock_subprocess, mock_reporter_class):
         """Test end-to-end security validation failure scenario in integrated test suite."""
         # Mock Python framework reporter to simulate failure
@@ -528,7 +534,7 @@ class TestSecurityIntegration:
         mock_reporter.run_comprehensive_test_suite.return_value = Mock(
             overall_status="fail",
             summary={"tests_passed": 3, "tests_failed": 2},
-            recommendations=["Check network policies", "Update RBAC rules"]
+            recommendations=["Check network policies", "Update RBAC rules"],
         )
         mock_reporter_class.return_value = mock_reporter
 
@@ -541,15 +547,15 @@ class TestSecurityIntegration:
 
         # Test that the orchestrator handles failures correctly
         orchestrator = IntegratedTestOrchestrator(base_dir=str(self.temp_path))
-        
+
         # Mock a comprehensive test run that would fail
         python_results = mock_reporter.run_comprehensive_test_suite.return_value
         k3s_results = orchestrator.run_k3s_validation_tests(categories=["core"])
-        
+
         # Verify that both components detected failures
         assert python_results.overall_status == "fail"
-        assert k3s_results is None or k3s_results.get('exit_code') == 1
-        
+        assert k3s_results is None or k3s_results.get("exit_code") == 1
+
         # Ensure the reporter was called
         mock_reporter.run_comprehensive_test_suite.assert_called_once()
 

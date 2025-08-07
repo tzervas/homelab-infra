@@ -12,14 +12,14 @@ It serves as a unified entry point for all testing operations.
 import json
 import logging
 import re
-import subprocess
 import sys
 import time
-import concurrent.futures
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
+
+from .k3s_validation import K3sValidationManager, K3sValidationResult
 
 
 try:
@@ -111,24 +111,14 @@ def validate_path(path: str | Path) -> Path:
 @dataclass
 class TimeoutConfig:
     """Configuration for operation timeouts."""
+
     python_framework: int = 600  # 10 min
-    k3s_validation: int = 1800   # 30 min
+    k3s_validation: int = 1800  # 30 min
     per_test_default: int = 300  # 5 min
-    cleanup_grace: int = 30      # 30 sec
+    cleanup_grace: int = 30  # 30 sec
 
-@dataclass
-class K3sValidationResult:
-    """Results from K3s validation framework."""
 
-    timestamp: str
-    test_suite: str
-    namespace: str
-    summary: dict[str, Any]
-    cluster_info: dict[str, Any]
-    categories_run: list[str] = field(default_factory=list)
-    exit_code: int = 0
-    duration: float = 0.0
-    report_files: list[str] = field(default_factory=list)
+# K3sValidationResult moved to k3s_validation.manager
 
 
 @dataclass
@@ -146,6 +136,16 @@ class IntegratedTestResults:
 
 class IntegratedTestOrchestrator:
     """Master orchestrator for all homelab testing frameworks."""
+
+    timeout_config: TimeoutConfig
+    logger: logging.Logger
+    kubeconfig_path: str | None
+    base_dir: Path
+    python_framework_dir: Path
+    k3s_validation_dir: Path 
+    orchestrator_path: Path
+    results_dir: Path
+    python_reporter: HomelabTestReporter
 
     def __init__(
         self,
@@ -207,17 +207,6 @@ class IntegratedTestOrchestrator:
 
         return logger
 
-    def cleanup_on_timeout(self, proc: subprocess.Popen) -> None:
-        """Gracefully terminate process tree on timeout."""
-        try:
-            proc.terminate()
-            try:
-                proc.wait(timeout=self.timeout_config.cleanup_grace)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-        except Exception as e:
-            self.logger.error(f"Cleanup failed: {e}")
-
     def _validate_framework_availability(self) -> dict[str, bool]:
         """Check availability of both testing frameworks."""
         availability = {
@@ -261,165 +250,26 @@ class IntegratedTestOrchestrator:
         """Run the K3s validation framework."""
         self.logger.info("🛠️ Running K3s validation tests...")
 
-        # Validate orchestrator path
         try:
-            validated_orchestrator = validate_path(self.orchestrator_path)
-            if not validated_orchestrator.exists():
-                self.logger.error(f"K3s orchestrator not found: {validated_orchestrator}")
-                return None
-        except ValueError as e:
-            self.logger.error(f"Invalid orchestrator path: {e}")
-            return None
-
-        # Sanitize and validate input parameters
-        try:
+            # Sanitize categories using existing function
             sanitized_categories = sanitize_categories(categories)
-        except ValueError as e:
-            self.logger.error(f"Invalid categories: {e}")
-            return None
-
-        # Validate report format
-        allowed_formats = {"json", "xml", "html"}
-        if report_format not in allowed_formats:
-            self.logger.error(f"Invalid report format: {report_format}")
-            return None
-
-        # Build command arguments securely - using list format prevents injection
-        # All inputs have been validated above: validated_orchestrator, sanitized_categories, report_format
-        cmd = [str(validated_orchestrator)]
-
-        if sanitized_categories:
-            # Categories have already been sanitized by sanitize_categories()
-            cmd.extend(sanitized_categories)
-        else:
-            cmd.append("--all")
-
-        # report_format has been validated against allowed_formats above
-        cmd.extend(
-            [
-                "--report-format",
-                report_format,
-            ]
-        )
-
-        if parallel:
-            cmd.append("--parallel")
-
-        start_time = time.time()
-
-        try:
-            # Validate working directory
-            validated_workdir = validate_path(self.k3s_validation_dir)
-
-            # Execute the K3s validation framework
-            self.logger.debug(f"Executing command: {' '.join(cmd)}")
-            result = None
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                # Start process but don't wait for completion
-                process = subprocess.Popen(
-                    cmd,
-                    cwd=validated_workdir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-
-                # Submit process monitoring to executor
-                future = executor.submit(lambda p: p.communicate(), process)
-
-                try:
-                    # Wait for completion with timeout
-                    stdout, stderr = future.result(timeout=self.timeout_config.k3s_validation)
-                    result = subprocess.CompletedProcess(
-                        args=cmd,
-                        returncode=process.returncode,
-                        stdout=stdout,
-                        stderr=stderr,
-                    )
-                except concurrent.futures.TimeoutError:
-                    self.logger.error("❌ K3s validation tests timed out, cleaning up...")
-                    self.cleanup_on_timeout(process)
-                    raise subprocess.TimeoutExpired(
-                        cmd=cmd,
-                        timeout=self.timeout_config.k3s_validation,
-                    )
-
-            if result is None:
-                raise Exception("K3s validation execution failed")
-
-            duration = time.time() - start_time
-
-            # Parse the JSON report if available
-            try:
-                validated_reports_dir = validate_path(self.k3s_validation_dir / "reports")
-                report_files = (
-                    list(validated_reports_dir.glob("test-*.json"))
-                    if validated_reports_dir.exists()
-                    else []
-                )
-            except ValueError as e:
-                self.logger.warning(f"Invalid reports directory path: {e}")
-                report_files = []
-
-            # Load the most recent report
-            cluster_info = {}
-            summary = {}
-            test_suite = "K3s Validation"
-            namespace = "k3s-test"
-
-            if report_files:
-                latest_report = max(report_files, key=lambda p: p.stat().st_mtime)
-                try:
-                    # Validate the report file path
-                    validated_report = validate_path(latest_report)
-                    with open(validated_report) as f:
-                        report_data = json.load(f)
-                        # Sanitize loaded data
-                        summary = (
-                            report_data.get("summary", {})
-                            if isinstance(report_data.get("summary"), dict)
-                            else {}
-                        )
-                        cluster_info = (
-                            report_data.get("cluster_info", {})
-                            if isinstance(report_data.get("cluster_info"), dict)
-                            else {}
-                        )
-                        test_suite = str(report_data.get("test_suite", test_suite))[
-                            :100
-                        ]  # Limit length
-                        namespace = str(report_data.get("namespace", namespace))[
-                            :50
-                        ]  # Limit length
-                except (ValueError, json.JSONDecodeError, OSError) as e:
-                    self.logger.warning(f"Failed to parse K3s report {latest_report}: {e}")
-
-            k3s_result = K3sValidationResult(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                test_suite=test_suite,
-                namespace=namespace,
-                summary=summary,
-                cluster_info=cluster_info,
-                categories_run=sanitized_categories or ["all"],
-                exit_code=result.returncode,
-                duration=duration,
-                report_files=[str(f) for f in report_files],
+            
+            # Initialize and use K3sValidationManager
+            validation_manager = K3sValidationManager(
+                base_dir=self.base_dir,
+                timeout_config=self.timeout_config
             )
+            
+            result = validation_manager.validate_k3s_config(
+                categories=sanitized_categories,
+                report_format=report_format,
+                parallel=parallel
+            )
+            
+            return result
 
-            if result.returncode == 0:
-                self.logger.info("✅ K3s validation tests completed successfully")
-            else:
-                self.logger.warning(
-                    f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})",
-                )
-                if result.stderr:
-                    self.logger.warning(f"K3s validation stderr: {result.stderr}")
-
-            return k3s_result
-
-        except subprocess.TimeoutExpired:
-            self.logger.exception("❌ K3s validation tests timed out")
+        except ValueError as e:
+            self.logger.error(f"Invalid configuration: {e}")
             return None
         except Exception as e:
             self.logger.exception(f"❌ K3s validation tests failed: {e}")
@@ -652,7 +502,7 @@ class IntegratedTestOrchestrator:
         msg = f"Unsupported format type: {format_type}"
         raise ValueError(msg)
 
-    def print_integrated_summary(self, results: IntegratedTestResults) -> None:
+    def print_integrated_summary(self, results: IntegratedTestResults) -> NoReturn:
         """Print a comprehensive console summary of integrated results."""
         print("\\n🏠 INTEGRATED HOMELAB INFRASTRUCTURE TEST REPORT")
         print(f"{'=' * 60}")
@@ -692,7 +542,7 @@ class IntegratedTestOrchestrator:
         print(f"\\n{'=' * 60}")
 
 
-def main() -> int:
+def main() -> int | NoReturn:
     """Main function for integrated testing."""
     import argparse
 

@@ -57,6 +57,27 @@ class TestSecurityValidationFunctions:
     def test_sanitize_categories_invalid_inputs(self):
         """Test sanitize_categories with invalid/malicious inputs."""
         # Test command injection attempts
+        with pytest.raises(ValueError):
+            sanitize_categories(['core;rm -rf /'])
+        with pytest.raises(ValueError):
+            sanitize_categories(['core|ls'])
+        with pytest.raises(ValueError):
+            sanitize_categories(['core&&echo pwned'])
+            
+        # Test non-ASCII and Unicode inputs
+        with pytest.raises(ValueError):
+            sanitize_categories(['core🔥'])
+        with pytest.raises(ValueError):
+            sanitize_categories(['séçurity'])
+        with pytest.raises(ValueError):
+            sanitize_categories(['测试'])
+            
+        # Test empty/malformed inputs
+        assert sanitize_categories([]) == []
+        with pytest.raises(ValueError):
+            sanitize_categories([''])
+        with pytest.raises(ValueError):
+            sanitize_categories([' '])
         malicious_inputs = [
             ["core; rm -rf /"],
             ["core && cat /etc/passwd"],
@@ -124,7 +145,22 @@ class TestSecurityValidationFunctions:
 
     def test_validate_path_traversal_attacks(self):
         """Test validate_path against path traversal attacks."""
-        # Test various path traversal attempts
+        # Test various path traversal attempts including Windows-style
+        invalid_paths = [
+            '../../../etc/passwd',
+            '..\\..\\Windows\\System32',
+            './../../../etc/shadow',
+            '..\\..\\..\\Windows\\System32\\config\\SAM',
+            './test/../../etc/passwd',
+            '.\\test\\..\\..\\Windows\\System32',
+            '%2e%2e%2f%2e%2e%2f%2e%2e%2f',  # URL encoded ../../../
+            'test/....//....//etc/passwd',    # Advanced traversal
+            'test\\....\\\\....\\\\Windows',  # Mixed separators
+        ]
+        
+        for path in invalid_paths:
+            with pytest.raises(ValueError, match=r'(traversal|invalid)'):
+                validate_path(path)
         traversal_attempts = [
             "../../../etc/passwd",
             "../../root/.ssh/id_rsa",

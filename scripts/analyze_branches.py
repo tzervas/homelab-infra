@@ -40,12 +40,25 @@ def get_all_branches() -> List[str]:
     return [b for b in branches if b]
 
 def get_branch_info(branch: str) -> BranchInfo:
-    # Get last commit info
-    commit_info = run_git_command([
-        'git', 'log', '-1',
-        '--format=%H%n%an%n%aI',
-        branch
-    ]).split('\n')
+    try:
+        # Get last commit info
+        output = run_git_command([
+            'git', 'log', '-1',
+            '--format=%H%n%an%n%aI',
+            branch
+        ])
+        
+        # Validate output is not empty
+        if not output.strip():
+            raise ValueError(f"No commit info found for branch: {branch}")
+            
+        # Split output and validate we have all needed parts
+        commit_info = output.strip().split('\n')
+        if len(commit_info) != 3:
+            raise ValueError(
+                f"Invalid commit info format for branch {branch}. " 
+                f"Expected 3 lines, got {len(commit_info)}"
+            )
     
     # Get commit count
     commit_count = int(run_git_command([

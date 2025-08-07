@@ -24,7 +24,7 @@ create_branch_bundle() {
     local bundle_file="${BACKUP_DIR}/${safe_name}.bundle"
     
     # Create bundle
-    git bundle create "${bundle_file}" "${branch}" --all
+    git bundle create "${bundle_file}" "${branch}"
 
     # Add to manifest
     echo "    - name: ${branch}" >> "${MANIFEST_FILE}"

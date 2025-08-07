@@ -137,6 +137,10 @@ class TestSecurityValidationFunctions:
             with pytest.raises(ValueError, match=f"Path traversal not detected: {attack_path}"):
                 validate_path(attack_path)
 
+    @pytest.mark.skipif(
+        not hasattr(os, "symlink"),
+        reason="Symlinks not supported on this platform"
+    )
     def test_validate_path_symlink_attacks(self):
         """Test validate_path against symlink attacks."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -396,7 +400,7 @@ class TestIntegratedTestOrchestratorSecurity:
         # Simulate successful subprocess run
         mock_subprocess.return_value.returncode = 0
         result = orchestrator.run_k3s_validation_tests(categories=["core"])
-        self.assertIsNone(result)
+        assert result is None
 
     @patch('builtins.open', side_effect=IOError("File not readable"))
     @patch('os.path.exists', return_value=True)
@@ -407,7 +411,7 @@ class TestIntegratedTestOrchestratorSecurity:
         # Simulate successful subprocess run
         mock_subprocess.return_value.returncode = 0
         result = orchestrator.run_k3s_validation_tests(categories=["core"])
-        self.assertIsNone(result)
+        assert result is None
 
     def test_generate_integration_recommendations_empty(self):
         """Test that generate_integration_recommendations returns empty when no recommendations or failures."""

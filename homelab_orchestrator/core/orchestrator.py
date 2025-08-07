@@ -1,40 +1,3 @@
-<<<<<<< HEAD
-import asyncio
-import logging
-from pathlib import Path
-from typing import Any
-
-from ..monitor import HealthMonitor
-from ..network import IngressManager
-from ..portal import PortalManager
-from ..remote.cluster_manager import ClusterManager
-from ..webhooks.manager import WebhookManager
-from .certificates import CertificateManager
-from .config_manager import ConfigManager
-from .deployment import DeploymentManager
-from .gpu_manager import GPUResourceManager
-
-
-class HomelabOrchestrator:
-    """Main orchestrator class for managing homelab deployment and operations."""
-
-    def __init__(self, config_path: Path) -> None:
-        """Initialize orchestrator with configuration path."""
-        self.config_path = config_path
-
-        # Load configuration
-        self.config_manager = ConfigManager(config_path)
-        config = self.config_manager.load_configuration()
-
-        # Deployment managers
-        deployment_config = config.get("deployment", {})
-        self.deployment_manager = DeploymentManager(
-            config_manager=self.config_manager,
-        )
-
-        # Certificate management
-        self.certificate_manager = CertificateManager(
-=======
 """
 Homelab Orchestrator - Main orchestration engine.
 
@@ -50,6 +13,7 @@ Unified orchestration system that coordinates all homelab operations:
 import asyncio
 import contextlib
 import logging
+import shlex
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -148,7 +112,6 @@ class HomelabOrchestrator:
         )
 
         self.security_manager = SecurityManager(
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
             config_manager=self.config_manager,
         )
 
@@ -160,44 +123,11 @@ class HomelabOrchestrator:
         else:
             self.gpu_manager = None
 
-<<<<<<< HEAD
-        # Network management
-        self.ingress_manager = IngressManager(
-            config_manager=self.config_manager,
-        )
-
-=======
         # Webhook management
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         self.webhook_manager = WebhookManager(
             config_manager=self.config_manager,
         )
 
-<<<<<<< HEAD
-        self.health_monitor = HealthMonitor(
-            config_manager=self.config_manager,
-        )
-
-    async def start(self) -> None:
-        """Start orchestrator components."""
-        # Start network monitoring
-        await self.ingress_manager.start()
-        await self.health_monitor.start()
-
-        if self.gpu_manager:
-            await self.gpu_manager.start_monitoring()
-
-        # Start certificate manager
-        await self.certificate_manager.start()
-
-        # Start webhook server
-        await self.webhook_manager.start()
-
-    async def stop(self) -> None:
-        """Stop orchestrator components."""
-        await self.ingress_manager.stop()
-
-=======
         # Cluster management (for remote/hybrid deployments)
         if self.config_manager.context.cluster_type in ["remote", "hybrid"]:
             self.cluster_manager = ClusterManager(
@@ -251,17 +181,10 @@ class HomelabOrchestrator:
                     await task
 
         # Stop component managers
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
         if self.gpu_manager:
             await self.gpu_manager.stop_monitoring()
 
         await self.health_monitor.stop_monitoring()
-<<<<<<< HEAD
-        await self.certificate_manager.stop()
-        await self.webhook_manager.stop()
-
-        # Shutdown thread pool
-=======
         await self.webhook_manager.stop()
 
         # Shutdown thread pool
@@ -1105,7 +1028,7 @@ class HomelabOrchestrator:
                     if namespace not in existing_namespaces:
                         issues.append(f"Namespace missing: {namespace}")
                         recommendations.append(
-                            f"Create namespace: kubectl create namespace {namespace}",
+                            f"Create namespace: kubectl create namespace {shlex.quote(namespace)}",
                         )
             else:
                 issues.append("Cannot retrieve namespaces from cluster")
@@ -1273,7 +1196,7 @@ class HomelabOrchestrator:
 
             for url, service_name in services_to_test:
                 result = await asyncio.create_subprocess_shell(
-                    f"curl -k -s -o /dev/null -w '%{{http_code}}' --connect-timeout 3 {url}",
+                    f"curl -k -s -o /dev/null -w '%{{http_code}}' --connect-timeout 3 {shlex.quote(url)}",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
@@ -1423,4 +1346,3 @@ class HomelabOrchestrator:
                 "cluster": self.cluster_manager is not None,
             },
         }
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)

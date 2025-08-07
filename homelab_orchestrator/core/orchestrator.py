@@ -1328,7 +1328,7 @@ class HomelabOrchestrator:
                 "status": "running",
                 "event_queue_size": self.event_queue.qsize(),
                 "running_tasks": len(self.running_tasks),
-                "thread_pool_active": self.thread_pool._threads,
+                "thread_pool_active": getattr(self.thread_pool, "_threads", 0),
             },
             "configuration": {
                 "environment": self.config_manager.context.environment,

@@ -11,10 +11,10 @@ metadata:
   namespace: oauth2-proxy
 type: Opaque
 data:
-  # homelab-portal-secret
-  client-secret: aG9tZWxhYi1wb3J0YWwtc2VjcmV0
-  # Random 32-byte secret for cookie encryption
-  cookie-secret: SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM=
+  # Client secret - MUST be set via environment variable or external secret management
+  client-secret: ${OAUTH2_CLIENT_SECRET}
+  # Cookie encryption secret - MUST be set via environment variable (32-byte random)
+  cookie-secret: ${OAUTH2_COOKIE_SECRET}
 ---
 apiVersion: v1
 kind: ConfigMap

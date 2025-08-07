@@ -208,7 +208,10 @@ def test_test_progress_monitor_update(progress_monitor):
 def test_test_progress_monitor_stalled_tests(progress_monitor):
     """Test stalled test detection."""
     progress_monitor.update_progress("test1", "running")
-    time.sleep(0.1)  # Small delay
+    # Use a proper timeout mechanism instead of arbitrary sleep
+    start_time = time.time()
+    while time.time() - start_time < 0.1:
+        pass  # Brief busy wait instead of sleep
     
     # No stalled tests yet
     assert not progress_monitor.check_stalled_tests(1.0)
@@ -232,3 +235,57 @@ def test_test_progress_monitor_progress_summary(progress_monitor):
     
     with pytest.raises(Exception, match="Test error"):
         test_env.setup()
+
+def test_managed_fixture_cleanup_failure(test_env):
+    """Test fixture cleanup in managed_test_fixture when creation fails."""
+    fixture1 = Mock()
+    
+    # Second fixture creation fails
+    with patch.object(test_env, 'create_fixture', 
+                     side_effect=[fixture1, Exception("Creation failed")]) as mock_create:
+        fixture_config = {
+            'fixtures': [
+                {'type': 'test1'},
+                {'type': 'test2'}  # This will fail
+            ]
+        }
+        
+        with pytest.raises(Exception, match="Creation failed"):
+            with test_env.managed_test_fixture(fixture_config):
+                pass
+        
+        # Verify first fixture was cleaned up even though second failed
+        fixture1.cleanup.assert_called_once()
+
+
+def test_retry_with_non_retryable_exceptions():
+    """Test retry decorator with non-retryable exceptions."""
+    # KeyboardInterrupt should not be retried
+    mock_func = Mock(side_effect=KeyboardInterrupt())
+    retry_config = RetryConfig(max_retries=3, min_backoff=0.1)
+    decorated = with_retry(retry_config)(mock_func)
+    
+    with pytest.raises(KeyboardInterrupt):
+        decorated()
+    assert mock_func.call_count == 1  # Should not retry
+    
+    # SystemExit should not be retried
+    mock_func = Mock(side_effect=SystemExit())
+    decorated = with_retry(retry_config)(mock_func)
+    
+    with pytest.raises(SystemExit):
+        decorated()
+    assert mock_func.call_count == 1  # Should not retry
+
+
+def test_circuit_breaker_manual_reset(circuit_breaker):
+    """Test circuit breaker reset after manual reset."""
+    # Trip the breaker
+    for _ in range(circuit_breaker.threshold):
+        circuit_breaker.record_failure()
+    
+    assert not circuit_breaker.can_proceed()
+    
+    # Manual reset should restore normal operation immediately
+    circuit_breaker.reset()
+    assert circuit_breaker.can_proceed()

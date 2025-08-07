@@ -258,9 +258,7 @@ def test_test_progress_monitor_stalled_tests(progress_monitor):
     """Test stalled test detection."""
     progress_monitor.update_progress("test1", "running")
     # Use a proper timeout mechanism instead of arbitrary sleep
-    start_time = time.time()
-    while time.time() - start_time < 0.1:
-        pass  # Brief busy wait instead of sleep
+    time.sleep(0.1)
 
     # No stalled tests yet
     assert not progress_monitor.check_stalled_tests(1.0)

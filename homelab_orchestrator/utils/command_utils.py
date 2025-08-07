@@ -45,7 +45,7 @@ def validate_command(command: str | list[str], allowed_commands: list[str] | Non
     return True
 
 
-def execute_command(
+def execute_command_sync(
     command: str | list[str],
     check: bool = True,
     capture_output: bool = True,

@@ -1,17 +1,13 @@
 #!/bin/bash
 
-# Script to consolidate Git branches by merging or removing stale ones
-# Usage: ./consolidate_branches.sh [--dry-run] [--stale-days N]
-
-set -e
-
 # Default values
 DRY_RUN=false
 STALE_DAYS=30
+BASE_BRANCH="main"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
+    case "$1" in
         --dry-run)
             DRY_RUN=true
             shift
@@ -20,92 +16,112 @@ while [[ $# -gt 0 ]]; do
             STALE_DAYS="$2"
             shift 2
             ;;
+        --base-branch)
+            BASE_BRANCH="$2"
+            shift 2
+            ;;
         *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--dry-run] [--stale-days N]"
-            exit 1
+            break
             ;;
     esac
 done
 
-# Ensure we're in a Git repository
-if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    echo "Error: Not in a Git repository"
-    exit 1
-fi
-
-# Store current branch
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-# Function to check if a branch is stale
-is_stale() {
+# Function to get branch last commit date
+get_branch_date() {
     local branch=$1
-    local last_commit_date
-    last_commit_date=$(git log -1 --format=%ct "$branch")
-    local current_date
-    current_date=$(date +%s)
-    local days_old=$(( (current_date - last_commit_date) / 86400 ))
-    
-    [[ $days_old -gt $STALE_DAYS ]]
+    git log -1 --format=%ct "$branch"
+}
+
+# Function to get branch author
+get_branch_author() {
+    local branch=$1
+    git log -1 --format=%an "$branch"
+}
+
+# Function to get total commit count
+get_commit_count() {
+    local branch=$1
+    git rev-list --count "$branch"
 }
 
 # Function to check if a branch is merged
 is_merged() {
     local branch=$1
-    git branch --merged main | grep -q "^[* ]*$branch$"
+    git branch --merged "$BASE_BRANCH" | grep -q "^[* ]*$branch$"
 }
 
-echo "Branch Consolidation Analysis"
-echo "============================"
-echo "Analyzing branches..."
+# Function to check if a branch is protected
+is_protected() {
+    local branch=$1
+    [[ " ${PROTECTED_BRANCHES[*]} " =~ " ${branch} " ]]
+}
 
-# Get all branches except main
-BRANCHES=$(git branch | grep -v '^[* ]*main$' | sed 's/^[* ]*//')
+# Function to check if a branch is stale
+is_stale() {
+    local branch=$1
+    local last_commit=$(get_branch_date "$branch")
+    local current_time=$(date +%s)
+    local days_old=$(( (current_time - last_commit) / 86400 ))
+    
+    [[ $days_old -gt $STALE_DAYS ]]
+}
 
-# Initialize counters
-STALE_COUNT=0
-MERGED_COUNT=0
+# Get list of all branches
+mapfile -t branches < <(git for-each-ref --format='%(refname:short)' refs/heads/)
+
+# Protected branches
+PROTECTED_BRANCHES=("main" "master" "dev" "develop" "staging" "production")
+
+# Track branches to delete
+declare -a branches_to_delete
 
 # Process each branch
-while IFS= read -r branch; do
-    [[ -z "$branch" ]] && continue
-    
-    echo -e "\nAnalyzing branch: $branch"
-    
-    if is_merged "$branch"; then
-        echo "Status: Merged into main"
-        if [ "$DRY_RUN" = false ]; then
-            echo "Action: Deleting merged branch"
-            git branch -d "$branch"
-        else
-            echo "Action: Would delete merged branch (dry run)"
-        fi
-        ((MERGED_COUNT++))
-    elif is_stale "$branch"; then
-        echo "Status: Stale (no commits for $STALE_DAYS days)"
-        if [ "$DRY_RUN" = false ]; then
-            echo "Action: Creating backup and marking for review"
-            git tag "archive/${branch}_$(date +%Y%m%d)" "$branch"
-        else
-            echo "Action: Would create backup tag (dry run)"
-        fi
-        ((STALE_COUNT++))
-    else
-        echo "Status: Active branch"
-        echo "Action: None needed"
+for branch in "${branches[@]}"; do
+    # Skip protected branches
+    if is_protected "$branch"; then
+        echo "Skipping protected branch: $branch"
+        continue
     fi
-done <<< "$BRANCHES"
 
-# Print summary
-echo -e "\nConsolidation Summary"
-echo "===================="
-echo "Total branches analyzed: $(echo "$BRANCHES" | wc -l)"
-echo "Merged branches: $MERGED_COUNT"
-echo "Stale branches: $STALE_COUNT"
+    # Check if branch is stale and merged
+    if is_stale "$branch" && is_merged "$branch"; then
+        branches_to_delete+=("$branch")
+        
+        # Get branch info for logging
+        author=$(get_branch_author "$branch")
+        commit_count=$(get_commit_count "$branch")
+        last_commit_date=$(date -d "@$(get_branch_date "$branch")" "+%Y-%m-%d")
+        
+        echo "Found stale branch:"
+        echo "  Name: $branch"
+        echo "  Author: $author"
+        echo "  Last commit: $last_commit_date"
+        echo "  Total commits: $commit_count"
+    fi
+done
 
-if [ "$DRY_RUN" = true ]; then
-    echo -e "\nThis was a dry run. No changes were made."
+# Handle branch deletion
+if [[ ${#branches_to_delete[@]} -eq 0 ]]; then
+    echo "No stale branches found."
+    exit 0
 fi
 
-# Return to original branch
-git checkout "$CURRENT_BRANCH" > /dev/null 2>&1
+# List branches to be deleted
+echo -e "\nBranches to be deleted:"
+printf '%s\n' "${branches_to_delete[@]}"
+
+# Delete branches or show dry run
+if [[ "$DRY_RUN" = true ]]; then
+    echo -e "\nDRY RUN - No branches were deleted"
+else
+    echo -e "\nDeleting branches..."
+    for branch in "${branches_to_delete[@]}"; do
+        if git branch -d "$branch"; then
+            echo "Deleted branch: $branch"
+        else
+            echo "Failed to delete branch: $branch"
+        fi
+    done
+fi
+
+exit 0

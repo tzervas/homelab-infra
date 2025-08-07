@@ -178,12 +178,19 @@ class UnifiedDeploymentManager:
     ) -> list[DeploymentResult]:
         """Deploy complete infrastructure or specific components."""
         self.logger.info("Starting unified infrastructure deployment")
+        
+        # Reset state for new deployment
+        self.completed_steps.clear()
+        self.failed_steps.clear()
 
         # Determine which steps to run
         if components:
             steps_to_run = self._resolve_dependencies(components, skip_dependencies)
         else:
             steps_to_run = list(self.deployment_steps.keys())
+
+        # Deduplicate steps_to_run to prevent redundant execution when dependencies overlap
+        steps_to_run = list(dict.fromkeys(steps_to_run))
 
         results = []
 
@@ -236,10 +243,9 @@ class UnifiedDeploymentManager:
                 status = "success"
                 error = ""
             elif step.command:
-                # Execute shell command with proper escaping
-                escaped_command = shlex.quote(step.command)
+                # Execute shell command directly
                 result = await asyncio.create_subprocess_shell(
-                    escaped_command,
+                    step.command,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     cwd=self.project_root,
@@ -323,7 +329,7 @@ class UnifiedDeploymentManager:
 
         # Execute K3s setup script
         result = await asyncio.create_subprocess_shell(
-            shlex.quote(str(script_path)),
+            str(script_path),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -348,7 +354,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in components:
             result = await asyncio.create_subprocess_shell(
-                shlex.quote(command),
+                command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,
@@ -370,7 +376,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                shlex.quote(command),
+                command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -390,7 +396,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                shlex.quote(command),
+                command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,
@@ -458,17 +464,25 @@ class UnifiedDeploymentManager:
 
         resolved = []
         visited = set()
+        visiting = set()  # Track components currently being visited to detect cycles
 
         def resolve_component(component: str) -> None:
             if component in visited:
                 return
-            visited.add(component)
+            if component in visiting:
+                msg = f"Dependency cycle detected involving component: {component}"
+                raise ValueError(msg)
+            
+            visiting.add(component)
 
             if component in self.deployment_steps:
                 step = self.deployment_steps[component]
                 for dep in step.dependencies:
                     resolve_component(dep)
                 resolved.append(component)
+            
+            visiting.remove(component)
+            visited.add(component)
 
         for component in components:
             resolve_component(component)
@@ -482,6 +496,10 @@ class UnifiedDeploymentManager:
     ) -> list[DeploymentResult]:
         """Teardown infrastructure components."""
         self.logger.info("Starting infrastructure teardown")
+        
+        # Reset state for teardown operation
+        self.completed_steps.clear()
+        self.failed_steps.clear()
 
         if components:
             steps_to_teardown = components

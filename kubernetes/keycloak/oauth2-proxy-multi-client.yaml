@@ -11,10 +11,10 @@ metadata:
   namespace: oauth2-proxy
 type: Opaque
 stringData:
-  # Client secret - MUST be set via environment variable or external secret management
-  client-secret: ${PROMETHEUS_CLIENT_SECRET}
-  # Cookie encryption secret - MUST be set via environment variable (32-byte random)
-  cookie-secret: ${PROMETHEUS_COOKIE_SECRET}
+  # Client secret - PLACEHOLDER: MUST be set via environment variable or external secret management
+  client-secret: ${PROMETHEUS_CLIENT_SECRET}  # ENV_VAR_PLACEHOLDER
+  # Cookie encryption secret - PLACEHOLDER: MUST be set via environment variable (32-byte random)
+  cookie-secret: ${PROMETHEUS_COOKIE_SECRET}  # ENV_VAR_PLACEHOLDER
 ---
 apiVersion: v1
 kind: ConfigMap

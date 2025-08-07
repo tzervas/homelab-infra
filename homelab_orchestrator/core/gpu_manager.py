@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from homelab_orchestrator.utils.command_utils import execute_command
+
 
 if TYPE_CHECKING:
     from .config_manager import ConfigManager
@@ -175,15 +177,13 @@ class GPUResourceManager:
 
         try:
             # Check if nvidia-smi is available
-            process = await asyncio.create_subprocess_exec(
-                "which",
-                "nvidia-smi",
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
+            returncode, _, _ = await execute_command(
+                ["which", "nvidia-smi"],
+                allowed_commands=["which"],
+                check=False,
             )
-            await process.communicate()
 
-            if process.returncode != 0:
+            if returncode != 0:
                 self.logger.debug("nvidia-smi not available, skipping local GPU discovery")
                 return local_gpus
 
@@ -194,15 +194,13 @@ class GPUResourceManager:
                 "--format=csv,noheader,nounits",
             ]
 
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            returncode, stdout, stderr = await execute_command(
+                cmd,
+                allowed_commands=["nvidia-smi"],
+                check=False,
             )
 
-            stdout, stderr = await process.communicate()
-
-            if process.returncode != 0:
+            if returncode != 0:
                 self.logger.warning(f"nvidia-smi query failed: {stderr.decode()}")
                 return local_gpus
 
@@ -255,23 +253,19 @@ class GPUResourceManager:
     async def _get_cuda_version(self) -> str | None:
         """Get CUDA version if available."""
         try:
-            process = await asyncio.create_subprocess_exec(
-                "nvidia-smi",
-                "--query-gpu=driver_version",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.DEVNULL,
+            returncode, stdout, _ = await execute_command(
+                ["nvidia-smi", "--query-gpu=driver_version"],
+                allowed_commands=["nvidia-smi"],
+                check=False,
             )
-            stdout, _ = await process.communicate()
 
-            if process.returncode == 0:
+            if returncode == 0:
                 # Simple CUDA version detection
-                process = await asyncio.create_subprocess_exec(
-                    "nvcc",
-                    "--version",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.DEVNULL,
+                returncode, stdout, _ = await execute_command(
+                    ["nvcc", "--version"],
+                    allowed_commands=["nvcc"],
+                    check=False,
                 )
-                stdout, _ = await process.communicate()
 
                 if process.returncode == 0:
                     output = stdout.decode()
@@ -555,14 +549,13 @@ class GPUResourceManager:
                 "kube-system",
             ]
 
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL,
+            returncode, _, _ = await execute_command(
+                cmd,
+                allowed_commands=["kubectl"],
+                check=False,
             )
-            await process.communicate()
 
-            if process.returncode == 0:
+            if returncode == 0:
                 return {
                     "success": True,
                     "message": "NVIDIA device plugin already deployed",
@@ -577,15 +570,13 @@ class GPUResourceManager:
                 "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml",
             ]
 
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            returncode, stdout, stderr = await execute_command(
+                cmd,
+                allowed_commands=["kubectl"],
+                check=False,
             )
 
-            stdout, stderr = await process.communicate()
-
-            if process.returncode == 0:
+            if returncode == 0:
                 return {
                     "success": True,
                     "message": "NVIDIA device plugin deployed successfully",

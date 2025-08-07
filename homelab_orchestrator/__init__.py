@@ -28,16 +28,6 @@ from .webhooks.manager import WebhookManager
 
 
 __all__ = [
-<<<<<<< HEAD
-    "ClusterManager",
-    "ConfigManager",
-    "DeploymentManager",
-    "GPUResourceManager",
-    "HealthMonitor",
-    "HomelabOrchestrator",
-    "SecurityManager",
-    "WebhookManager",
-=======
     "ConfigManager",
     "HomelabOrchestrator",
     "DeploymentManager",
@@ -46,5 +36,4 @@ __all__ = [
     "GPUResourceManager",
     "WebhookManager",
     "ClusterManager",
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 ]

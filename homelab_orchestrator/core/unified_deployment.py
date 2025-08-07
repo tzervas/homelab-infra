@@ -5,12 +5,12 @@ Replaces all bash deployment scripts with unified Python implementation.
 
 import asyncio
 import logging
+import shlex
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from rich.console import Console
 from .config_manager import ConfigManager
 
 
@@ -26,6 +26,7 @@ class DeploymentStep:
     timeout: int = 300
     critical: bool = True
     namespace: str | None = None
+
 
 @dataclass
 class DeploymentResult:
@@ -235,9 +236,10 @@ class UnifiedDeploymentManager:
                 status = "success"
                 error = ""
             elif step.command:
-                # Execute shell command
+                # Execute shell command with proper escaping
+                escaped_command = shlex.quote(step.command)
                 result = await asyncio.create_subprocess_shell(
-                    step.command,
+                    escaped_command,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     cwd=self.project_root,
@@ -321,7 +323,7 @@ class UnifiedDeploymentManager:
 
         # Execute K3s setup script
         result = await asyncio.create_subprocess_shell(
-            str(script_path),
+            shlex.quote(str(script_path)),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -346,7 +348,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in components:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,
@@ -368,7 +370,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -388,7 +390,7 @@ class UnifiedDeploymentManager:
         results = []
         for command in commands:
             result = await asyncio.create_subprocess_shell(
-                command,
+                shlex.quote(command),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.project_root,
@@ -406,7 +408,7 @@ class UnifiedDeploymentManager:
         while time.time() - start_time < timeout:
             try:
                 result = await asyncio.create_subprocess_shell(
-                    f"kubectl get pods -n {namespace} --no-headers",
+                    f"kubectl get pods -n {shlex.quote(namespace)} --no-headers",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
@@ -507,10 +509,10 @@ class UnifiedDeploymentManager:
         try:
             if step.namespace:
                 # Delete namespace and all resources in it
-                command = f"kubectl delete namespace {step.namespace} --timeout=60s"
+                command = f"kubectl delete namespace {shlex.quote(step.namespace)} --timeout=60s"
             else:
                 # For core components, use specific teardown logic
-                command = f"echo 'Teardown not implemented for {step.name}'"
+                command = f"echo 'Teardown not implemented for {shlex.quote(step.name)}'"
 
             result = await asyncio.create_subprocess_shell(
                 command,

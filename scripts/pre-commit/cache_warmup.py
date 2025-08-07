@@ -7,10 +7,10 @@ which helps improve the performance of subsequent pre-commit hooks.
 
 import logging
 import os
-import shutil
 import sys
 import time
 from pathlib import Path
+
 
 # Set up logging
 logging.basicConfig(
@@ -19,6 +19,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
 
 def ensure_directory(path: Path) -> None:
     """Ensure a directory exists and is writable."""
@@ -31,6 +32,7 @@ def ensure_directory(path: Path) -> None:
     except Exception as e:
         logger.error(f"Failed to create/verify directory {path}: {e}")
         sys.exit(1)
+
 
 def warm_cache() -> None:
     """Initialize and warm up local caches for development tools."""
@@ -55,15 +57,14 @@ def warm_cache() -> None:
         for cache_dir in cache_dirs:
             if cache_dir.exists():
                 for item in cache_dir.glob("**/*"):
-                    if item.is_file() and (
-                        item.stat().st_mtime < (time.time() - 7 * 24 * 60 * 60)
-                    ):
+                    if item.is_file() and (item.stat().st_mtime < (time.time() - 7 * 24 * 60 * 60)):
                         item.unlink()
         logger.info("Cleaned stale cache entries")
     except Exception as e:
         logger.warning(f"Error while cleaning stale cache entries: {e}")
 
     logger.info("Cache warmup completed successfully")
+
 
 if __name__ == "__main__":
     warm_cache()

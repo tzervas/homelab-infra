@@ -243,104 +243,6 @@ def manage_recover(
         _display_deployment_result(result)
 
 
-@cli.group()
-@click.pass_context
-def manage(ctx: click.Context) -> None:
-    """Backup, Teardown, and Recovery operations."""
-
-
-@manage.command("backup")
-@click.option("--components", multiple=True, help="Specific components to backup")
-@click.pass_context
-def manage_backup(ctx: click.Context, components: list[str]) -> None:
-    """Backup infrastructure components."""
-
-    async def _backup() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.backup_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_backup())
-
-
-@manage.command("teardown")
-@click.option("--force", is_flag=True, help="Force teardown without confirmation")
-@click.option("--no-backup", is_flag=True, help="Skip backup before teardown")
-@click.pass_context
-def manage_teardown(ctx: click.Context, force: bool, no_backup: bool) -> None:
-    """Teardown complete infrastructure."""
-
-    async def _teardown() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Initializing orchestrator...", total=None)
-
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
-            )
-
-            try:
-                progress.update(task, description="Starting orchestrator...")
-                await orchestrator.start()
-
-                progress.update(task, description="Tearing down infrastructure...")
-                result = await orchestrator.teardown_infrastructure(
-                    environment=config_manager.context.environment,
-                    force=force,
-                    backup=not no_backup,
-                )
-
-                progress.update(task, description="Teardown completed", completed=100)
-
-                # Display results
-                _display_teardown_result(result)
-
-            finally:
-                progress.update(task, description="Cleaning up...")
-                await orchestrator.stop()
-
-    asyncio.run(_teardown())
-
-
-@manage.command("recover")
-@click.option("--components", multiple=True, help="Specific components to recover")
-@click.pass_context
-def manage_recover(ctx: click.Context, components: list[str]) -> None:
-    """Recover infrastructure components from backup."""
-
-    async def _recover() -> None:
-        config_manager = ctx.obj["config_manager"]
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-            result = await orchestrator.deployment_manager.recover_infrastructure(components)
-            _display_deployment_result(result)
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_recover())
 
 
 @cli.group()
@@ -354,16 +256,12 @@ def health(ctx: click.Context) -> None:
 @click.option("--component", multiple=True, help="Check specific components")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-<<<<<<< HEAD
 @with_orchestrator
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 def health_check(
     ctx: click.Context,
     comprehensive: bool,
     component: list[str],
     output_format: str,
-<<<<<<< HEAD
     orchestrator: HomelabOrchestrator,
 ) -> None:
     """Check system health status."""
@@ -376,41 +274,6 @@ def health_check(
 
         progress.update(task, description="Health check completed", completed=100)
         _display_health_result(result, output_format)
-=======
-) -> None:
-    """Check system health status."""
-
-    async def _check_health() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Running health checks...", total=None)
-
-            orchestrator = HomelabOrchestrator(
-                config_manager=config_manager,
-                project_root=ctx.obj["project_root"],
-                log_level=ctx.obj["log_level"],
-            )
-
-            try:
-                await orchestrator.start()
-
-                result = await orchestrator.validate_system_health()
-
-                progress.update(task, description="Health check completed", completed=100)
-
-                # Display results
-                _display_health_result(result, output_format)
-
-            finally:
-                await orchestrator.stop()
-
-    asyncio.run(_check_health())
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @health.command("monitor")
@@ -520,7 +383,6 @@ def gpu(ctx: click.Context) -> None:
 @gpu.command("discover")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-<<<<<<< HEAD
 @with_orchestrator
 def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Discover available GPU resources."""
@@ -533,37 +395,11 @@ def gpu_discover(ctx: click.Context, output_format: str, orchestrator: HomelabOr
 
         progress.update(task, description="GPU discovery completed", completed=100)
         _display_gpu_result(result, output_format)
-=======
-def gpu_discover(ctx: click.Context, output_format: str) -> None:
-    """Discover available GPU resources."""
-
-    async def _discover() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-
-            result = await orchestrator.manage_gpu_resources("discover")
-
-            _display_gpu_result(result, output_format)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_discover())
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @gpu.command("status")
 @click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
 @click.pass_context
-<<<<<<< HEAD
 @with_orchestrator
 def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestrator) -> None:
     """Show GPU resource status."""
@@ -576,31 +412,6 @@ def gpu_status(ctx: click.Context, output_format: str, orchestrator: HomelabOrch
 
         progress.update(task, description="GPU status check completed", completed=100)
         _display_gpu_result(result, output_format)
-=======
-def gpu_status(ctx: click.Context, output_format: str) -> None:
-    """Show GPU resource status."""
-
-    async def _status() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-
-            result = await orchestrator.manage_gpu_resources("monitor")
-
-            _display_gpu_result(result, output_format)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_status())
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 @cli.group()
@@ -621,7 +432,6 @@ def webhook_start(ctx: click.Context, host: str, port: int) -> None:
     console.print("[green]Webhook server started[/green]")
 
 
-<<<<<<< HEAD
 @cli.group()
 @click.pass_context
 def certificates(ctx: click.Context) -> None:
@@ -823,38 +633,6 @@ def status(ctx: click.Context, output_format: str, orchestrator: HomelabOrchestr
         console.print(json.dumps(system_status, indent=2, default=str))
     else:
         _display_system_status(system_status)
-=======
-@cli.command("status")
-@click.option("--format", "output_format", type=click.Choice(["table", "json"]), default="table")
-@click.pass_context
-def status(ctx: click.Context, output_format: str) -> None:
-    """Show overall system status."""
-
-    async def _status() -> None:
-        config_manager = ctx.obj["config_manager"]
-
-        orchestrator = HomelabOrchestrator(
-            config_manager=config_manager,
-            project_root=ctx.obj["project_root"],
-            log_level=ctx.obj["log_level"],
-        )
-
-        try:
-            await orchestrator.start()
-
-            # Get system status
-            system_status = orchestrator.get_system_status()
-
-            if output_format == "json":
-                console.print(json.dumps(system_status, indent=2, default=str))
-            else:
-                _display_system_status(system_status)
-
-        finally:
-            await orchestrator.stop()
-
-    asyncio.run(_status())
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
 
 
 # Display helper functions
@@ -876,10 +654,6 @@ def _display_deployment_result(result: Any) -> None:
         ),
     )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
     # Display comprehensive validation results if available
     if hasattr(result, "details") and "comprehensive_validation" in result.details:
         validation = result.details["comprehensive_validation"]
@@ -887,12 +661,6 @@ def _display_deployment_result(result: Any) -> None:
             _display_validation_details(validation["validation_details"])
 
     if hasattr(result, "components_deployed") and result.components_deployed:
-<<<<<<< HEAD
-=======
-    if result.components_deployed:
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
-=======
->>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
         table = Table(title="Deployed Components")
         table.add_column("Component", style="green")
         table.add_column("Status", style="bold")
@@ -902,15 +670,7 @@ def _display_deployment_result(result: Any) -> None:
 
         console.print(table)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     if hasattr(result, "components_failed") and result.components_failed:
-=======
-    if result.components_failed:
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
-=======
-    if hasattr(result, "components_failed") and result.components_failed:
->>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
         table = Table(title="Failed Components")
         table.add_column("Component", style="red")
         table.add_column("Status", style="bold")
@@ -926,10 +686,6 @@ def _display_deployment_result(result: Any) -> None:
             console.print(f"  {i}. {rec}")
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
 def _display_teardown_result(result: Any) -> None:
     """Display teardown results in a nice format."""
     status_color = {
@@ -990,11 +746,6 @@ def _display_validation_details(validation_details: dict[str, Any]) -> None:
     console.print(table)
 
 
-<<<<<<< HEAD
-=======
->>>>>>> 7c4b6fe (Step 3: Establish comprehensive user and admin bootstrap processes)
-=======
->>>>>>> 7490cec (feat: Complete GitLab setup with Keycloak SSO integration and configuration fixes)
 def _display_health_result(result: Any, output_format: str) -> None:
     """Display health check results."""
     if output_format == "json":

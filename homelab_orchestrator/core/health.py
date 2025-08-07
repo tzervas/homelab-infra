@@ -1,37 +1,41 @@
-import time
 import logging
+import time
 from dataclasses import dataclass
-from typing import List
+
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior with circuit breaker integration.
-    
+
     Args:
         max_retries: Maximum number of retry attempts before giving up
         backoff_factor: Multiplicative factor for exponential backoff
         max_backoff: Maximum backoff time in seconds
         circuit_breaker_threshold: Number of failures before tripping circuit breaker
     """
-    max_retries: int = 3 
+
+    max_retries: int = 3
     backoff_factor: float = 1.5
     max_backoff: int = 60
     circuit_breaker_threshold: int = 5
 
+
 class CircuitBreaker:
     """Circuit breaker pattern implementation to prevent cascading failures.
-    
+
     Args:
         threshold: Number of failures before tripping the circuit breaker
     """
+
     def __init__(self, threshold: int = 5):
         self.failures = 0
         self.threshold = threshold
         self.tripped = False
         self._last_failure_time = 0.0
-        
+
     def record_failure(self) -> None:
         """Record a failure and potentially trip the circuit breaker."""
         self.failures += 1
@@ -39,72 +43,75 @@ class CircuitBreaker:
         if self.failures >= self.threshold:
             logger.warning(f"Circuit breaker tripped after {self.failures} failures")
             self.tripped = True
-            
+
     def can_proceed(self) -> bool:
         """Check if the circuit breaker allows proceeding with the operation."""
         return not self.tripped
-    
+
     def reset(self) -> None:
         """Reset the circuit breaker state."""
         self.failures = 0
         self.tripped = False
         self._last_failure_time = 0.0
 
+
 class TestProgressMonitor:
     """Monitors test execution progress and identifies stalled tests.
-    
+
     The monitor tracks test status and duration to identify tests that may have
     stalled or exceeded timeout thresholds.
     """
+
     def __init__(self):
         self.start_time = time.time()
         self.test_states = {}
-        
+
     def update_progress(self, test_name: str, status: str) -> None:
         """Update the status and duration for a specific test.
-        
+
         Args:
             test_name: Name of the test being monitored
             status: Current status of the test (e.g., 'running', 'completed', 'failed')
         """
         self.test_states[test_name] = {
-            'status': status,
-            'duration': time.time() - self.start_time
+            "status": status,
+            "duration": time.time() - self.start_time,
         }
         logger.debug(f"Updated test {test_name} status to {status}")
-        
-    def check_stalled_tests(self, timeout: float) -> List[str]:
+
+    def check_stalled_tests(self, timeout: float) -> list[str]:
         """Identify tests that have exceeded the timeout threshold.
-        
+
         Args:
             timeout: Maximum allowed duration in seconds
-            
+
         Returns:
             List of test names that have exceeded the timeout
         """
         stalled = [
-            test for test, state in self.test_states.items()
-            if state['status'] == 'running' 
-            and state['duration'] > timeout
+            test
+            for test, state in self.test_states.items()
+            if state["status"] == "running" and state["duration"] > timeout
         ]
-        
+
         if stalled:
             logger.warning(f"Found {len(stalled)} stalled tests: {', '.join(stalled)}")
-        
+
         return stalled
-    
+
     def get_test_duration(self, test_name: str) -> float:
         """Get the current duration of a specific test.
-        
+
         Args:
             test_name: Name of the test to check
-            
+
         Returns:
             Duration in seconds since the test started
         """
         if test_name in self.test_states:
-            return self.test_states[test_name]['duration']
+            return self.test_states[test_name]["duration"]
         return 0.0
+
 
 """
 Health Monitor - Unified health monitoring and validation.

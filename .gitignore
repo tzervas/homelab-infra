@@ -227,8 +227,8 @@ temp/
 
 # Backup directories that may contain sensitive data
 backups/*
-backups/
-**/backups/
+!backups/branch-consolidation-optimized/
+!backups/branch-consolidation-optimized/*
 
 # Exclude all backup files that may contain secrets
 deploy-homelab-with-sso.sh
@@ -237,26 +237,6 @@ deploy-homelab-with-sso.sh
 docs/consolidation-reports/
 **/consolidation-reports/
 update_branches.sh
-
-# Analysis and consolidation scripts (temporary)
-run_analysis.sh
-scripts/analyze_branches.py
-scripts/backup_branches.sh
-scripts/consolidate_branches.sh
-scripts/index_docs.py
-scripts/map_features.py
-scripts/update_protection.sh
-scripts/validate_structure.sh
-analyze_branches.sh
-
-# Development and testing artifacts
-*.pyc
-__pycache__/
-.pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
-.ruff_cache/
 *branch-info*
 *branch-manifest*
 *consolidation-manifest*
@@ -264,7 +244,6 @@ htmlcov/
 # Deployment reports (generated locally)
 docs/deployment-reports/
 **/deployment-reports/
-
 # Internal documentation and tracking files
 pr-description-documentation.md
 code-quality-output.txt
@@ -315,6 +294,3 @@ reports/
 .claude/rag_index.json
 .claude/rag_metadata.json
 homelab-infra/
-
-# Analysis workspace - local development tracking
-.analysis/

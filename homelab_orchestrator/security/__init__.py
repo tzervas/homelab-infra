@@ -1,4 +1,4 @@
-"""Security management package."""
+"""Security-related functionality."""
 
 from .privilege_manager import PrivilegeContext, PrivilegeManager
 

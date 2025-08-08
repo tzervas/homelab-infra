@@ -294,3 +294,7 @@ reports/
 .claude/rag_index.json
 .claude/rag_metadata.json
 homelab-infra/
+
+# Analysis workspace - local development tracking
+.analysis/
+.analysis/**/*

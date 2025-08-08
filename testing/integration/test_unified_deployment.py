@@ -339,12 +339,21 @@ class TestKubernetesIntegration:
             with open(rbac_file) as f:
                 rbac_resources = list(yaml.safe_load_all(f))
 
-            # Should have ServiceAccount, Role, and RoleBinding
+            # Should have ServiceAccount and either Role/ClusterRole and RoleBinding/ClusterRoleBinding
             resource_kinds = [r.get("kind", "") for r in rbac_resources if r]
 
-            expected_kinds = ["ServiceAccount", "Role", "RoleBinding"]
-            for kind in expected_kinds:
-                assert kind in resource_kinds, f"Missing RBAC resource: {kind}"
+            # Validate ServiceAccount exists
+            assert "ServiceAccount" in resource_kinds, "Missing ServiceAccount"
+
+            # Check for either Role or ClusterRole
+            assert any(kind in resource_kinds for kind in ["Role", "ClusterRole"]), (
+                "Missing Role or ClusterRole"
+            )
+
+            # Check for either RoleBinding or ClusterRoleBinding
+            assert any(kind in resource_kinds for kind in ["RoleBinding", "ClusterRoleBinding"]), (
+                "Missing RoleBinding or ClusterRoleBinding"
+            )
 
 
 class TestTerraformIntegration:

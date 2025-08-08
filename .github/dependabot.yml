@@ -124,3 +124,12 @@ updates:
       # Ignore major version updates for critical dependencies
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+
+# Global configuration for all package ecosystems
+registries:
+  # Private registry configuration (if needed)
+  # private-registry:
+  #   type: docker-registry
+  #   url: registry.homelab.local
+  #   username: ${{secrets.REGISTRY_USERNAME}}
+  #   password: ${{secrets.REGISTRY_PASSWORD}}

@@ -10,10 +10,13 @@ import asyncio
 import getpass
 import logging
 import os
-import subprocess
+import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from homelab_orchestrator.utils.command_utils import execute_command
 
 
 @dataclass
@@ -119,26 +122,26 @@ class PrivilegeManager:
     def _check_sudo_nopasswd(self) -> bool:
         """Check if sudo is configured for passwordless operation."""
         try:
-            result = subprocess.run(
+            returncode, _, _ = execute_command(
                 ["sudo", "-n", "true"],
-                capture_output=True,
-                timeout=5,
                 check=False,
+                timeout=5,
+                allowed_commands=["sudo"],
             )
-            return result.returncode == 0
+            return returncode == 0
         except Exception:
             return False
 
     def _check_sudo_cached(self) -> bool:
         """Check if sudo credentials are cached."""
         try:
-            result = subprocess.run(
+            returncode, _, _ = execute_command(
                 ["sudo", "-n", "true"],
-                capture_output=True,
-                timeout=5,
                 check=False,
+                timeout=5,
+                allowed_commands=["sudo"],
             )
-            return result.returncode == 0
+            return returncode == 0
         except Exception:
             return False
 

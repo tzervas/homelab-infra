@@ -7,6 +7,7 @@ This document describes how to set up your test environment for running the home
 The test suite requires certain environment variables to be set for security testing. These variables contain test values that should never be used in production.
 
 1. Copy the template file to create your test environment file:
+
    ```bash
    cp .env.test.template .env.test
    ```
@@ -14,6 +15,7 @@ The test suite requires certain environment variables to be set for security tes
 2. (Optional) Modify the test values in `.env.test` if you want to use different test secrets.
 
 3. Load the environment variables before running tests:
+
    ```bash
    source .env.test
    ```

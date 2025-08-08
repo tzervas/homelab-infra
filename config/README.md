@@ -30,7 +30,9 @@ config/
 ├── hooks/                      # Deployment validation hooks
 │   └── deployment-validation-hooks.yaml
 └── templates/                  # Reusable configuration templates
-    └── deployment.yaml        # Standard deployment template
+    ├── deployment.yaml        # Standard deployment template
+    ├── service.yaml           # Standard service template
+    └── ingress.yaml           # Standard ingress template
 ```
 
 ## Migration from Duplicated Structure
@@ -98,6 +100,8 @@ These configurations are automatically loaded by:
 - **Simplified Maintenance**: One location for all configuration updates
 - **Clear Dependencies**: Explicit configuration layer hierarchy
 - **Version Control Safety**: Sanitized templates with secret placeholders
+- **Easier Maintenance**: Centralized updates propagate to all tools
+- **Configuration Validation**: Structured YAML enables schema validation
 
 ## Security Notes
 

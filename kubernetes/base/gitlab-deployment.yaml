@@ -67,7 +67,6 @@ spec:
             gitlab_rails['env'] = {
               'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000'
             }
-
             # Keycloak OAuth2 Integration
             gitlab_rails['omniauth_enabled'] = true
             gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']

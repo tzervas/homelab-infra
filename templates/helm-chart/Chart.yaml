@@ -18,7 +18,8 @@ maintainers:
   - name: Homelab Team
     email: homelab@example.com
 
-dependencies: []
+dependencies:
+  []
   # - name: postgresql
   #   version: "12.x.x"
   #   repository: "https://charts.bitnami.com/bitnami"

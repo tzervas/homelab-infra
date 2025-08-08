@@ -78,7 +78,8 @@ ingress:
   # -- Ingress class name
   className: "nginx"
   # -- Ingress annotations
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
     # cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -191,11 +192,13 @@ secret:
   data: {}
 
 # Environment variables
-env: {}
+env:
+  {}
   # EXAMPLE_VAR: "example-value"
 
 # Environment variables from secrets/configmaps
-envFrom: []
+envFrom:
+  []
   # - secretRef:
   #     name: mysecret
   # - configMapRef:

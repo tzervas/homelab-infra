@@ -41,6 +41,8 @@ global:
     loki: loki.homelab.local
     service_monitors: service_monitors.homelab.local
     log_collection: log_collection.homelab.local
+    auth: auth.homelab.local
+    homelab: homelab.local
   environments:
     development:
       suffix: development
@@ -74,6 +76,7 @@ certificates:
     country: US
     province: Home
     locality: Lab
+
 registry:
   default: docker.io
   pullPolicy: IfNotPresent

@@ -211,7 +211,6 @@ class ConfigManager:
             "image_security": full_security_config.get("image_security", {}),
             "secrets": full_security_config.get("secrets", {}),
         }
-
         env_config = self.get_environment_config()
 
         # Apply environment-specific security settings

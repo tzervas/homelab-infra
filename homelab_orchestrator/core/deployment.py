@@ -1042,9 +1042,7 @@ class DeploymentManager:
             return {"success": False, "error": str(e)}
 
     async def _backup_kubernetes_resources(
-        self,
-        component: str,
-        backup_dir: Path,
+        self, component: str, backup_dir: Path
     ) -> dict[str, Any]:
         """Backup Kubernetes resources for a component."""
         try:

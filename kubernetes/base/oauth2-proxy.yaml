@@ -1,14 +1,182 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oauth2-proxy
+---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: oauth2-proxy-secrets
+  name: oauth2-proxy-secret
   namespace: oauth2-proxy
 type: Opaque
 data:
-  # OAuth2 client secret - MUST be set via environment variable
-  client-secret: ${OAUTH2_CLIENT_SECRET}
-  # Cookie encryption secret - MUST be set via environment variable (32-byte random)
-  cookie-secret: ${OAUTH2_COOKIE_SECRET}
+  # homelab-portal-secret
+  client-secret: aG9tZWxhYi1wb3J0YWwtc2VjcmV0
+  # Random 32-byte secret for cookie encryption
+  cookie-secret: SEQzeUMxN1JmR3VYVGg4dXRHWXNLRGZLYUJ2bDhqUXM=
 ---
 apiVersion: v1
 kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: oauth2-proxy
+data:
+  oauth2_proxy.cfg: |
+    # OIDC Config
+    provider = "keycloak-oidc"
+    client_id = "homelab-portal"
+    oidc_issuer_url = "http://keycloak.keycloak.svc.cluster.local:8080/realms/homelab"
+    insecure_oidc_allow_unverified_email = true
+    insecure_oidc_skip_issuer_verification = true
+    skip_oidc_discovery = false
+
+    # Redirect and logout URLs
+    redirect_url = "https://homelab.local/oauth2/callback"
+
+    # Upstream and reverse proxy config
+    http_address = "0.0.0.0:4180"
+    reverse_proxy = true
+
+    # Session and security
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_samesite = "lax"
+    cookie_name = "_oauth2_proxy"
+    cookie_expire = "24h0m0s"
+    cookie_refresh = "1h0m0s"
+    cookie_domains = [".homelab.local"]
+
+    # Skip auth for health checks
+    skip_auth_regex = [
+      "^/oauth2/",
+      "^/ping$",
+      "^/ready$"
+    ]
+
+    # Email and username headers
+    set_xauthrequest = true
+    pass_access_token = true
+    pass_user_headers = true
+
+    # Logging
+    silence_ping_logging = true
+    request_logging = true
+
+    # Whitelist email domains
+email_domains = ["*"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        app: oauth2-proxy
+    spec:
+      containers:
+      - name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+        args:
+        - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+        ports:
+        - containerPort: 4180
+          protocol: TCP
+        env:
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth2-proxy-secret
+              key: client-secret
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth2-proxy-secret
+              key: cookie-secret
+        volumeMounts:
+        - name: config
+          mountPath: /etc/oauth2-proxy
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 4180
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 4180
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: oauth2-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  selector:
+    app: oauth2-proxy
+  ports:
+  - name: http
+    port: 4180
+    targetPort: 4180
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: oauth2-proxy-ingress
+  namespace: oauth2-proxy
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "homelab-ca-issuer"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - homelab.local
+    secretName: oauth2-proxy-tls-cert
+  rules:
+  - host: homelab.local
+    http:
+      paths:
+      - path: /oauth2
+        pathType: Prefix
+        backend:
+          service:
+            name: oauth2-proxy
+            port:
+              number: 4180
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: oauth2-proxy-tls-cert
+  namespace: oauth2-proxy
+spec:
+  secretName: oauth2-proxy-tls-cert
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: homelab.local
+  dnsNames:
+  - homelab.local

@@ -27,7 +27,7 @@ networking:
     enabled: true
     protocol: "layer2"
 
-    # Controller configuration (from base/metallb.yaml)
+    # Controller configuration (from base/metallb.yaml) 
     controller:
       image:
         repository: quay.io/metallb/controller

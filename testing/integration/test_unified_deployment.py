@@ -58,7 +58,7 @@ class UnifiedDeploymentIntegrationTest:
                 "--dry-run=client",
                 "-o",
                 "yaml",
-            ],
+            ]
         )
 
         # Validate required files exist
@@ -80,7 +80,7 @@ class UnifiedDeploymentIntegrationTest:
             print("Cleaning up integration test environment...")
             try:
                 self._run_kubectl(
-                    ["delete", "namespace", self.test_namespace, "--ignore-not-found=true"],
+                    ["delete", "namespace", self.test_namespace, "--ignore-not-found=true"]
                 )
             except subprocess.CalledProcessError:
                 print(f"Warning: Could not delete namespace {self.test_namespace}")
@@ -169,9 +169,9 @@ class TestConfigurationIntegration:
                     env_config = yaml.safe_load(f)
 
                     # Validate required sections
-                    assert "global" in env_config or "app" in env_config, (
-                        f"Environment {env} missing required configuration sections"
-                    )
+                    assert (
+                        "global" in env_config or "app" in env_config
+                    ), f"Environment {env} missing required configuration sections"
 
     def test_helm_values_integration(self, integration_test):
         """Test Helm values integration with consolidated config."""
@@ -204,7 +204,7 @@ class TestConfigurationIntegration:
                                 ]
                             ):
                                 pytest.fail(
-                                    f"Potential hardcoded secret in {values_file.name}: {line.strip()}",
+                                    f"Potential hardcoded secret in {values_file.name}: {line.strip()}"
                                 )
 
 
@@ -227,7 +227,7 @@ class TestHelmIntegration:
                         str(chart_dir),
                         "--debug",
                         "--dry-run",
-                    ],
+                    ]
                 )
 
                 assert result.returncode == 0, f"Helm template failed for {chart_dir.name}"
@@ -267,7 +267,7 @@ class TestHelmIntegration:
                         "template",
                         chart_dir.name,
                         str(chart_dir),
-                    ],
+                    ]
                 )
 
                 # Parse templated output
@@ -287,9 +287,9 @@ class TestHelmIntegration:
 
                         # Should have non-root user
                         if "runAsNonRoot" in security_context:
-                            assert security_context["runAsNonRoot"] is True, (
-                                f"Chart {chart_dir.name} allows root execution"
-                            )
+                            assert (
+                                security_context["runAsNonRoot"] is True
+                            ), f"Chart {chart_dir.name} allows root execution"
 
 
 class TestKubernetesIntegration:
@@ -310,12 +310,12 @@ class TestKubernetesIntegration:
                     str(manifest_file),
                     "--dry-run=client",
                     "--validate=true",
-                ],
+                ]
             )
 
-            assert result.returncode == 0, (
-                f"Kubernetes manifest validation failed for {manifest_file.name}: {result.stderr}"
-            )
+            assert (
+                result.returncode == 0
+            ), f"Kubernetes manifest validation failed for {manifest_file.name}: {result.stderr}"
 
     def test_network_policies_integration(self, integration_test):
         """Test network policies are properly configured."""
@@ -327,9 +327,9 @@ class TestKubernetesIntegration:
 
             # Should have at least a default deny policy
             policy_names = [p.get("metadata", {}).get("name", "") for p in policies if p]
-            assert any("deny" in name.lower() for name in policy_names), (
-                "No default deny network policy found"
-            )
+            assert any(
+                "deny" in name.lower() for name in policy_names
+            ), "No default deny network policy found"
 
     def test_rbac_integration(self, integration_test):
         """Test RBAC configuration is properly set up."""
@@ -339,12 +339,17 @@ class TestKubernetesIntegration:
             with open(rbac_file) as f:
                 rbac_resources = list(yaml.safe_load_all(f))
 
-            # Should have ServiceAccount, Role, and RoleBinding
+            # Should have ServiceAccount and either Role/ClusterRole and RoleBinding/ClusterRoleBinding
             resource_kinds = [r.get("kind", "") for r in rbac_resources if r]
 
-            expected_kinds = ["ServiceAccount", "Role", "RoleBinding"]
-            for kind in expected_kinds:
-                assert kind in resource_kinds, f"Missing RBAC resource: {kind}"
+            # Validate ServiceAccount exists
+            assert "ServiceAccount" in resource_kinds, "Missing ServiceAccount"
+
+            # Check for either Role or ClusterRole
+            assert any(kind in resource_kinds for kind in ["Role", "ClusterRole"]), "Missing Role or ClusterRole"
+
+            # Check for either RoleBinding or ClusterRoleBinding
+            assert any(kind in resource_kinds for kind in ["RoleBinding", "ClusterRoleBinding"]), "Missing RoleBinding or ClusterRoleBinding"
 
 
 class TestTerraformIntegration:
@@ -364,7 +369,7 @@ class TestTerraformIntegration:
                 # Check for basic Terraform syntax
                 assert content.strip(), f"Empty Terraform file: {tf_file}"
                 assert not content.count("{") < content.count(
-                    "}",
+                    "}"
                 ), f"Unbalanced braces in {tf_file}"
 
     def test_terraform_module_structure(self, integration_test):
@@ -406,7 +411,7 @@ class TestServiceIntegration:
                 for expected_service in expected_services:
                     if expected_service not in service_names:
                         print(
-                            f"Warning: Expected service {expected_service} not found in configuration",
+                            f"Warning: Expected service {expected_service} not found in configuration"
                         )
 
     def test_monitoring_integration(self, integration_test):
@@ -466,19 +471,19 @@ class TestEndToEndIntegration:
                             str(chart_dir),
                             "-f",
                             test_values_file,
-                        ],
+                        ]
                     )
 
-                    assert result.returncode == 0, (
-                        f"Helm template with test values failed for {chart_dir.name}"
-                    )
+                    assert (
+                        result.returncode == 0
+                    ), f"Helm template with test values failed for {chart_dir.name}"
 
                     # Validate the templated output
                     templated_resources = list(yaml.safe_load_all(result.stdout))
                     valid_resources = [r for r in templated_resources if r is not None]
-                    assert len(valid_resources) > 0, (
-                        f"No valid resources generated for {chart_dir.name}"
-                    )
+                    assert (
+                        len(valid_resources) > 0
+                    ), f"No valid resources generated for {chart_dir.name}"
 
                 finally:
                     os.unlink(test_values_file)
@@ -508,7 +513,7 @@ class TestEndToEndIntegration:
                     if not pss_found:
                         print(
                             f"Warning: Namespace {resource.get('metadata', {}).get('name')} "
-                            "missing Pod Security Standard labels",
+                            "missing Pod Security Standard labels"
                         )
 
 

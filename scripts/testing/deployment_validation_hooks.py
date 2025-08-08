@@ -499,7 +499,15 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                             "message": f"Network policies: {len(policies.items)} found"
                             if has_policies
                             else "No network policies found",
+<<<<<<< HEAD
+<<<<<<< HEAD
                         },
+=======
+                        }
+>>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        },
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
                 except Exception:
                     security_checks.append(
@@ -507,7 +515,15 @@ class PreDeploymentValidationHook(DeploymentValidationHook):
                             "name": "network_policies",
                             "success": False,
                             "message": "Failed to check network policies",
+<<<<<<< HEAD
+<<<<<<< HEAD
                         },
+=======
+                        }
+>>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        },
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
 
             success_count = sum(1 for check in security_checks if check["success"])
@@ -868,7 +884,15 @@ class ContinuousValidationHook(DeploymentValidationHook):
 
                 if name == "infrastructure_health":
                     recommendations.append(
+<<<<<<< HEAD
+<<<<<<< HEAD
                         "Investigate infrastructure health issues and check node resources",
+=======
+                        "Investigate infrastructure health issues and check node resources"
+>>>>>>> 31720e1 (feat: Comprehensive deployment validation framework and enhanced documentation)
+=======
+                        "Investigate infrastructure health issues and check node resources",
+>>>>>>> a080360 (feat: Complete cluster validation and comprehensive Grafana dashboards)
                     )
                 elif name == "service_availability":
                     recommendations.append("Review failing services and check pod logs for errors")

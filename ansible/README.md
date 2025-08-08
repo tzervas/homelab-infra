@@ -64,7 +64,6 @@ Ansible is now used for:
 - Supports the overall deployment workflow
 
 ## Usage
-
 ### Complete System Provisioning
 
 ```bash

@@ -1,91 +1,107 @@
 # Homelab Infrastructure Orchestrator
 
-🧪 **Beta Release v0.9.0-beta** - Unified orchestration platform ready for testing!
+🚧 **Current Phase: PoC/MVP** - Docker/Docker Compose based deployment with Python/Shell orchestration
 
 Modern homelab infrastructure orchestrator with security-first deployment, comprehensive certificate management, and unified CLI interface.
 
-## 🧪 Current Status: BETA TESTING
+## 🚧 Current Status: PoC/MVP PHASE
 
-✅ **Unified Orchestrator**: Single Python-based CLI replacing all bash scripts  
-✅ **Certificate Management**: Let's Encrypt + self-signed fallback automation  
+**Current Implementation (Active Development):**
+✅ **Docker/Docker Compose**: Container-based service deployment  
+✅ **Python Orchestration**: Python-based automation scripts for deployment  
+✅ **Shell Scripts**: Helper scripts for setup and management  
 ✅ **Security-First**: No hardcoded secrets, environment-based configuration  
-✅ **Multi-Environment**: Development, staging, and production support  
-✅ **Testing Ready**: Comprehensive test suite validates all functionality  
+✅ **Configuration Management**: Centralized YAML-based configuration with overrides
+
+**Future Enhancements (Post-MVP):**
+🔮 **K3s/Kubernetes**: Enterprise container orchestration (planned after PoC completion)  
+🔮 **Helm Charts**: Kubernetes package management (future enhancement)  
+🔮 **Advanced Networking**: MetalLB, Ingress controllers (K3s phase)  
+🔮 **GitOps**: Flux/ArgoCD integration (production phase)
 
 ## Overview
 
-This repository contains a **comprehensive homelab orchestration platform** that unifies infrastructure management with a single, powerful CLI interface:
+This repository contains a **homelab orchestration platform** currently in PoC/MVP phase using Docker/Docker Compose for service deployment. The platform will evolve to K3s/Kubernetes infrastructure in future phases after validating core functionality.
 
-### 🚀 Core Features
+### 🚀 Current Phase Features (PoC/MVP)
 
-- **Unified CLI**: Single `python -m homelab_orchestrator` command for all operations
-- **Certificate Management**: Automated Let's Encrypt + self-signed certificate provisioning
+- **Docker Compose Deployments**: Service orchestration using Docker Compose
+- **Python Automation**: Python-based deployment and management scripts
+- **Shell Helper Scripts**: Bash/shell scripts for setup and operations
 - **Security-First**: Environment-based secrets, no hardcoded credentials  
-- **Multi-Environment**: Development (staging certs), production (Let's Encrypt)
-- **Health Monitoring**: Comprehensive system and certificate health validation
-- **Configuration Management**: Centralized YAML-based configuration with overrides
+- **Configuration Management**: Centralized YAML-based configuration
+- **Multi-Service Support**: Keycloak, OAuth2-proxy, Grafana, Prometheus, GitLab, JupyterLab, Ollama
 
-### 🔧 Infrastructure Components
+### 🔧 Current Infrastructure Components (Docker-based)
 
+- **Docker/Docker Compose**: Primary container orchestration for PoC/MVP
+- **Python Scripts**: Deployment automation and orchestration
+- **Shell Scripts**: Setup, configuration, and helper utilities
+- **Monitoring Stack**: Prometheus, Grafana, AlertManager (Docker containers)
+- **Authentication**: Keycloak with OAuth2 proxy integration (Docker containers)
+- **Development Tools**: GitLab, JupyterLab, Ollama + Open-WebUI (Docker containers)
+
+### 🔮 Future Infrastructure Components (Post-MVP)
+
+**Phase 2: K3s Migration**
 - **K3s Kubernetes**: Container orchestration platform
 - **cert-manager**: Automated TLS certificate lifecycle management
 - **MetalLB**: Load balancer for bare metal deployments
 - **NGINX Ingress**: HTTP/HTTPS routing with TLS termination
-- **Monitoring Stack**: Prometheus, Grafana, AlertManager
-- **Authentication**: Keycloak with OAuth2 proxy integration
 
-## Quick Start
+**Phase 3: Production Enhancements**
+- **Helm Charts**: Kubernetes package management
+- **GitOps**: Flux or ArgoCD for declarative deployments
+- **Advanced Networking**: Network policies, service mesh
+- **HA Configuration**: High availability and redundancy
+
+## Quick Start (Docker/Compose PoC)
 
 ### Prerequisites
 
 - **Server**: Homelab server (Ubuntu 20.04+) with SSH access and sudo privileges
-  - k3s cluster running on 192.168.16.26
   - Static IP configuration recommended
   - Configuration file: /etc/netplan/01-netcfg.yaml
 - **Resources**: Minimum 4GB RAM, 2 CPU cores, 50GB storage
-  - Example: 8GB RAM, 4 CPU cores
+  - Recommended: 8GB RAM, 4 CPU cores
 - **Tools**: Required software (will be installed by setup script)
   - Git
   - Docker
-  - kubectl
-  - Helm 3.x
-  - Helmfile
+  - Docker Compose
+  - Python 3.10+
 
 ```bash
 # Clone repository on homelab server
 git clone https://github.com/tzervas/homelab-infra.git
 cd homelab-infra
 
-# Run secure deployment setup (requires initial sudo)
-sudo ./scripts/deployment/setup-secure-deployment.sh
+# Install Docker and Docker Compose (if not already installed)
+# Setup script TBD - will configure Docker environment
 
-# This creates:
-# - homelab-deploy user with minimal sudo permissions
-# - Proper directory structure and SSH configuration
-# - Docker access and environment setup
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Deploy services using Docker Compose
+# Deployment scripts TBD - will orchestrate Docker Compose deployments
 ```
 
-#### 2. Quick Validation
+### Current Phase Development
 
-```bash
-# Switch to deployment user
-su - homelab-deploy
+The current PoC/MVP phase focuses on:
+1. Docker Compose service definitions for all components
+2. Python orchestration scripts for deployment automation
+3. Shell helper scripts for setup and management
+4. Environment-based configuration management
+5. Security hardening for Docker-based deployments
 
-# Run comprehensive validation
-python3 scripts/testing/validate_deployment.py
+### Future Phase: K3s Migration
 
-# Expected output: "✅ All validations passed - deployment is ready!"
-```
-
-#### 3. Deploy Infrastructure
-
-```bash
-# Deploy core infrastructure
-./scripts/deployment/deploy-with-privileges.sh deploy all
-
-# Check deployment status
-./scripts/deployment/deploy-with-privileges.sh status
-```
+After PoC/MVP completion, the project will migrate to K3s/Kubernetes:
+- K3s cluster deployment (reference architecture in docs)
+- Helm chart conversions
+- Advanced networking with MetalLB and Ingress
+- GitOps workflows with Flux or ArgoCD
 
 ### 📋 Traditional Deployment
 

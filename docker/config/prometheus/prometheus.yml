@@ -1,0 +1,47 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'homelab'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Docker containers via Docker daemon
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets:
+          - 'keycloak:8080'
+          - 'grafana:3000'
+          - 'alertmanager:9093'
+          - 'portal:80'
+        labels:
+          environment: 'homelab'
+
+  # Node exporter (if deployed)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: []  # Add node-exporter:9100 when deployed
+
+  # cAdvisor for container metrics (if deployed)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: []  # Add cadvisor:8080 when deployed

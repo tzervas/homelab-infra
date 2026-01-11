@@ -11,13 +11,15 @@ It serves as a unified entry point for all testing operations.
 
 import json
 import logging
-import subprocess
+import re
 import sys
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
+
+from .k3s_validation import K3sValidationManager, K3sValidationResult
 
 
 try:
@@ -26,19 +28,97 @@ except ImportError:
     from test_reporter import HomelabTestReporter, TestSuiteResult
 
 
-@dataclass
-class K3sValidationResult:
-    """Results from K3s validation framework."""
+def sanitize_categories(categories: list[str] | None) -> list[str]:
+    """Sanitize and validate K3s test categories to prevent command injection.
 
-    timestamp: str
-    test_suite: str
-    namespace: str
-    summary: dict[str, Any]
-    cluster_info: dict[str, Any]
-    categories_run: list[str] = field(default_factory=list)
-    exit_code: int = 0
-    duration: float = 0.0
-    report_files: list[str] = field(default_factory=list)
+    Args:
+        categories: List of category names to sanitize
+
+    Returns:
+        List of sanitized category names
+
+    Raises:
+        ValueError: If any category contains invalid characters
+    """
+    if not categories:
+        return []
+
+    # Define allowed K3s validation categories
+    allowed_categories = {
+        "core",
+        "k3s-specific",
+        "performance",
+        "security",
+        "failure",
+        "production",
+        "all",
+    }
+
+    sanitized = []
+    for category in categories:
+        if not isinstance(category, str):
+            raise ValueError(f"Category must be string, got {type(category)}")
+
+        # Remove any potentially dangerous characters
+        cleaned = re.sub(r"[^a-zA-Z0-9\-_]", "", category.strip())
+
+        if not cleaned:
+            raise ValueError(f"Invalid category after sanitization: {category}")
+
+        if cleaned not in allowed_categories:
+            raise ValueError(f"Unknown category: {cleaned}")
+
+        sanitized.append(cleaned)
+
+    return sanitized
+
+
+def validate_path(path: str | Path) -> Path:
+    """Validate and sanitize file paths to prevent path traversal attacks.
+
+    Args:
+        path: Path to validate
+
+    Returns:
+        Validated Path object
+
+    Raises:
+        ValueError: If path contains dangerous patterns
+    """
+    if not path:
+        raise ValueError("Path cannot be empty")
+
+    path_obj = Path(path)
+
+    # Check for path traversal attempts
+    if ".." in path_obj.parts:
+        raise ValueError("Path traversal detected: path contains '..'")
+
+    # Convert to absolute path and resolve to prevent symlink attacks
+    try:
+        resolved_path = path_obj.resolve()
+    except (OSError, RuntimeError) as e:
+        raise ValueError(f"Invalid path: {e}")
+
+    # Additional security check - ensure path doesn't contain null bytes
+    path_str = str(resolved_path)
+    if "\x00" in path_str:
+        raise ValueError("Path contains null byte")
+
+    return resolved_path
+
+
+@dataclass
+class TimeoutConfig:
+    """Configuration for operation timeouts."""
+
+    python_framework: int = 600  # 10 min
+    k3s_validation: int = 1800  # 30 min
+    per_test_default: int = 300  # 5 min
+    cleanup_grace: int = 30  # 30 sec
+
+
+# K3sValidationResult moved to k3s_validation.manager
 
 
 @dataclass
@@ -57,6 +137,16 @@ class IntegratedTestResults:
 class IntegratedTestOrchestrator:
     """Master orchestrator for all homelab testing frameworks."""
 
+    timeout_config: TimeoutConfig
+    logger: logging.Logger
+    kubeconfig_path: str | None
+    base_dir: Path
+    python_framework_dir: Path
+    k3s_validation_dir: Path 
+    orchestrator_path: Path
+    results_dir: Path
+    python_reporter: HomelabTestReporter
+
     def __init__(
         self,
         kubeconfig_path: str | None = None,
@@ -64,17 +154,34 @@ class IntegratedTestOrchestrator:
         base_dir: str | None = None,
     ) -> None:
         """Initialize the integrated test orchestrator."""
+        # Initialize timeouts
+        self.timeout_config = TimeoutConfig()
         self.logger = self._setup_logging(log_level)
         self.kubeconfig_path = kubeconfig_path
-        self.base_dir = Path(base_dir) if base_dir else Path.cwd()
 
-        # Framework paths
-        self.python_framework_dir = self.base_dir / "scripts" / "testing"
-        self.k3s_validation_dir = self.base_dir / "testing" / "k3s-validation"
-        self.orchestrator_path = self.k3s_validation_dir / "orchestrator.sh"
+        # Validate base directory
+        try:
+            self.base_dir = validate_path(Path(base_dir) if base_dir else Path.cwd())
+        except ValueError as e:
+            raise ValueError(f"Invalid base directory: {e}")
+
+        # Framework paths - validate during construction to fail fast
+        try:
+            self.python_framework_dir = validate_path(self.base_dir / "scripts" / "testing")
+            self.k3s_validation_dir = validate_path(self.base_dir / "testing" / "k3s-validation")
+            self.orchestrator_path = validate_path(self.k3s_validation_dir / "orchestrator.sh")
+        except ValueError as e:
+            self.logger.warning(f"Framework path validation warning: {e}")
+            # Still set the paths but mark as potentially invalid
+            self.python_framework_dir = self.base_dir / "scripts" / "testing"
+            self.k3s_validation_dir = self.base_dir / "testing" / "k3s-validation"
+            self.orchestrator_path = self.k3s_validation_dir / "orchestrator.sh"
 
         # Results directory
-        self.results_dir = self.base_dir / "test_results"
+        try:
+            self.results_dir = validate_path(self.base_dir / "test_results")
+        except ValueError:
+            self.results_dir = self.base_dir / "test_results"
         self.results_dir.mkdir(exist_ok=True)
 
         # Initialize Python framework
@@ -143,92 +250,26 @@ class IntegratedTestOrchestrator:
         """Run the K3s validation framework."""
         self.logger.info("🛠️ Running K3s validation tests...")
 
-        if not self.orchestrator_path.exists():
-            self.logger.error(f"K3s orchestrator not found: {self.orchestrator_path}")
-            return None
-
-        # Build command arguments
-        cmd = [str(self.orchestrator_path)]
-
-        if categories:
-            cmd.extend(categories)
-        else:
-            cmd.append("--all")
-
-        cmd.extend(
-            [
-                "--report-format",
-                report_format,
-            ],
-        )
-
-        if parallel:
-            cmd.append("--parallel")
-
-        start_time = time.time()
-
         try:
-            # Execute the K3s validation framework
-            self.logger.debug(f"Executing command: {' '.join(cmd)}")
-
-            result = subprocess.run(
-                cmd,
-                cwd=self.k3s_validation_dir,
-                capture_output=True,
-                text=True,
-                timeout=1800,
-                check=False,  # 30 minute timeout
+            # Sanitize categories using existing function
+            sanitized_categories = sanitize_categories(categories)
+            
+            # Initialize and use K3sValidationManager
+            validation_manager = K3sValidationManager(
+                base_dir=self.base_dir,
+                timeout_config=self.timeout_config
             )
-
-            duration = time.time() - start_time
-
-            # Parse the JSON report if available
-            reports_dir = self.k3s_validation_dir / "reports"
-            report_files = list(reports_dir.glob("test-*.json")) if reports_dir.exists() else []
-
-            # Load the most recent report
-            cluster_info = {}
-            summary = {}
-            test_suite = "K3s Validation"
-            namespace = "k3s-test"
-
-            if report_files:
-                latest_report = max(report_files, key=lambda p: p.stat().st_mtime)
-                try:
-                    with open(latest_report) as f:
-                        report_data = json.load(f)
-                        summary = report_data.get("summary", {})
-                        cluster_info = report_data.get("cluster_info", {})
-                        test_suite = report_data.get("test_suite", test_suite)
-                        namespace = report_data.get("namespace", namespace)
-                except Exception as e:
-                    self.logger.warning(f"Failed to parse K3s report {latest_report}: {e}")
-
-            k3s_result = K3sValidationResult(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                test_suite=test_suite,
-                namespace=namespace,
-                summary=summary,
-                cluster_info=cluster_info,
-                categories_run=categories or ["all"],
-                exit_code=result.returncode,
-                duration=duration,
-                report_files=[str(f) for f in report_files],
+            
+            result = validation_manager.validate_k3s_config(
+                categories=sanitized_categories,
+                report_format=report_format,
+                parallel=parallel
             )
+            
+            return result
 
-            if result.returncode == 0:
-                self.logger.info("✅ K3s validation tests completed successfully")
-            else:
-                self.logger.warning(
-                    f"⚠️ K3s validation tests completed with issues (exit code: {result.returncode})",
-                )
-                if result.stderr:
-                    self.logger.warning(f"K3s validation stderr: {result.stderr}")
-
-            return k3s_result
-
-        except subprocess.TimeoutExpired:
-            self.logger.exception("❌ K3s validation tests timed out")
+        except ValueError as e:
+            self.logger.error(f"Invalid configuration: {e}")
             return None
         except Exception as e:
             self.logger.exception(f"❌ K3s validation tests failed: {e}")

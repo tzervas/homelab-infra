@@ -1,22 +1,59 @@
 metadata:
   project: homelab-infra
   maintainer: yourname@example.com
+  current_phase: poc_mvp_docker
+  
+# PHASE 1: PoC/MVP (Current - Docker/Docker Compose)
+poc_mvp:
+  description: "Proof of concept using Docker and Docker Compose with Python/Shell orchestration"
+  technology_stack:
+    - Docker and Docker Compose for container orchestration
+    - Python scripts for deployment automation
+    - Shell/Bash scripts for setup and helpers
+    - YAML-based configuration management
+  services:
+    - Keycloak (authentication)
+    - OAuth2-proxy (authentication proxy)
+    - Grafana (monitoring visualization)
+    - Prometheus (metrics collection)
+    - GitLab (CI/CD and source control)
+    - JupyterLab (development environment)
+    - Ollama + Open-WebUI (AI/ML tools)
+  features:
+    - Docker Compose service definitions
+    - Python orchestration scripts
+    - Environment-based configuration
+    - Basic monitoring and alerting
+    - OAuth2 authentication flow
+  success_criteria:
+    - All services running via Docker Compose
+    - Python orchestration functional
+    - Configuration management working
+    - Authentication flow operational
+    - Basic monitoring dashboard available
 
-mvp:
-  description: "Minimal infrastructure setup for homelab using K3s"
+# PHASE 2: K3s Migration (Future Enhancement)  
+k3s_migration:
+  description: "Migration to K3s Kubernetes cluster after PoC validation"
+  prerequisites:
+    - PoC/MVP fully operational
+    - All services validated in Docker environment
+    - Migration strategy documented
   features:
     - K3s single node setup
     - MetalLB basic configuration
     - Basic ingress and egress traffic handling
-    - Essential monitoring and alerting with Prometheus and Grafana
-    - Configuration management via Ansible
+    - cert-manager for TLS certificates
+    - Helm chart deployments
   success_criteria:
-    - Successful deployment of all specified features
-    - Network communication between all nodes
+    - Successful K3s cluster deployment
+    - All services migrated from Docker Compose to K3s
+    - Network communication functional
     - Monitoring dashboard available
 
-poc:
-  description: "Proof of concept involving multi-node and advanced configuration"
+# PHASE 3: Advanced K3s (Future Enhancement)
+advanced_k3s:
+  description: "Advanced K3s features and multi-node setup"
   features:
     - K3s multi-node cluster
     - Advanced MetalLB configurations
@@ -29,6 +66,7 @@ poc:
     - GitOps sync working correctly
     - Multi-node cluster operational
 
+# PHASE 4: Production (Future Enhancement)
 production:
   description: "Full-scale production setup with redundancy and automation"
   features:

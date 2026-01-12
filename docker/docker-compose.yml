@@ -1,0 +1,244 @@
+version: '3.8'
+
+# Homelab Infrastructure - Main Docker Compose Configuration
+# Phase 1: PoC/MVP using Docker Compose
+
+networks:
+  homelab-frontend:
+    name: homelab-frontend
+    driver: bridge
+  homelab-backend:
+    name: homelab-backend
+    driver: bridge
+    internal: true
+  monitoring:
+    name: homelab-monitoring
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: homelab-postgres-data
+  keycloak-data:
+    name: homelab-keycloak-data
+  prometheus-data:
+    name: homelab-prometheus-data
+  grafana-data:
+    name: homelab-grafana-data
+  gitlab-config:
+    name: homelab-gitlab-config
+  gitlab-logs:
+    name: homelab-gitlab-logs
+  gitlab-data:
+    name: homelab-gitlab-data
+  jupyter-data:
+    name: homelab-jupyter-data
+  ollama-data:
+    name: homelab-ollama-data
+
+services:
+  # ==========================================
+  # DATABASE SERVICES
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: homelab-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - homelab-backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-keycloak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-512m}
+
+  # ==========================================
+  # AUTHENTICATION SERVICES
+  # ==========================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: homelab-keycloak
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      KC_HOSTNAME: auth.${DOMAIN:-homelab.local}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: edge
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD is required}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - homelab-frontend
+      - homelab-backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${KEYCLOAK_MEMORY_LIMIT:-1g}
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    container_name: homelab-oauth2-proxy
+    restart: unless-stopped
+    command:
+      - --provider=keycloak-oidc
+      - --client-id=${OAUTH2_CLIENT_ID:-homelab}
+      - --client-secret=${OAUTH2_CLIENT_SECRET:?OAUTH2_CLIENT_SECRET is required}
+      - --cookie-secret=${OAUTH2_COOKIE_SECRET:?OAUTH2_COOKIE_SECRET is required}
+      - --email-domain=*
+      - --upstream=http://portal:${PORTAL_PORT:-8000}
+      - --http-address=0.0.0.0:4180
+      - --redirect-url=https://${DOMAIN:-homelab.local}/oauth2/callback
+      - --oidc-issuer-url=http://keycloak:8080/realms/homelab
+      - --cookie-secure=false
+      - --cookie-domain=.${DOMAIN:-homelab.local}
+      - --whitelist-domain=.${DOMAIN:-homelab.local}
+      - --skip-provider-button=true
+    ports:
+      - "${OAUTH2_PROXY_PORT:-4180}:4180"
+    depends_on:
+      - keycloak
+      - portal
+    networks:
+      - homelab-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4180/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # MONITORING SERVICES
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: homelab-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}'
+      - '--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-50GB}'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./config/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+      - homelab-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: ${PROMETHEUS_MEMORY_LIMIT:-2g}
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: homelab-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_SERVER_ROOT_URL: http://grafana.${DOMAIN:-homelab.local}
+      GF_SERVER_DOMAIN: grafana.${DOMAIN:-homelab.local}
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: Keycloak
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${OAUTH2_CLIENT_SECRET}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://keycloak:8080/realms/homelab/protocol/openid-connect/auth
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://keycloak:8080/realms/homelab/protocol/openid-connect/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: http://keycloak:8080/realms/homelab/protocol/openid-connect/userinfo
+      TZ: ${TZ:-UTC}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - keycloak
+    networks:
+      - monitoring
+      - homelab-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: ${GRAFANA_MEMORY_LIMIT:-512m}
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: homelab-alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./config/alertmanager:/etc/alertmanager
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # PORTAL/LANDING PAGE
+  # ==========================================
+  portal:
+    image: nginx:alpine
+    container_name: homelab-portal
+    restart: unless-stopped
+    ports:
+      - "${PORTAL_PORT:-8000}:80"
+    volumes:
+      - ./portal:/usr/share/nginx/html:ro
+      - ./config/nginx/portal.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - homelab-frontend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

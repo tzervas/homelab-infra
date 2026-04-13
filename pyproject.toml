@@ -66,7 +66,7 @@ dev = [
     "mypy>=1.5.0",
     "pre-commit>=3.3.0",
     # Additional dev tools for code quality
-    "bandit[toml]>=1.7.5",  # Security linting
+    "bandit[toml]>=1.9.4",  # Security linting
     "safety>=3.0.0",  # Dependency vulnerability scanning
     "yamllint>=1.35.0",  # YAML linting
     "ansible-lint>=24.9.2",  # Ansible linting
@@ -86,7 +86,7 @@ test = [
 lint = [
     "ruff>=0.6.0",
     "mypy>=1.5.0",
-    "bandit[toml]>=1.7.5",
+    "bandit[toml]>=1.9.4",
     "yamllint>=1.35.0",
 ]
 

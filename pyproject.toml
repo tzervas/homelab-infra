@@ -71,7 +71,7 @@ dev = [
     "yamllint>=1.35.0",  # YAML linting
     "ansible-lint>=24.9.2",  # Ansible linting
     # Type stub packages for better type checking
-    "types-PyYAML>=6.0.12",
+    "types-PyYAML>=6.0.12.20260408",
     "types-requests>=2.31.0",
     "types-jsonschema>=4.19.0",
 ]

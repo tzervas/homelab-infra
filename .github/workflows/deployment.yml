@@ -16,7 +16,7 @@ on:
 jobs:
   pre-deployment-validation:
     name: Pre-deployment Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     outputs:
       validation_status: ${{ steps.validation.outputs.status }}
       config_status: ${{ steps.config.outputs.status }}
@@ -48,7 +48,7 @@ jobs:
     name: Deploy to Environment
     needs: pre-deployment-validation
     if: needs.pre-deployment-validation.outputs.validation_status == 'success'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     environment:
       name: ${{ github.event.inputs.environment || github.ref_name }}
 
@@ -79,7 +79,7 @@ jobs:
     name: Post-deployment Validation
     needs: [deployment, pre-deployment-validation]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - uses: actions/checkout@v4
 

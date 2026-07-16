@@ -1,11 +1,8 @@
 name: Homelab Infrastructure CI/CD
 
+# Manual only — no push/pull_request CI triggers
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-
+  workflow_dispatch:
 env:
   ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'staging' || 'development') }}
 

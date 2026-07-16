@@ -1,9 +1,7 @@
 name: Repository Monitoring
 
+# Manual only — no push/pull_request CI triggers
 on:
-  schedule:
-    # Run daily at 02:00 UTC
-    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       full_scan:

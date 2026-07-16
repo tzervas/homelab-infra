@@ -1,12 +1,7 @@
 name: Security Scans
 
+# Manual only — no push/pull_request CI triggers
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - "feat/**"
-      - "feature/**"
   workflow_dispatch:
 
 jobs:

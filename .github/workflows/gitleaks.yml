@@ -1,14 +1,8 @@
 name: Gitleaks Secret Scanning
 
+# Manual only — no push/pull_request CI triggers
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: "0 2 * * *"
-
+  workflow_dispatch:
 jobs:
   gitleaks:
     name: Gitleaks Secret Detection

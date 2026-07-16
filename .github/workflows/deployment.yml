@@ -1,8 +1,7 @@
 name: Deployment
 
+# Manual only — no push/pull_request CI triggers
 on:
-  pull_request:
-    types: [labeled]
   workflow_dispatch:
     inputs:
       environment:

@@ -1,16 +1,7 @@
 name: Deployment Validation with Automated Hooks
 
+# Manual only — no push/pull_request CI triggers
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - "release/**"
-      - "hotfix/**"
-  pull_request:
-    branches:
-      - main
-      - develop
   workflow_dispatch:
     inputs:
       deployment_phase:

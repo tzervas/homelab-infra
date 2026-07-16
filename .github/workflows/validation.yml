@@ -1,11 +1,7 @@
 name: Validation Workflow
 
+# Manual only — no push/pull_request CI triggers
 on:
-  pull_request:
-    paths:
-      - "helm/**"
-      - "kubernetes/**"
-      - "config/**"
   workflow_dispatch:
 
 jobs:

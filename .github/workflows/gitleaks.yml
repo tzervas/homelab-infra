@@ -2,11 +2,21 @@ name: Gitleaks Secret Scanning
 
 # Manual only — no push/pull_request CI triggers
 on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
   workflow_dispatch:
 jobs:
   gitleaks:
     name: Gitleaks Secret Detection
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +39,7 @@ jobs:
   gitleaks-pr:
     name: Gitleaks PR Scan
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4

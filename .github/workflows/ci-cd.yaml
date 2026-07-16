@@ -2,13 +2,23 @@ name: Homelab Infrastructure CI/CD
 
 # Manual only — no push/pull_request CI triggers
 on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
   workflow_dispatch:
 env:
   ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'staging' || 'development') }}
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
     steps:
@@ -52,7 +62,7 @@ jobs:
 
   test-and-lint:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -101,7 +111,7 @@ jobs:
 
   config-validation:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -171,7 +181,7 @@ except Exception as e:
 
   integration-tests:
     needs: [validate, test-and-lint, config-validation]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code

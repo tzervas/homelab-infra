@@ -15,7 +15,7 @@ env:
 
 jobs:
   repository-health:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Repository Health Check
     steps:
       - name: Checkout repository
@@ -85,7 +85,7 @@ jobs:
           retention-days: 30
 
   security-monitoring:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Security Monitoring
     steps:
       - name: Checkout repository
@@ -116,7 +116,7 @@ jobs:
           done
 
   dependency-monitoring:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Dependency Monitoring
     steps:
       - name: Checkout repository
@@ -163,7 +163,7 @@ jobs:
           done
 
   compliance-check:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Compliance Check
     steps:
       - name: Checkout repository
@@ -222,7 +222,7 @@ jobs:
           fi
 
   notification:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Send Monitoring Summary
     needs: [repository-health, security-monitoring, dependency-monitoring, compliance-check]
     if: failure() || github.event.inputs.full_scan == 'true'

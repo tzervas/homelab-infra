@@ -38,7 +38,7 @@ jobs:
   # Pre-deployment validation job
   pre-deployment-validation:
     name: Pre-deployment Validation Hooks
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     if:
       github.event_name != 'workflow_dispatch' || github.event.inputs.deployment_phase !=
       'validation-only'
@@ -122,7 +122,7 @@ jobs:
   # Configuration and security validation
   config-security-validation:
     name: Configuration & Security Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
 
     steps:
       - name: Checkout code
@@ -162,7 +162,7 @@ jobs:
   # Helm chart validation
   helm-validation:
     name: Helm Chart Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
 
     steps:
       - name: Checkout code
@@ -200,7 +200,7 @@ jobs:
   # Deployment simulation (for non-production)
   deployment-simulation:
     name: Deployment Simulation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs: [pre-deployment-validation, config-security-validation, helm-validation]
     if: |
       always() &&
@@ -307,7 +307,7 @@ jobs:
   # Continuous validation setup
   continuous-validation-setup:
     name: Setup Continuous Validation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs: [deployment-simulation]
     if: always() && needs.deployment-simulation.result == 'success'
 
@@ -392,7 +392,7 @@ jobs:
   # Summary and notification
   deployment-validation-summary:
     name: Deployment Validation Summary
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs:
       [
         pre-deployment-validation,
@@ -475,7 +475,7 @@ jobs:
   # Cleanup
   cleanup:
     name: Cleanup
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs: [deployment-validation-summary]
     if: always()
 

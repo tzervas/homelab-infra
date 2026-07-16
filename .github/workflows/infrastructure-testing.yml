@@ -2,6 +2,16 @@ name: Infrastructure Testing & Validation
 
 # Manual only — no push/pull_request CI triggers
 on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
   workflow_dispatch:
     inputs:
       run_terratest:
@@ -16,7 +26,7 @@ env:
 jobs:
   # Configuration and manifest validation
   validation:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Configuration Validation
     steps:
       - name: Checkout code
@@ -58,7 +68,7 @@ jobs:
 
   # Security scanning
   security:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     name: Security Scanning
     steps:
       - name: Checkout code
@@ -86,7 +96,7 @@ jobs:
 
   # Comprehensive testing
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs: [validation, security]
     defaults:
       run:
@@ -157,7 +167,7 @@ jobs:
         run: helm unittest ${GITHUB_WORKSPACE}/helm/charts  -3
 
   performance:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -191,7 +201,7 @@ jobs:
   # Optional Terratest — off by default; does not affect default workflow_dispatch runs
   terratest:
     if: ${{ inputs.run_terratest }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, podman]
     needs: [validation, security]
     name: Terratest (optional)
     defaults:

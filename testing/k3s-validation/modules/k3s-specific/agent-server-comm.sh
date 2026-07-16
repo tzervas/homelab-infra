@@ -170,7 +170,7 @@ EOF
 
                     if [[ "$pod_status" == "Running" ]]; then
                         ((running_pods++))
-                        if [[ ! " ${nodes_with_pods[@]} " =~ " ${node_name} " ]]; then
+                        if [[ ! " ${nodes_with_pods[*]} " =~ " ${node_name} " ]]; then
                             nodes_with_pods+=("$node_name")
                         fi
                     fi

@@ -159,25 +159,12 @@ jobs:
 
       - name: Validate Kubernetes manifests
         run: |
-          # Basic Kubernetes YAML validation
-          find kubernetes/ -name "*.yaml" -o -name "*.yml" | while read manifest; do
+          # Basic Kubernetes YAML validation (single-line python keeps workflow YAML valid)
+          set -euo pipefail
+          while IFS= read -r manifest; do
             echo "Validating Kubernetes manifest: $manifest"
-            python -c "
-import yaml
-import sys
-try:
-    with open('$manifest') as f:
-        docs = yaml.safe_load_all(f)
-        for doc in docs:
-            if doc and 'apiVersion' in doc and 'kind' in doc:
-                print(f'✅ Valid K8s manifest: {doc.get(\"kind\", \"Unknown\")}')
-            elif doc:
-                print(f'⚠️ Possible invalid K8s manifest in $manifest')
-except Exception as e:
-    print(f'❌ Error validating $manifest: {e}')
-    sys.exit(1)
-"
-          done
+            python3 -c "import sys,yaml; docs=list(yaml.safe_load_all(open(sys.argv[1]))); kinds=[d.get('kind','Unknown') for d in docs if isinstance(d,dict) and 'apiVersion' in d and 'kind' in d]; print('Valid K8s manifests:', ', '.join(kinds) if kinds else 'none/unknown')" "$manifest"
+          done < <(find kubernetes/ \( -name '*.yaml' -o -name '*.yml' \))
 
   integration-tests:
     needs: [validate, test-and-lint, config-validation]

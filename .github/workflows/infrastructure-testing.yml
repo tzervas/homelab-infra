@@ -3,6 +3,11 @@ name: Infrastructure Testing & Validation
 # Manual only — no push/pull_request CI triggers
 on:
   workflow_dispatch:
+    inputs:
+      run_terratest:
+        description: "Run Terratest (requires OpenTofu/Terraform, kubectl, KUBECONFIG for apply tests)"
+        type: boolean
+        default: false
 env:
   PYTHON_VERSION: "3.11"
   GO_VERSION: "1.21"
@@ -182,3 +187,38 @@ jobs:
         with:
           name: benchmark-results
           path: benchmark-results.json
+
+  # Optional Terratest — off by default; does not affect default workflow_dispatch runs
+  terratest:
+    if: ${{ inputs.run_terratest }}
+    runs-on: ubuntu-latest
+    needs: [validation, security]
+    name: Terratest (optional)
+    defaults:
+      run:
+        working-directory: testing/terraform/terratest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: testing/terraform/terratest/go.mod
+          cache-dependency-path: testing/terraform/terratest/go.sum
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Verify Terratest prerequisites
+        run: ./check-prereqs.sh
+
+      - name: Run Terratest
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: ./run-terratest.sh -v

@@ -262,16 +262,18 @@ run_terratest() {
 
     cd "$terratest_dir"
 
-    # Install dependencies
-    log_info "Installing Go dependencies..."
-    if ! go mod download; then
-        log_error "Failed to install Go dependencies"
-        return 1
+    # Fail fast with actionable errors when OpenTofu/Terraform is missing
+    if [[ -x "$terratest_dir/check-prereqs.sh" ]]; then
+        log_info "Checking Terratest prerequisites..."
+        if ! "$terratest_dir/check-prereqs.sh"; then
+            log_error "Terratest prerequisites missing — see testing/terraform/terratest/README.md"
+            return 1
+        fi
     fi
 
-    # Run tests with timeout and JSON output
+    # Run tests with timeout and JSON output (run-terratest.sh handles tofu/terraform shim)
     log_info "Running Terratest..."
-    if timeout "$TEST_TIMEOUT" go test -v -timeout "${TEST_TIMEOUT}s" -json ./... > "$output_file" 2>&1; then
+    if timeout "$TEST_TIMEOUT" ./run-terratest.sh -timeout "${TEST_TIMEOUT}s" -json ./... > "$output_file" 2>&1; then
         log_success "Terratest completed successfully"
 
         # Parse results for summary

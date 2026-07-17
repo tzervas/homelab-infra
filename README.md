@@ -1,5 +1,10 @@
 # Homelab Infrastructure Orchestrator
 
+<!-- FLEET-BADGES:BEGIN -->
+[![CI](https://github.com/tzervas/homelab-infra/actions/workflows/fleet-ci.yml/badge.svg?branch=main)](https://github.com/tzervas/homelab-infra/actions/workflows/fleet-ci.yml?query=branch%3Amain)
+[![Security](https://github.com/tzervas/homelab-infra/actions/workflows/fleet-security.yml/badge.svg?branch=main)](https://github.com/tzervas/homelab-infra/actions/workflows/fleet-security.yml?query=branch%3Amain)
+<!-- FLEET-BADGES:END -->
+
 🧪 **Beta Release v0.9.0-beta** - Unified orchestration platform ready for testing!
 
 Modern homelab infrastructure orchestrator with security-first deployment, comprehensive certificate management, and unified CLI interface.
